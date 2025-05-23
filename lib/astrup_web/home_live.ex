@@ -2,7 +2,19 @@ defmodule AstrupWeb.HomeLive do
   use AstrupWeb, :live_view
 
   def mount(_, _, socket) do
-    {:ok, socket}
+    random_minutes =
+      -60..-2
+      |> Enum.take_random(1)
+      |> List.first()
+
+    date =
+      "Europe/Helsinki"
+      |> DateTime.now!()
+      |> DateTime.add(random_minutes, :minute)
+
+    {:ok,
+     socket
+     |> assign(:date, date)}
   end
 
   def render(assigns) do
@@ -14,8 +26,8 @@ defmodule AstrupWeb.HomeLive do
         <div class="text-sm space-y-1">
           <div class="flex justify-between">
             <span>ABL90 ABL TeVa I393-092R0178N0019</span>
-            <span>22:39</span>
-            <span>23.5.2025</span>
+            <span>{Calendar.strftime(@date, "%H:%M")}</span>
+            <span>{Calendar.strftime(@date, "%d.%m.%Y")}</span>
           </div>
           <div class="flex justify-between">
             <span>PATIENT REPORT</span>
@@ -32,7 +44,7 @@ defmodule AstrupWeb.HomeLive do
         <div class="text-sm space-y-1 ml-4">
           <div class="grid grid-cols-[1fr_2fr] gap-4">
             <span>Patient ID</span>
-            <span>110875-205H</span>
+            <span>XXXXXX-XXXX</span>
           </div>
           <div class="grid grid-cols-[1fr_2fr] gap-4">
             <span>Sample type</span>
