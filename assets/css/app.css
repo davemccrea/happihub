@@ -4,7 +4,6 @@
 
 body {
   font-family: monospace; /* Using monospace to mimic the printout style */
-  color: #333;
 }
 .report-container {
   width: 600px; /* Approximate width of the printout */
@@ -48,7 +47,6 @@ body {
   display: flex;
   justify-content: space-between;
   font-size: 0.875rem; /* text-sm */
-  margin-bottom: 1rem;
 }
 .footer-info {
   display: flex;
