@@ -1,0 +1,60 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+body {
+  font-family: monospace; /* Using monospace to mimic the printout style */
+  color: #333;
+}
+.report-container {
+  width: 600px; /* Approximate width of the printout */
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border: 1px solid #ccc;
+  background-color: #fff;
+}
+.section-title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.25rem;
+}
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  padding-left: 1rem;
+}
+.data-label {
+  flex-basis: 60%;
+}
+.data-value {
+  flex-basis: 20%;
+  text-align: right;
+}
+.data-unit {
+  flex-basis: 20%;
+  text-align: left;
+  padding-left: 0.5rem;
+}
+.header-main {
+  font-size: 1.5rem; /* Increased size for main header */
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem; /* text-sm */
+  margin-bottom: 1rem;
+}
+.footer-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem; /* text-xs */
+  margin-top: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #ccc;
+}
