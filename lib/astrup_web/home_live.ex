@@ -20,6 +20,7 @@ defmodule AstrupWeb.HomeLive do
 
     {:ok,
      socket
+     |> assign(:show_hints, true)
      |> assign(:sample_date, sample_date)
      |> assign(:printed_date, printed_date)}
   end
@@ -70,21 +71,19 @@ defmodule AstrupWeb.HomeLive do
         <section class="mb-1">
           <.heading label="Temperature-corrected values" />
           <dl class="space-y-1 ml-8">
-            <.result_row>
-              <:label>
-                pH(<i> T </i>)
-              </:label>
+            <.result_row show_hints={@show_hints} id="value-0">
+              <:label>pH(<i> T </i>)</:label>
               <:value>7,446</:value>
               <:unit>pH</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-1">
               <:label>
                 <i>p</i>CO<sub>2</sub>(<i> T </i>)
               </:label>
               <:value>4,88</:value>
               <:unit>kPa</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-2">
               <:label>
                 <i>p</i>O<sub>2</sub>(<i> T </i>)
               </:label>
@@ -97,17 +96,17 @@ defmodule AstrupWeb.HomeLive do
         <section class="mb-1">
           <.heading label="Acid-base status" />
           <dl class="space-y-1 ml-8">
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-3">
               <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
               <:value>25,2</:value>
               <:unit>mmol/L</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-4">
               <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
               <:value>1,1</:value>
               <:unit>mmol/L</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-5">
               <:label>Anion Gap<i><sub>c</sub></i></:label>
               <:value>6,9</:value>
               <:unit>mmol/L</:unit>
@@ -118,27 +117,27 @@ defmodule AstrupWeb.HomeLive do
         <section class="mb-1">
           <.heading label="Oximetry values" />
           <dl class="space-y-1 ml-8">
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-6">
               <:label><i>c</i>tHb</:label>
               <:value>107</:value>
               <:unit>g/L</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-7">
               <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
               <:value>14,5</:value>
               <:unit>Vol%</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-8">
               <:label><i>s</i>O<sub>2</sub></:label>
               <:value>96,7</:value>
               <:unit>%</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-9">
               <:label><i>F</i>COHb</:label>
               <:value>0,5</:value>
               <:unit>%</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-10">
               <:label><i>F</i>MetHb</:label>
               <:value>0,7</:value>
               <:unit>%</:unit>
@@ -149,22 +148,27 @@ defmodule AstrupWeb.HomeLive do
         <section class="mb-1">
           <.heading label="Electrolyte values" />
           <dl class="space-y-1 ml-8">
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-11">
               <:label><i>c</i>K<sup>+</sup></:label>
               <:value>3,7</:value>
               <:unit>mmol/L</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-12">
               <:label><i>c</i>Na<sup>+</sup></:label>
               <:value>143</:value>
               <:unit>mmol/L</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-13">
+              <:label><i>c</i>Ca<sup>2+</sup></:label>
+              <:value>1,19</:value>
+              <:unit>mmol/L</:unit>
+            </.result_row>
+            <.result_row show_hints={@show_hints} id="value-14">
               <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
               <:value>1,19</:value>
               <:unit>mmol/L</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-15">
               <:label><i>c</i>Cl<sup>-</sup></:label>
               <:value>111</:value>
               <:unit>mmol/L</:unit>
@@ -175,12 +179,12 @@ defmodule AstrupWeb.HomeLive do
         <section class="mb-1">
           <.heading label="Metabolite values" />
           <dl class="space-y-1 ml-8">
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-16">
               <:label><i>c</i>Glu</:label>
               <:value>8,7</:value>
               <:unit>mmol/L</:unit>
             </.result_row>
-            <.result_row>
+            <.result_row show_hints={@show_hints} id="value-17">
               <:label><i>c</i>Lac</:label>
               <:value>0,7</:value>
               <:unit>mmol/L</:unit>
@@ -230,15 +234,37 @@ defmodule AstrupWeb.HomeLive do
     """
   end
 
+  attr :id, :string, required: true
+  attr :show_hints, :boolean, default: true
   slot :label, required: true
   slot :value, required: true
   slot :unit, required: true
 
   def result_row(assigns) do
+    n =
+      assigns.id
+      |> String.replace("value-", "")
+      |> String.to_integer()
+
+    assigns =
+      assign(assigns, :n, n)
+
     ~H"""
-    <div class="grid grid-cols-[1fr_1fr_1fr] gap-4">
-      <dt>{render_slot(@label)}</dt>
-      <dd class="font-bold text-right">{render_slot(@value)}</dd>
+    <div id={@id} class="grid grid-cols-[1fr_1fr_1fr] gap-4">
+      <sl-tooltip disabled={!@show_hints} placement="left-top" content={Astrup.Result.label(@n)}>
+        <dt>
+          {render_slot(@label)}
+        </dt>
+      </sl-tooltip>
+      <sl-tooltip
+        disabled={!@show_hints}
+        placement="right-top"
+        content={Astrup.Result.format_reference_range(@n)}
+      >
+        <dd class="font-bold text-right">
+          {render_slot(@value)}
+        </dd>
+      </sl-tooltip>
       <dd>{render_slot(@unit)}</dd>
     </div>
     """
