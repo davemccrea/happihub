@@ -31,10 +31,8 @@ defmodule AstrupWeb.HomeLive do
 
   def render(assigns) do
     ~H"""
-    <div class="relative max-w-2xl mx-auto my-12 select-none">
-      <div class="absolute inset-0 bg-white shadow transform -rotate-[1deg] -z-20" />
-      <div class="absolute inset-0 bg-white shadow transform -rotate-[2deg] -z-10" />
-      <article class="relative bg-white py-12 px-12 shadow">
+    <Layouts.app flash={@flash}>
+      <article class="relative max-w-2xl mx-auto select-none bg-base-200 py-12 px-12 shadow">
         <header class="text-center">
           <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
           <div class="space-y-1">
@@ -52,7 +50,7 @@ defmodule AstrupWeb.HomeLive do
           </div>
         </header>
 
-        <hr class="border-gray-800 border-[1.5px] mb-1 mt-1" />
+        <hr class="border-base-content border-[1.5px] mb-1 mt-1" />
 
         <section class="px-2">
           <.heading label="Identifications" />
@@ -72,7 +70,7 @@ defmodule AstrupWeb.HomeLive do
           </dl>
         </section>
 
-        <hr class="border-gray-800 mb-1 mt-2 border-[1.5px]" />
+        <hr class="border-base-content mb-1 mt-2 border-[1.5px]" />
 
         <div class="px-4">
           <section class="mb-1">
@@ -272,7 +270,7 @@ defmodule AstrupWeb.HomeLive do
           </section>
         </div>
 
-        <hr class="border-dashed border-gray-400 mb-1" />
+        <hr class="border-dashed border-base-content mb-1" />
 
         <section class="mb-2">
           <.heading label="Notes" />
@@ -284,9 +282,9 @@ defmodule AstrupWeb.HomeLive do
           </dl>
         </section>
 
-        <hr class="border-gray-800 mb-14 border-[1.5px]" />
+        <hr class="border-base-content mb-14 border-[1.5px]" />
 
-        <hr class="border-gray-800 mb-2 border-[1.5px]" />
+        <hr class="border-base-content mb-2 border-[1.5px]" />
 
         <footer>
           <div class="flex justify-between">
@@ -304,7 +302,7 @@ defmodule AstrupWeb.HomeLive do
           </div>
         </footer>
       </article>
-    </div>
+    </Layouts.app>
     """
   end
 
