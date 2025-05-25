@@ -59,9 +59,32 @@ defmodule Astrup do
     end
   end
 
+  def units_for_parameter(:abl90, id) do
+    case id do
+      0 -> ""
+      1 -> "kPa"
+      2 -> "kPa"
+      3 -> "mmol/L"
+      4 -> "mmol/L"
+      5 -> "mmol/L"
+      6 -> "g/L"
+      7 -> "Vol%"
+      8 -> "%"
+      9 -> "%"
+      10 -> "%"
+      11 -> "mmol/L"
+      12 -> "mmol/L"
+      13 -> "mmol/L"
+      14 -> "mmol/L"
+      15 -> "mmol/L"
+      16 -> "mmol/L"
+      17 -> "mmol/L"
+    end
+  end
+
   def reference_ranges(id) do
     case id do
-      0 -> {Decimal.new("7.35"), Decimal.new("7.45"), nil, :decimal}
+      0 -> {Decimal.new("7.35"), Decimal.new("7.45"), "", :decimal}
       1 -> {Decimal.new("4.5"), Decimal.new("6.0"), "kPa", :decimal}
       2 -> {Decimal.new("10.3"), Decimal.new("13.0"), "kPa", :decimal}
       3 -> {Decimal.new("22.0"), Decimal.new("27.0"), "mmol/l", :integer}

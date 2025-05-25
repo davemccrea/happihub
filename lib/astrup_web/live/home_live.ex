@@ -21,7 +21,6 @@ defmodule AstrupWeb.HomeLive do
 
     {:ok,
      socket
-     |> assign(:show_answers, true)
      |> assign(:sample_number, sample_number)
      |> assign(:printout, printout)
      |> assign(:show_hints, true)
@@ -76,33 +75,15 @@ defmodule AstrupWeb.HomeLive do
           <section class="mb-1">
             <.heading label="Temperature-corrected values" />
             <dl class="space-y-1 ml-8">
-              <.parameter
-                value={@printout[0]}
-                unit="pH"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={0}
-              >
+              <.parameter parameter_id={0} {assigns}>
                 <:label>pH(<i> T </i>)</:label>
               </.parameter>
-              <.parameter
-                value={@printout[1]}
-                unit="kPa"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={1}
-              >
+              <.parameter parameter_id={1} {assigns}>
                 <:label>
                   <i>p</i>CO<sub>2</sub>(<i> T </i>)
                 </:label>
               </.parameter>
-              <.parameter
-                value={@printout[2]}
-                unit="kPa"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={2}
-              >
+              <.parameter parameter_id={2} {assigns}>
                 <:label>
                   <i>p</i>O<sub>2</sub>(<i> T </i>)
                 </:label>
@@ -113,31 +94,13 @@ defmodule AstrupWeb.HomeLive do
           <section class="mb-1">
             <.heading label="Acid-base status" />
             <dl class="space-y-1 ml-8">
-              <.parameter
-                value={@printout[3]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={3}
-              >
+              <.parameter parameter_id={3} {assigns}>
                 <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
               </.parameter>
-              <.parameter
-                value={@printout[4]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={4}
-              >
+              <.parameter parameter_id={4} {assigns}>
                 <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
               </.parameter>
-              <.parameter
-                value={@printout[5]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={5}
-              >
+              <.parameter parameter_id={5} {assigns}>
                 <:label>Anion Gap<i><sub>c</sub></i></:label>
               </.parameter>
             </dl>
@@ -146,49 +109,19 @@ defmodule AstrupWeb.HomeLive do
           <section class="mb-1">
             <.heading label="Oximetry values" />
             <dl class="space-y-1 ml-8">
-              <.parameter
-                value={@printout[6]}
-                unit="g/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={6}
-              >
+              <.parameter parameter_id={6} {assigns}>
                 <:label><i>c</i>tHb</:label>
               </.parameter>
-              <.parameter
-                value={@printout[7]}
-                unit="Vol%"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={7}
-              >
+              <.parameter parameter_id={7} {assigns}>
                 <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
               </.parameter>
-              <.parameter
-                value={@printout[8]}
-                unit="%"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={8}
-              >
+              <.parameter parameter_id={8} {assigns}>
                 <:label><i>s</i>O<sub>2</sub></:label>
               </.parameter>
-              <.parameter
-                value={@printout[9]}
-                unit="%"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={9}
-              >
+              <.parameter parameter_id={9} {assigns}>
                 <:label><i>F</i>COHb</:label>
               </.parameter>
-              <.parameter
-                value={@printout[10]}
-                unit="%"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={10}
-              >
+              <.parameter parameter_id={10} {assigns}>
                 <:label><i>F</i>MetHb</:label>
               </.parameter>
             </dl>
@@ -197,49 +130,19 @@ defmodule AstrupWeb.HomeLive do
           <section class="mb-1">
             <.heading label="Electrolyte values" />
             <dl class="space-y-1 ml-8">
-              <.parameter
-                value={@printout[11]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={11}
-              >
+              <.parameter parameter_id={11} {assigns}>
                 <:label><i>c</i>K<sup>+</sup></:label>
               </.parameter>
-              <.parameter
-                value={@printout[12]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={12}
-              >
+              <.parameter parameter_id={12} {assigns}>
                 <:label><i>c</i>Na<sup>+</sup></:label>
               </.parameter>
-              <.parameter
-                value={@printout[13]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={13}
-              >
+              <.parameter parameter_id={13} {assigns}>
                 <:label><i>c</i>Ca<sup>2+</sup></:label>
               </.parameter>
-              <.parameter
-                value={@printout[14]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={14}
-              >
+              <.parameter parameter_id={14} {assigns}>
                 <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
               </.parameter>
-              <.parameter
-                value={@printout[15]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={15}
-              >
+              <.parameter parameter_id={15} {assigns}>
                 <:label><i>c</i>Cl<sup>-</sup></:label>
               </.parameter>
             </dl>
@@ -248,22 +151,10 @@ defmodule AstrupWeb.HomeLive do
           <section class="mb-1">
             <.heading label="Metabolite values" />
             <dl class="space-y-1 ml-8">
-              <.parameter
-                value={@printout[16]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={16}
-              >
+              <.parameter parameter_id={16} {assigns}>
                 <:label><i>c</i>Glu</:label>
               </.parameter>
-              <.parameter
-                value={@printout[17]}
-                unit="mmol/L"
-                show_answers={@show_answers}
-                show_hints={@show_hints}
-                parameter_id={17}
-              >
+              <.parameter parameter_id={17} {assigns}>
                 <:label><i>c</i>Lac</:label>
               </.parameter>
             </dl>
@@ -313,15 +204,11 @@ defmodule AstrupWeb.HomeLive do
   end
 
   attr :parameter_id, :integer, required: true
-  attr :show_hints, :boolean, default: true
-  attr :show_answers, :boolean, default: false
-  attr :value, :string, required: true
-  attr :unit, :string, required: true
   slot :label, required: true
 
   def parameter(assigns) do
     ~H"""
-    <div class="grid grid-cols-[1fr_1fr_1fr] gap-4">
+    <div class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4">
       <dt>
         <sl-tooltip
           disabled={!@show_hints}
@@ -337,26 +224,13 @@ defmodule AstrupWeb.HomeLive do
         placement="right"
         content={Astrup.pretty_print_reference_range(@parameter_id)}
       >
-        <dd class={[
-          "font-bold text-right",
-          color_for_value(@parameter_id, @value, @show_answers)
-        ]}>
-          {@value}
+        <dd class="font-bold text-right text-neutral">
+          {@printout[@parameter_id]}
         </dd>
       </sl-tooltip>
 
-      <dd>{@unit}</dd>
+      <dd>{Astrup.units_for_parameter(:abl90, @parameter_id)}</dd>
     </div>
     """
-  end
-
-  defp color_for_value(_id, _value, false), do: ""
-
-  defp color_for_value(id, value, true) do
-    case Astrup.check_reference_range(id, value) do
-      :high -> "text-red-500"
-      :low -> "text-red-500"
-      :normal -> ""
-    end
   end
 end
