@@ -32,9 +32,9 @@ defmodule AstrupWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <div class="relative max-w-2xl mx-auto my-12 select-none">
-      <div class="absolute inset-0 bg-white border shadow transform -rotate-[1deg] -z-20" />
-      <div class="absolute inset-0 bg-white border shadow transform -rotate-[2deg] -z-10" />
-      <article class="relative bg-white border py-12 px-12 shadow">
+      <div class="absolute inset-0 bg-white shadow transform -rotate-[1deg] -z-20" />
+      <div class="absolute inset-0 bg-white shadow transform -rotate-[2deg] -z-10" />
+      <article class="relative bg-white py-12 px-12 shadow">
         <header class="text-center">
           <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
           <div class="space-y-1">

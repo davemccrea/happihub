@@ -38,9 +38,7 @@ defmodule AstrupWeb do
 
   def controller do
     quote do
-      use Phoenix.Controller,
-        formats: [:html, :json],
-        layouts: [html: AstrupWeb.Layouts]
+      use Phoenix.Controller, formats: [:html, :json]
 
       use Gettext, backend: AstrupWeb.Gettext
 
@@ -52,8 +50,7 @@ defmodule AstrupWeb do
 
   def live_view do
     quote do
-      use Phoenix.LiveView,
-        layout: {AstrupWeb.Layouts, :app}
+      use Phoenix.LiveView
 
       unquote(html_helpers())
     end
@@ -90,8 +87,9 @@ defmodule AstrupWeb do
       # Core UI components
       import AstrupWeb.CoreComponents
 
-      # Shortcut for generating JS commands
+      # Common modules used in templates
       alias Phoenix.LiveView.JS
+      alias AstrupWeb.Layouts
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

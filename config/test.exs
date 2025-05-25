@@ -17,7 +17,7 @@ config :astrup, Astrup.Repo,
 # you can enable the server option below.
 config :astrup, AstrupWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "3q7zMriCnuE7A1z4Cj70PGeZMOqgE2DNDpBXzlzXGaZXcfgb/9uMbEuaDW9hSYlB",
+  secret_key_base: "RCHouUQA2DrOSQWEufh1QrvOKrhM47PO9i59Sme6KImOaVCzL4Od+D4+oqXXbVKg",
   server: false
 
 # In test we don't send emails
