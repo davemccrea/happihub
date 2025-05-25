@@ -4,12 +4,9 @@ defmodule AstrupWeb.HomeLive do
   def mount(_, _, socket) do
     sample_number = Enum.random(10000..99999)
 
-    result =
-      Astrup.Result.db()
-      |> Enum.random()
+    printout = Astrup.random_printout()
 
-    random_minutes =
-      Enum.random(-60..-2)
+    random_minutes = Enum.random(-60..-2)
 
     sample_date =
       "Europe/Helsinki"
@@ -26,7 +23,7 @@ defmodule AstrupWeb.HomeLive do
      socket
      |> assign(:show_answers, true)
      |> assign(:sample_number, sample_number)
-     |> assign(:result, result)
+     |> assign(:printout, printout)
      |> assign(:show_hints, true)
      |> assign(:sample_date, sample_date)
      |> assign(:printed_date, printed_date)}
@@ -34,9 +31,9 @@ defmodule AstrupWeb.HomeLive do
 
   def render(assigns) do
     ~H"""
-    <div class="relative max-w-2xl mx-auto my-12">
-      <div class="absolute inset-0 bg-white border shadow transform -rotate-[2deg] -z-20" />
-      <div class="absolute inset-0 bg-white border shadow transform -rotate-[4deg] -z-10" />
+    <div class="relative max-w-2xl mx-auto my-12 select-none">
+      <div class="absolute inset-0 bg-white border shadow transform -rotate-[1deg] -z-20" />
+      <div class="absolute inset-0 bg-white border shadow transform -rotate-[2deg] -z-10" />
       <article class="relative bg-white border py-12 px-12 shadow">
         <header class="text-center">
           <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
@@ -81,196 +78,196 @@ defmodule AstrupWeb.HomeLive do
           <section class="mb-1">
             <.heading label="Temperature-corrected values" />
             <dl class="space-y-1 ml-8">
-              <.result_row
-                value={@result[0]}
+              <.parameter
+                value={@printout[0]}
                 unit="pH"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-0"
+                parameter_id={0}
               >
                 <:label>pH(<i> T </i>)</:label>
-              </.result_row>
-              <.result_row
-                value={@result[1]}
+              </.parameter>
+              <.parameter
+                value={@printout[1]}
                 unit="kPa"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-1"
+                parameter_id={1}
               >
                 <:label>
                   <i>p</i>CO<sub>2</sub>(<i> T </i>)
                 </:label>
-              </.result_row>
-              <.result_row
-                value={@result[2]}
+              </.parameter>
+              <.parameter
+                value={@printout[2]}
                 unit="kPa"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-2"
+                parameter_id={2}
               >
                 <:label>
                   <i>p</i>O<sub>2</sub>(<i> T </i>)
                 </:label>
-              </.result_row>
+              </.parameter>
             </dl>
           </section>
 
           <section class="mb-1">
             <.heading label="Acid-base status" />
             <dl class="space-y-1 ml-8">
-              <.result_row
-                value={@result[3]}
+              <.parameter
+                value={@printout[3]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-3"
+                parameter_id={3}
               >
                 <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
-              </.result_row>
-              <.result_row
-                value={@result[4]}
+              </.parameter>
+              <.parameter
+                value={@printout[4]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-4"
+                parameter_id={4}
               >
                 <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
-              </.result_row>
-              <.result_row
-                value={@result[5]}
+              </.parameter>
+              <.parameter
+                value={@printout[5]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-5"
+                parameter_id={5}
               >
                 <:label>Anion Gap<i><sub>c</sub></i></:label>
-              </.result_row>
+              </.parameter>
             </dl>
           </section>
 
           <section class="mb-1">
             <.heading label="Oximetry values" />
             <dl class="space-y-1 ml-8">
-              <.result_row
-                value={@result[6]}
+              <.parameter
+                value={@printout[6]}
                 unit="g/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-6"
+                parameter_id={6}
               >
                 <:label><i>c</i>tHb</:label>
-              </.result_row>
-              <.result_row
-                value={@result[7]}
+              </.parameter>
+              <.parameter
+                value={@printout[7]}
                 unit="Vol%"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-7"
+                parameter_id={7}
               >
                 <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
-              </.result_row>
-              <.result_row
-                value={@result[8]}
+              </.parameter>
+              <.parameter
+                value={@printout[8]}
                 unit="%"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-8"
+                parameter_id={8}
               >
                 <:label><i>s</i>O<sub>2</sub></:label>
-              </.result_row>
-              <.result_row
-                value={@result[9]}
+              </.parameter>
+              <.parameter
+                value={@printout[9]}
                 unit="%"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-9"
+                parameter_id={9}
               >
                 <:label><i>F</i>COHb</:label>
-              </.result_row>
-              <.result_row
-                value={@result[10]}
+              </.parameter>
+              <.parameter
+                value={@printout[10]}
                 unit="%"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-10"
+                parameter_id={10}
               >
                 <:label><i>F</i>MetHb</:label>
-              </.result_row>
+              </.parameter>
             </dl>
           </section>
 
           <section class="mb-1">
             <.heading label="Electrolyte values" />
             <dl class="space-y-1 ml-8">
-              <.result_row
-                value={@result[11]}
+              <.parameter
+                value={@printout[11]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-11"
+                parameter_id={11}
               >
                 <:label><i>c</i>K<sup>+</sup></:label>
-              </.result_row>
-              <.result_row
-                value={@result[12]}
+              </.parameter>
+              <.parameter
+                value={@printout[12]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-12"
+                parameter_id={12}
               >
                 <:label><i>c</i>Na<sup>+</sup></:label>
-              </.result_row>
-              <.result_row
-                value={@result[13]}
+              </.parameter>
+              <.parameter
+                value={@printout[13]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-13"
+                parameter_id={13}
               >
                 <:label><i>c</i>Ca<sup>2+</sup></:label>
-              </.result_row>
-              <.result_row
-                value={@result[14]}
+              </.parameter>
+              <.parameter
+                value={@printout[14]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-14"
+                parameter_id={14}
               >
                 <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
-              </.result_row>
-              <.result_row
-                value={@result[15]}
+              </.parameter>
+              <.parameter
+                value={@printout[15]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-15"
+                parameter_id={15}
               >
                 <:label><i>c</i>Cl<sup>-</sup></:label>
-              </.result_row>
+              </.parameter>
             </dl>
           </section>
 
           <section class="mb-1">
             <.heading label="Metabolite values" />
             <dl class="space-y-1 ml-8">
-              <.result_row
-                value={@result[16]}
+              <.parameter
+                value={@printout[16]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-16"
+                parameter_id={16}
               >
                 <:label><i>c</i>Glu</:label>
-              </.result_row>
-              <.result_row
-                value={@result[17]}
+              </.parameter>
+              <.parameter
+                value={@printout[17]}
                 unit="mmol/L"
                 show_answers={@show_answers}
                 show_hints={@show_hints}
-                id="value-17"
+                parameter_id={17}
               >
                 <:label><i>c</i>Lac</:label>
-              </.result_row>
+              </.parameter>
             </dl>
           </section>
         </div>
@@ -317,25 +314,22 @@ defmodule AstrupWeb.HomeLive do
     """
   end
 
-  attr :id, :string, required: true
+  attr :parameter_id, :integer, required: true
   attr :show_hints, :boolean, default: true
   attr :show_answers, :boolean, default: false
   attr :value, :string, required: true
   attr :unit, :string, required: true
   slot :label, required: true
 
-  def result_row(assigns) do
-    n =
-      assigns.id
-      |> String.replace("value-", "")
-      |> String.to_integer()
-
-    assigns = assign(assigns, :n, n)
-
+  def parameter(assigns) do
     ~H"""
-    <div id={@id} class="grid grid-cols-[1fr_1fr_1fr] gap-4">
+    <div class="grid grid-cols-[1fr_1fr_1fr] gap-4">
       <dt>
-        <sl-tooltip disabled={!@show_hints} placement="top-start" content={Astrup.Result.label(@n)}>
+        <sl-tooltip
+          disabled={!@show_hints}
+          placement="top-start"
+          content={Astrup.get_parameter_label(@parameter_id)}
+        >
           {render_slot(@label)}
         </sl-tooltip>
       </dt>
@@ -343,11 +337,11 @@ defmodule AstrupWeb.HomeLive do
       <sl-tooltip
         disabled={!@show_hints}
         placement="right"
-        content={Astrup.Result.format_reference_range(@n)}
+        content={Astrup.pretty_print_reference_range(@parameter_id)}
       >
         <dd class={[
           "font-bold text-right",
-          color_for_value(@n, @value, @show_answers)
+          color_for_value(@parameter_id, @value, @show_answers)
         ]}>
           {@value}
         </dd>
@@ -361,7 +355,7 @@ defmodule AstrupWeb.HomeLive do
   defp color_for_value(_id, _value, false), do: ""
 
   defp color_for_value(id, value, true) do
-    case Astrup.Result.check_reference_range(id, value) do
+    case Astrup.check_reference_range(id, value) do
       :high -> "text-red-500"
       :low -> "text-red-500"
       :normal -> ""
