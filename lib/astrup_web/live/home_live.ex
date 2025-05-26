@@ -382,8 +382,8 @@ defmodule AstrupWeb.HomeLive do
     }
 
     ~H"""
-    <p class="text-lg font-semibold mt-2">
-      Score: {@correct_count} / {@total_count}
+    <p class="mt-2">
+      Score: {@correct_count}/{@total_count}
     </p>
     <%= if @correct_count == @total_count && @total_count > 0 do %>
       <p class="text-lg font-semibold text-success mt-2">
