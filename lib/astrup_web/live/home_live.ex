@@ -24,42 +24,30 @@ defmodule AstrupWeb.HomeLive do
   }
 
   def mount(_, _, socket) do
-    sample_number = Enum.random(10000..99999)
-
-    printout = Astrup.random_printout()
-
-    random_minutes = Enum.random(-60..-2)
-
-    sample_date =
-      "Europe/Helsinki"
-      |> DateTime.now!()
-      |> DateTime.add(random_minutes, :minute)
-
-    printed_date =
-      "Europe/Helsinki"
-      |> DateTime.now!()
-      |> DateTime.add(random_minutes, :minute)
-      |> DateTime.add(2, :minute)
-
-    {:ok,
-     socket
-     |> assign(:test_state, :pending)
-     |> assign(:selections, @selections)
-     |> assign(:printout, printout)
-     |> assign(:show_hints, true)
-     |> assign(:sample_number, sample_number)
-     |> assign(:sample_date, sample_date)
-     |> assign(:printed_date, printed_date)}
+    {:ok, setup(socket)}
   end
 
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="flex flex-row gap-4">
-        <button phx-click="check_answers" class="btn btn-primary">Check Answers</button>
-        <button phx-click="reset" class="btn btn-primary">Reset</button>
-        <span class="text-sm text-gray-500">{number_of_selections_made(@selections)} / 18</span>
+      <div class="flex flex-row gap-4 items-center mb-4">
+        <button
+          phx-click="check_answers"
+          class="btn btn-primary"
+          disabled={number_of_selections_made(@selections) != 18}
+        >
+          Check Answers
+        </button>
+        <button phx-click="reset" class="btn btn-secondary">New Quiz / Reset</button>
+        <span class="text-lg font-semibold text-gray-700">
+          {number_of_selections_made(@selections)} / 18 selected
+        </span>
+      </div>
 
+      <.flash kind={:info} title="Attention" flash={@flash} />
+      <.flash kind={:error} title="Error" flash={@flash} />
+
+      <div class="flex flex-row gap-4">
         <article class="relative max-w-2xl select-none bg-base-200 py-12 px-12 shadow-xl border border-base-content/10">
           <header class="text-center">
             <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
@@ -241,9 +229,11 @@ defmodule AstrupWeb.HomeLive do
     <% {selection, correct_answer?} = @selections[@parameter_id] %>
 
     <div class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4">
-      <div class="tooltip tooltip-left" data-tip={Astrup.get_parameter_label(@parameter_id)}>
-        <dt>{render_slot(@label)}</dt>
-      </div>
+      <dt>
+        <div class="tooltip tooltip-right" data-tip={Astrup.get_parameter_label(@parameter_id)}>
+          {render_slot(@label)}
+        </div>
+      </dt>
 
       <dd class="font-bold text-right">{@printout[@parameter_id]}</dd>
 
@@ -300,10 +290,6 @@ defmodule AstrupWeb.HomeLive do
     """
   end
 
-  def handle_event("select", _params, %{assigns: %{test_state: :result}} = socket) do
-    {:noreply, socket}
-  end
-
   def handle_event("select", params, socket) do
     parameter_id = String.to_integer(params["parameter_id"])
     choice = String.to_existing_atom(params["choice"])
@@ -322,15 +308,42 @@ defmodule AstrupWeb.HomeLive do
        |> assign(:selections, check_answers(socket.assigns))
        |> assign(:test_state, :result)}
     else
-      {:noreply, socket}
+      {:noreply,
+       Phoenix.LiveView.put_flash(
+         socket,
+         :info,
+         "Please make all 18 selections before checking answers."
+       )}
     end
   end
 
   def handle_event("reset", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(:selections, @selections)
-     |> assign(:test_state, :input)}
+    {:noreply, setup(socket)}
+  end
+
+  defp setup(socket) do
+    sample_number = Enum.random(10000..99999)
+    printout = Astrup.random_printout()
+    random_minutes = Enum.random(-60..-2)
+
+    sample_date =
+      "Europe/Helsinki"
+      |> DateTime.now!()
+      |> DateTime.add(random_minutes, :minute)
+
+    printed_date =
+      "Europe/Helsinki"
+      |> DateTime.now!()
+      |> DateTime.add(random_minutes, :minute)
+      |> DateTime.add(2, :minute)
+
+    socket
+    |> assign(:selections, @selections)
+    |> assign(:test_state, :pending)
+    |> assign(:printout, printout)
+    |> assign(:sample_number, sample_number)
+    |> assign(:sample_date, sample_date)
+    |> assign(:printed_date, printed_date)
   end
 
   defp check_answers(%{selections: selections, printout: printout}) do
