@@ -41,7 +41,7 @@ defmodule AstrupWeb.HomeLive do
 
     socket
     |> assign(:selections, @selections)
-    |> assign(:test_state, :pending)
+    |> assign(:state, :pending)
     |> assign(:printout, printout)
     |> assign(:sample_number, sample_number)
     |> assign(:sample_date, sample_date)
@@ -57,174 +57,7 @@ defmodule AstrupWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="flex flex-row gap-8 justify-between">
-        <div class="flex-grow flex justify-center">
-          <article class="relative max-w-2xl select-none bg-base-200 py-12 px-12 shadow-xl border border-base-content/10">
-            <header class="text-center">
-              <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
-              <div class="space-y-1">
-                <div class="flex justify-between">
-                  <span>ABL90 ABL TeVa I393-092R0178N0019</span>
-                  <time>{Calendar.strftime(@sample_date, "%H:%M")}</time>
-                  <time>{Calendar.strftime(@sample_date, "%d.%m.%Y")}</time>
-                </div>
-                <div class="flex justify-between">
-                  <span>PATIENT REPORT</span>
-                  <span>Syringe - S 65uL</span>
-                  <span>Sample #</span>
-                  <span>{@printout.id}</span>
-                </div>
-              </div>
-            </header>
-
-            <hr class="border-[1.5px] mb-1 mt-1" />
-
-            <section class="px-2">
-              <.heading label="Identifications" />
-              <dl class="ml-4">
-                <div class="grid grid-cols-[1fr_2fr] gap-4">
-                  <dt>Patient ID</dt>
-                  <dd>XXXXXX-XXXX</dd>
-                </div>
-                <div class="grid grid-cols-[1fr_2fr] gap-4">
-                  <dt>Sample type</dt>
-                  <dd>Arterial</dd>
-                </div>
-                <div class="grid grid-cols-[1fr_2fr] gap-4">
-                  <dt class="italic">T</dt>
-                  <dd>37,0 °C</dd>
-                </div>
-              </dl>
-            </section>
-
-            <hr class="mb-1 mt-2 border-[1.5px]" />
-
-            <div class="px-4">
-              <section class="mb-1">
-                <.heading label="Temperature-corrected values" />
-                <dl class="space-y-1 ml-8">
-                  <.parameter parameter_id={0} {assigns}>
-                    <:label>pH(<i> T </i>)</:label>
-                  </.parameter>
-                  <.parameter parameter_id={1} {assigns}>
-                    <:label>
-                      <i>p</i>CO<sub>2</sub>(<i> T </i>)
-                    </:label>
-                  </.parameter>
-                  <.parameter parameter_id={2} {assigns}>
-                    <:label>
-                      <i>p</i>O<sub>2</sub>(<i> T </i>)
-                    </:label>
-                  </.parameter>
-                </dl>
-              </section>
-
-              <section class="mb-1">
-                <.heading label="Acid-base status" />
-                <dl class="space-y-1 ml-8">
-                  <.parameter parameter_id={3} {assigns}>
-                    <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
-                  </.parameter>
-                  <.parameter parameter_id={4} {assigns}>
-                    <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
-                  </.parameter>
-                  <.parameter parameter_id={5} {assigns}>
-                    <:label>Anion Gap<i><sub>c</sub></i></:label>
-                  </.parameter>
-                </dl>
-              </section>
-
-              <section class="mb-1">
-                <.heading label="Oximetry values" />
-                <dl class="space-y-1 ml-8">
-                  <.parameter parameter_id={6} {assigns}>
-                    <:label><i>c</i>tHb</:label>
-                  </.parameter>
-                  <.parameter parameter_id={7} {assigns}>
-                    <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
-                  </.parameter>
-                  <.parameter parameter_id={8} {assigns}>
-                    <:label><i>s</i>O<sub>2</sub></:label>
-                  </.parameter>
-                  <.parameter parameter_id={9} {assigns}>
-                    <:label><i>F</i>COHb</:label>
-                  </.parameter>
-                  <.parameter parameter_id={10} {assigns}>
-                    <:label><i>F</i>MetHb</:label>
-                  </.parameter>
-                </dl>
-              </section>
-
-              <section class="mb-1">
-                <.heading label="Electrolyte values" />
-                <dl class="space-y-1 ml-8">
-                  <.parameter parameter_id={11} {assigns}>
-                    <:label><i>c</i>K<sup>+</sup></:label>
-                  </.parameter>
-                  <.parameter parameter_id={12} {assigns}>
-                    <:label><i>c</i>Na<sup>+</sup></:label>
-                  </.parameter>
-                  <.parameter parameter_id={13} {assigns}>
-                    <:label><i>c</i>Ca<sup>2+</sup></:label>
-                  </.parameter>
-                  <.parameter parameter_id={14} {assigns}>
-                    <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
-                  </.parameter>
-                  <.parameter parameter_id={15} {assigns}>
-                    <:label><i>c</i>Cl<sup>-</sup></:label>
-                  </.parameter>
-                </dl>
-              </section>
-
-              <section class="mb-1">
-                <.heading label="Metabolite values" />
-                <dl class="space-y-1 ml-8">
-                  <.parameter parameter_id={16} {assigns}>
-                    <:label><i>c</i>Glu</:label>
-                  </.parameter>
-                  <.parameter parameter_id={17} {assigns}>
-                    <:label><i>c</i>Lac</:label>
-                  </.parameter>
-                </dl>
-              </section>
-            </div>
-
-            <hr class="border-dashed mb-1" />
-
-            <section class="mb-2">
-              <.heading label="Notes" />
-              <dl>
-                <div class="flex flex-row gap-24">
-                  <dt class="italic">c</dt>
-                  <dd>Calculated value(s)</dd>
-                </div>
-              </dl>
-            </section>
-
-            <hr class="mb-14 border-[1.5px]" />
-
-            <hr class="mb-2 border-[1.5px]" />
-
-            <footer>
-              <div class="flex justify-between">
-                <div>
-                  <div>Solution pack lot: DX-20</div>
-                  <div class="flex flex-row gap-12">
-                    <span>Printed</span>
-                    <time datetime={@printed_date}>{Calendar.strftime(@printed_date, "%H:%M")}</time>
-                    <time datetime={@printed_date}>
-                      {Calendar.strftime(@printed_date, "%d.%m.%Y")}
-                    </time>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div>Sensor cassette run #: 2496-39</div>
-                </div>
-              </div>
-            </footer>
-          </article>
-        </div>
-
+      <div class="flex flex-row gap-8 justify-center">
         <div class="sticky top-4 self-start space-y-4 w-64">
           <h2 class="text-xl font-semibold mb-3">Reference Values Quiz</h2>
           <p class="text-sm mb-4">
@@ -236,15 +69,11 @@ defmodule AstrupWeb.HomeLive do
               id="check-answers"
               phx-click="check_answers"
               class="btn btn-primary w-full"
-              disabled={@test_state == :result}
+              disabled={@state == :result}
             >
               Check Answers
             </button>
-            <button
-              phx-click="next"
-              class="btn btn-secondary w-full"
-              disabled={@test_state != :result}
-            >
+            <button phx-click="next" class="btn btn-secondary w-full" disabled={@state != :result}>
               Next <.icon name="hero-arrow-right" />
             </button>
           </div>
@@ -253,7 +82,7 @@ defmodule AstrupWeb.HomeLive do
               Selections: {number_of_selections_made(@selections)}/18
             </p>
 
-            <%= if @test_state == :result do %>
+            <%= if @state == :result do %>
               <p>
                 Score: {correct_count(@selections)}/{total_count(@selections)}
               </p>
@@ -268,6 +97,171 @@ defmodule AstrupWeb.HomeLive do
             <% end %>
           </div>
         </div>
+
+        <article class="relative max-w-2xl flex-1 select-none bg-base-200 py-12 px-12 shadow-xl border border-base-content/10">
+          <header class="text-center">
+            <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
+            <div class="space-y-1">
+              <div class="flex justify-between">
+                <span>ABL90 ABL TeVa I393-092R0178N0019</span>
+                <time>{Calendar.strftime(@sample_date, "%H:%M")}</time>
+                <time>{Calendar.strftime(@sample_date, "%d.%m.%Y")}</time>
+              </div>
+              <div class="flex justify-between">
+                <span>PATIENT REPORT</span>
+                <span>Syringe - S 65uL</span>
+                <span>Sample #</span>
+                <span>{@printout.id}</span>
+              </div>
+            </div>
+          </header>
+
+          <hr class="border-[1.5px] mb-1 mt-1" />
+
+          <section class="px-2">
+            <.heading label="Identifications" />
+            <dl class="ml-4">
+              <div class="grid grid-cols-[1fr_2fr] gap-4">
+                <dt>Patient ID</dt>
+                <dd>XXXXXX-XXXX</dd>
+              </div>
+              <div class="grid grid-cols-[1fr_2fr] gap-4">
+                <dt>Sample type</dt>
+                <dd>Arterial</dd>
+              </div>
+              <div class="grid grid-cols-[1fr_2fr] gap-4">
+                <dt class="italic">T</dt>
+                <dd>37,0 °C</dd>
+              </div>
+            </dl>
+          </section>
+
+          <hr class="mb-1 mt-2 border-[1.5px]" />
+
+          <div class="px-4">
+            <section class="mb-1">
+              <.heading label="Temperature-corrected values" />
+              <dl class="space-y-1 ml-8">
+                <.parameter parameter_id={0} {assigns}>
+                  <:label>pH(<i> T </i>)</:label>
+                </.parameter>
+                <.parameter parameter_id={1} {assigns}>
+                  <:label>
+                    <i>p</i>CO<sub>2</sub>(<i> T </i>)
+                  </:label>
+                </.parameter>
+                <.parameter parameter_id={2} {assigns}>
+                  <:label>
+                    <i>p</i>O<sub>2</sub>(<i> T </i>)
+                  </:label>
+                </.parameter>
+              </dl>
+            </section>
+
+            <section class="mb-1">
+              <.heading label="Acid-base status" />
+              <dl class="space-y-1 ml-8">
+                <.parameter parameter_id={3} {assigns}>
+                  <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
+                </.parameter>
+                <.parameter parameter_id={4} {assigns}>
+                  <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
+                </.parameter>
+                <.parameter parameter_id={5} {assigns}>
+                  <:label>Anion Gap<i><sub>c</sub></i></:label>
+                </.parameter>
+              </dl>
+            </section>
+
+            <section class="mb-1">
+              <.heading label="Oximetry values" />
+              <dl class="space-y-1 ml-8">
+                <.parameter parameter_id={6} {assigns}>
+                  <:label><i>c</i>tHb</:label>
+                </.parameter>
+                <.parameter parameter_id={7} {assigns}>
+                  <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
+                </.parameter>
+                <.parameter parameter_id={8} {assigns}>
+                  <:label><i>s</i>O<sub>2</sub></:label>
+                </.parameter>
+                <.parameter parameter_id={9} {assigns}>
+                  <:label><i>F</i>COHb</:label>
+                </.parameter>
+                <.parameter parameter_id={10} {assigns}>
+                  <:label><i>F</i>MetHb</:label>
+                </.parameter>
+              </dl>
+            </section>
+
+            <section class="mb-1">
+              <.heading label="Electrolyte values" />
+              <dl class="space-y-1 ml-8">
+                <.parameter parameter_id={11} {assigns}>
+                  <:label><i>c</i>K<sup>+</sup></:label>
+                </.parameter>
+                <.parameter parameter_id={12} {assigns}>
+                  <:label><i>c</i>Na<sup>+</sup></:label>
+                </.parameter>
+                <.parameter parameter_id={13} {assigns}>
+                  <:label><i>c</i>Ca<sup>2+</sup></:label>
+                </.parameter>
+                <.parameter parameter_id={14} {assigns}>
+                  <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
+                </.parameter>
+                <.parameter parameter_id={15} {assigns}>
+                  <:label><i>c</i>Cl<sup>-</sup></:label>
+                </.parameter>
+              </dl>
+            </section>
+
+            <section class="mb-1">
+              <.heading label="Metabolite values" />
+              <dl class="space-y-1 ml-8">
+                <.parameter parameter_id={16} {assigns}>
+                  <:label><i>c</i>Glu</:label>
+                </.parameter>
+                <.parameter parameter_id={17} {assigns}>
+                  <:label><i>c</i>Lac</:label>
+                </.parameter>
+              </dl>
+            </section>
+          </div>
+
+          <hr class="border-dashed mb-1" />
+
+          <section class="mb-2">
+            <.heading label="Notes" />
+            <dl>
+              <div class="flex flex-row gap-24">
+                <dt class="italic">c</dt>
+                <dd>Calculated value(s)</dd>
+              </div>
+            </dl>
+          </section>
+
+          <hr class="mb-14 border-[1.5px]" />
+
+          <hr class="mb-2 border-[1.5px]" />
+
+          <footer>
+            <div class="flex justify-between">
+              <div>
+                <div>Solution pack lot: DX-20</div>
+                <div class="flex flex-row gap-12">
+                  <span>Printed</span>
+                  <time datetime={@printed_date}>{Calendar.strftime(@printed_date, "%H:%M")}</time>
+                  <time datetime={@printed_date}>
+                    {Calendar.strftime(@printed_date, "%d.%m.%Y")}
+                  </time>
+                </div>
+              </div>
+              <div class="text-right">
+                <div>Sensor cassette run #: 2496-39</div>
+              </div>
+            </div>
+          </footer>
+        </article>
       </div>
     </Layouts.app>
     """
@@ -301,7 +295,7 @@ defmodule AstrupWeb.HomeLive do
         <div
           id={"tooltip-param-#{@parameter_id}"}
           class={
-            if(show_hint?(@test_state, correct_answer?),
+            if(show_hint?(@state, correct_answer?),
               do: "tooltip tooltip-right tooltip-open",
               else: ""
             )
@@ -315,7 +309,7 @@ defmodule AstrupWeb.HomeLive do
             phx-value-parameter_id={@parameter_id}
             class={[
               "btn btn-sm btn-square",
-              button_colour(selection == :low, correct_answer?, @test_state)
+              button_colour(selection == :low, correct_answer?, @state)
             ]}
           >
             {gettext("L")}
@@ -328,7 +322,7 @@ defmodule AstrupWeb.HomeLive do
             phx-value-parameter_id={@parameter_id}
             class={[
               "btn btn-sm btn-square",
-              button_colour(selection == :normal, correct_answer?, @test_state)
+              button_colour(selection == :normal, correct_answer?, @state)
             ]}
           >
             {gettext("N")}
@@ -341,7 +335,7 @@ defmodule AstrupWeb.HomeLive do
             phx-value-parameter_id={@parameter_id}
             class={[
               "btn btn-sm btn-square",
-              button_colour(selection == :high, correct_answer?, @test_state)
+              button_colour(selection == :high, correct_answer?, @state)
             ]}
           >
             {gettext("H")}
@@ -361,7 +355,7 @@ defmodule AstrupWeb.HomeLive do
     {:noreply,
      socket
      |> assign(:selections, selections)
-     |> assign(:test_state, :input)}
+     |> assign(:state, :input)}
   end
 
   def handle_event("next", _params, socket) do
@@ -382,7 +376,7 @@ defmodule AstrupWeb.HomeLive do
     {:noreply,
      socket
      |> assign(:selections, checked_answers)
-     |> assign(:test_state, :result)}
+     |> assign(:state, :result)}
   end
 
   defp check_answers(%{selections: selections, printout: printout}) do
@@ -407,7 +401,7 @@ defmodule AstrupWeb.HomeLive do
     correct_count == total_count && total_count > 0
   end
 
-  # selected?, correct_answer?, test_state
+  # selected?, correct_answer?, state
   defp button_colour(true, true, :result), do: "border border-success border-2"
   defp button_colour(true, false, :result), do: "border border-error border-2"
   defp button_colour(true, _, :input), do: "border border-base-content border-2"
@@ -419,7 +413,7 @@ defmodule AstrupWeb.HomeLive do
     |> length()
   end
 
-  # test_state, correct_answer?
+  # state, correct_answer?
   def show_hint?(:result, correct_answer?), do: not correct_answer?
   def show_hint?(_, _), do: false
 end
