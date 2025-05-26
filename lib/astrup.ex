@@ -30,7 +30,8 @@ defmodule Astrup do
         14 => Decimal.new("1.18"),
         15 => Decimal.new("99"),
         16 => Decimal.new("7.2"),
-        17 => Decimal.new("1.9")
+        17 => Decimal.new("1.9"),
+        id: "10000"
       },
       # DKA
       %{
@@ -51,7 +52,8 @@ defmodule Astrup do
         14 => Decimal.new("1.19"),
         15 => Decimal.new("90"),
         16 => Decimal.new("28.5"),
-        17 => Decimal.new("4.2")
+        17 => Decimal.new("4.2"),
+        id: "10001"
       },
       # Spesis with lactic acidosis
       %{
@@ -72,7 +74,8 @@ defmodule Astrup do
         14 => Decimal.new("1.14"),
         15 => Decimal.new("100"),
         16 => Decimal.new("9.8"),
-        17 => Decimal.new("7.5")
+        17 => Decimal.new("7.5"),
+        id: "10002"
       },
       # Panic attack / hyperventilation
       %{
@@ -93,7 +96,8 @@ defmodule Astrup do
         14 => Decimal.new("0.98"),
         15 => Decimal.new("105"),
         16 => Decimal.new("5.9"),
-        17 => Decimal.new("1.0")
+        17 => Decimal.new("1.0"),
+        id: "10003"
       },
       # Chronic Renal Failure
       %{
@@ -114,7 +118,8 @@ defmodule Astrup do
         14 => Decimal.new("1.07"),
         15 => Decimal.new("107"),
         16 => Decimal.new("6.8"),
-        17 => Decimal.new("1.4")
+        17 => Decimal.new("1.4"),
+        id: "10004"
       },
       # Salicylate overdose (early presentation)
       %{
@@ -135,7 +140,8 @@ defmodule Astrup do
         14 => Decimal.new("1.10"),
         15 => Decimal.new("108"),
         16 => Decimal.new("7.1"),
-        17 => Decimal.new("3.1")
+        17 => Decimal.new("3.1"),
+        id: "10005"
       },
       # Severe dehydration / hypovolemic shock
       %{
@@ -156,7 +162,8 @@ defmodule Astrup do
         14 => Decimal.new("1.29"),
         15 => Decimal.new("115"),
         16 => Decimal.new("6.5"),
-        17 => Decimal.new("5.8")
+        17 => Decimal.new("5.8"),
+        id: "10006"
       },
       # Carbon monoxide poisoning
       %{
@@ -177,7 +184,8 @@ defmodule Astrup do
         14 => Decimal.new("1.23"),
         15 => Decimal.new("103"),
         16 => Decimal.new("8.0"),
-        17 => Decimal.new("3.9")
+        17 => Decimal.new("3.9"),
+        id: "10007"
       },
       # Pulmonary embolism
       %{
@@ -198,7 +206,8 @@ defmodule Astrup do
         14 => Decimal.new("1.06"),
         15 => Decimal.new("106"),
         16 => Decimal.new("6.1"),
-        17 => Decimal.new("1.7")
+        17 => Decimal.new("1.7"),
+        id: "10008"
       },
       # Patient on Optiflow (acute asthma attack - improving)
       %{
@@ -219,7 +228,8 @@ defmodule Astrup do
         14 => Decimal.new("1.17"),
         15 => Decimal.new("102"),
         16 => Decimal.new("7.9"),
-        17 => Decimal.new("1.5")
+        17 => Decimal.new("1.5"),
+        id: "10009"
       },
       # Near-drowning incident (freshwater aspiration)
       %{
@@ -240,7 +250,8 @@ defmodule Astrup do
         14 => Decimal.new("1.10"),
         15 => Decimal.new("95"),
         16 => Decimal.new("4.3"),
-        17 => Decimal.new("6.1")
+        17 => Decimal.new("6.1"),
+        id: "10010"
       },
       # Normal
       %{
@@ -261,7 +272,8 @@ defmodule Astrup do
         14 => Decimal.new("1.22"),
         15 => Decimal.new("103"),
         16 => Decimal.new("5.1"),
-        17 => Decimal.new("0.9")
+        17 => Decimal.new("0.9"),
+        id: "10011"
       },
       # Normal
       %{
@@ -282,7 +294,8 @@ defmodule Astrup do
         14 => Decimal.new("1.18"),
         15 => Decimal.new("105"),
         16 => Decimal.new("4.8"),
-        17 => Decimal.new("1.2")
+        17 => Decimal.new("1.2"),
+        id: "10012"
       }
     ]
   end
