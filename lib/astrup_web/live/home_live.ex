@@ -23,10 +23,37 @@ defmodule AstrupWeb.HomeLive do
     17 => {nil, nil}
   }
 
+  defp setup(socket) do
+    sample_number = Enum.random(10000..99999)
+    printout = Astrup.random_printout()
+    random_minutes = Enum.random(-60..-2)
+
+    sample_date =
+      "Europe/Helsinki"
+      |> DateTime.now!()
+      |> DateTime.add(random_minutes, :minute)
+
+    printed_date =
+      "Europe/Helsinki"
+      |> DateTime.now!()
+      |> DateTime.add(random_minutes, :minute)
+      |> DateTime.add(2, :minute)
+
+    socket
+    |> assign(:selections, @selections)
+    |> assign(:test_state, :pending)
+    |> assign(:printout, printout)
+    |> assign(:sample_number, sample_number)
+    |> assign(:sample_date, sample_date)
+    |> assign(:printed_date, printed_date)
+  end
+
+  @impl true
   def mount(_, _, socket) do
     {:ok, setup(socket)}
   end
 
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
@@ -206,6 +233,7 @@ defmodule AstrupWeb.HomeLive do
           </p>
           <div class="flex flex-col gap-3">
             <button
+              id="check-answers"
               phx-click="check_answers"
               class="btn btn-primary w-full"
               disabled={@test_state == :result}
@@ -213,7 +241,7 @@ defmodule AstrupWeb.HomeLive do
               Check Answers
             </button>
             <button
-              phx-click="reset"
+              phx-click="next"
               class="btn btn-secondary w-full"
               disabled={@test_state != :result}
             >
@@ -224,8 +252,19 @@ defmodule AstrupWeb.HomeLive do
             <p>
               Selections: {number_of_selections_made(@selections)}/18
             </p>
+
             <%= if @test_state == :result do %>
-              <.score selections={@selections} />
+              <p>
+                Score: {correct_count(@selections)}/{total_count(@selections)}
+              </p>
+
+              <p
+                :if={full_score?(@selections)}
+                id="congratulations"
+                class="text-lg font-semibold text-success mt-2"
+              >
+                Congratulations! 🎉
+              </p>
             <% end %>
           </div>
         </div>
@@ -313,6 +352,7 @@ defmodule AstrupWeb.HomeLive do
     """
   end
 
+  @impl true
   def handle_event("select", params, socket) do
     parameter_id = String.to_integer(params["parameter_id"])
     choice = String.to_existing_atom(params["choice"])
@@ -324,40 +364,25 @@ defmodule AstrupWeb.HomeLive do
      |> assign(:test_state, :input)}
   end
 
-  def handle_event("check_answers", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(:selections, check_answers(socket.assigns))
-     |> assign(:test_state, :result)}
-  end
-
-  def handle_event("reset", _params, socket) do
+  def handle_event("next", _params, socket) do
     {:noreply, setup(socket)}
   end
 
-  defp setup(socket) do
-    sample_number = Enum.random(10000..99999)
-    printout = Astrup.random_printout()
-    random_minutes = Enum.random(-60..-2)
+  @impl true
+  def handle_event("check_answers", _params, %{assigns: _assigns} = socket) do
+    checked_answers = check_answers(socket.assigns)
 
-    sample_date =
-      "Europe/Helsinki"
-      |> DateTime.now!()
-      |> DateTime.add(random_minutes, :minute)
+    socket =
+      if full_score?(checked_answers) do
+        push_event(socket, "confetti", %{})
+      else
+        socket
+      end
 
-    printed_date =
-      "Europe/Helsinki"
-      |> DateTime.now!()
-      |> DateTime.add(random_minutes, :minute)
-      |> DateTime.add(2, :minute)
-
-    socket
-    |> assign(:selections, @selections)
-    |> assign(:test_state, :pending)
-    |> assign(:printout, printout)
-    |> assign(:sample_number, sample_number)
-    |> assign(:sample_date, sample_date)
-    |> assign(:printed_date, printed_date)
+    {:noreply,
+     socket
+     |> assign(:selections, checked_answers)
+     |> assign(:test_state, :result)}
   end
 
   defp check_answers(%{selections: selections, printout: printout}) do
@@ -368,29 +393,18 @@ defmodule AstrupWeb.HomeLive do
     end)
   end
 
-  attr :selections, :map, required: true
+  defp correct_count(selections) do
+    selections
+    |> Enum.filter(fn {_, {_, correct?}} -> correct? == true end)
+    |> length()
+  end
 
-  defp score(assigns) do
-    correct_count =
-      assigns.selections
-      |> Enum.filter(fn {_, {_, correct?}} -> correct? == true end)
-      |> length()
+  defp total_count(selections), do: map_size(selections)
 
-    assigns = %{
-      correct_count: correct_count,
-      total_count: map_size(assigns.selections)
-    }
-
-    ~H"""
-    <p class="mt-2">
-      Score: {@correct_count}/{@total_count}
-    </p>
-    <%= if @correct_count == @total_count && @total_count > 0 do %>
-      <p class="text-lg font-semibold text-success mt-2">
-        Congratulations! 🎉
-      </p>
-    <% end %>
-    """
+  defp full_score?(selections) do
+    correct_count = correct_count(selections)
+    total_count = total_count(selections)
+    correct_count == total_count && total_count > 0
   end
 
   # selected?, correct_answer?, test_state

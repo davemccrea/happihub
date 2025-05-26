@@ -34,7 +34,7 @@ defmodule AstrupWeb.Layouts do
     <header>
       <div class="navbar bg-base-100 shadow-sm">
         <div class="flex-1">
-          <a class="btn btn-ghost text-xl">TeVa</a>
+          <.link navigate={~p"/"} class="btn btn-ghost text-xl">ABG</.link>
         </div>
         <nav class="flex-none">
           <ul class="menu menu-horizontal px-1">
