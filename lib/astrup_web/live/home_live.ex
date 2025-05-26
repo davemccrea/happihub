@@ -30,24 +30,7 @@ defmodule AstrupWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>
-      <div class="flex flex-row gap-4 items-center mb-4">
-        <button
-          phx-click="check_answers"
-          class="btn btn-primary"
-          disabled={number_of_selections_made(@selections) != 18}
-        >
-          Check Answers
-        </button>
-        <button phx-click="reset" class="btn btn-secondary">New Quiz / Reset</button>
-        <span class="text-lg font-semibold text-gray-700">
-          {number_of_selections_made(@selections)} / 18 selected
-        </span>
-      </div>
-
-      <.flash kind={:info} title="Attention" flash={@flash} />
-      <.flash kind={:error} title="Error" flash={@flash} />
-
-      <div class="flex flex-row gap-4">
+      <div class="flex flex-row gap-8 justify-center">
         <article class="relative max-w-2xl select-none bg-base-200 py-12 px-12 shadow-xl border border-base-content/10">
           <header class="text-center">
             <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
@@ -201,7 +184,9 @@ defmodule AstrupWeb.HomeLive do
                 <div class="flex flex-row gap-12">
                   <span>Printed</span>
                   <time datetime={@printed_date}>{Calendar.strftime(@printed_date, "%H:%M")}</time>
-                  <time datetime={@printed_date}>{Calendar.strftime(@printed_date, "%d.%m.%Y")}</time>
+                  <time datetime={@printed_date}>
+                    {Calendar.strftime(@printed_date, "%d.%m.%Y")}
+                  </time>
                 </div>
               </div>
               <div class="text-right">
@@ -210,6 +195,38 @@ defmodule AstrupWeb.HomeLive do
             </div>
           </footer>
         </article>
+
+        <div class="sticky top-4 self-start space-y-4 w-64">
+          <h2 class="text-xl font-semibold mb-3">ABG Quiz</h2>
+          <p class="text-sm mb-4">
+            For each parameter on the left, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range.
+            Once you've made all 18 selections, click "Check Answers".
+          </p>
+          <div class="flex flex-col gap-3">
+            <button
+              phx-click="check_answers"
+              class="btn btn-primary w-full"
+              disabled={@test_state == :result}
+            >
+              Check Answers
+            </button>
+            <button
+              phx-click="reset"
+              class="btn btn-secondary w-full"
+              disabled={@test_state != :result}
+            >
+              Next <.icon name="hero-arrow-right" />
+            </button>
+          </div>
+          <div class="mt-4 pt-4 border-t">
+            <p class="text-lg font-semibold">
+              Selections: {number_of_selections_made(@selections)} / 18
+            </p>
+            <%= if @test_state == :result do %>
+              <.score selections={@selections} />
+            <% end %>
+          </div>
+        </div>
       </div>
     </Layouts.app>
     """
@@ -302,19 +319,10 @@ defmodule AstrupWeb.HomeLive do
   end
 
   def handle_event("check_answers", _params, socket) do
-    if number_of_selections_made(socket.assigns.selections) == 18 do
-      {:noreply,
-       socket
-       |> assign(:selections, check_answers(socket.assigns))
-       |> assign(:test_state, :result)}
-    else
-      {:noreply,
-       Phoenix.LiveView.put_flash(
-         socket,
-         :info,
-         "Please make all 18 selections before checking answers."
-       )}
-    end
+    {:noreply,
+     socket
+     |> assign(:selections, check_answers(socket.assigns))
+     |> assign(:test_state, :result)}
   end
 
   def handle_event("reset", _params, socket) do
@@ -354,11 +362,36 @@ defmodule AstrupWeb.HomeLive do
     end)
   end
 
+  attr :selections, :map, required: true
+
+  defp score(assigns) do
+    correct_count =
+      assigns.selections
+      |> Enum.filter(fn {_, {_, correct?}} -> correct? == true end)
+      |> length()
+
+    assigns = %{
+      correct_count: correct_count,
+      total_count: map_size(assigns.selections)
+    }
+
+    ~H"""
+    <p class="text-lg font-semibold mt-2">
+      Score: {@correct_count} / {@total_count}
+    </p>
+    <%= if @correct_count == @total_count && @total_count > 0 do %>
+      <p class="text-lg font-semibold text-success mt-2">
+        Congratulations! 🎉
+      </p>
+    <% end %>
+    """
+  end
+
   # selected?, correct_answer?, test_state
   defp button_colour(true, true, :result), do: "border border-success border-2"
   defp button_colour(true, false, :result), do: "border border-error border-2"
-  defp button_colour(true, _, :input), do: "border border-black border-2"
-  defp button_colour(_, _, _), do: ""
+  defp button_colour(true, _, :input), do: "border border-base-content border-2"
+  defp button_colour(_, _, _), do: "border border-transparent border-2"
 
   defp number_of_selections_made(selections) do
     selections
