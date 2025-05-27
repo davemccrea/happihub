@@ -1,5 +1,6 @@
 defmodule Astrup.Printout do
   use Ecto.Schema
+
   import Ecto.Changeset
   import Ecto.Query
 
@@ -26,8 +27,8 @@ defmodule Astrup.Printout do
     field :lactate, :decimal
     field :age, :integer
     field :sex, :string
-
-    timestamps()
+    field :checked_at, :utc_datetime
+    timestamps(type: :utc_datetime)
   end
 
   @required_fields [
@@ -53,7 +54,8 @@ defmodule Astrup.Printout do
 
   @optional_fields [
     :age,
-    :sex
+    :sex,
+    :checked_at
   ]
 
   def changeset(printout, params \\ %{}) do
@@ -62,10 +64,19 @@ defmodule Astrup.Printout do
     |> validate_required(@required_fields)
   end
 
+  def mark_as_checked(printout) do
+    printout
+    |> changeset(%{checked_at: DateTime.utc_now()})
+    |> Repo.update()
+  end
+
+  @doc """
+  Get a random printout that has been checked.
+  """
   def get_random_printout() do
     Printout
     |> from(order_by: fragment("RANDOM()"), limit: 1)
-    |> Repo.all()
-    |> List.first()
+    |> where([p], not is_nil(p.checked_at))
+    |> Repo.one()
   end
 end

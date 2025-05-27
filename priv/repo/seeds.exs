@@ -12,6 +12,10 @@
 
 alias Astrup.{Repo, Printout}
 
+Repo.delete_all(Printout)
+
+now = DateTime.truncate(DateTime.utc_now(), :second)
+
 Repo.insert_all(
   Printout,
   [
@@ -35,8 +39,9 @@ Repo.insert_all(
       chloride: Decimal.new("99"),
       glucose: Decimal.new("7.2"),
       lactate: Decimal.new("1.9"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # DKA
     %{
@@ -58,8 +63,9 @@ Repo.insert_all(
       chloride: Decimal.new("90"),
       glucose: Decimal.new("28.5"),
       lactate: Decimal.new("4.2"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Spesis with lactic acidosis
     %{
@@ -81,8 +87,9 @@ Repo.insert_all(
       chloride: Decimal.new("100"),
       glucose: Decimal.new("9.8"),
       lactate: Decimal.new("7.5"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Panic attack / hyperventilation
     %{
@@ -104,8 +111,9 @@ Repo.insert_all(
       chloride: Decimal.new("105"),
       glucose: Decimal.new("5.9"),
       lactate: Decimal.new("1.0"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Chronic Renal Failure
     %{
@@ -127,8 +135,9 @@ Repo.insert_all(
       chloride: Decimal.new("107"),
       glucose: Decimal.new("6.8"),
       lactate: Decimal.new("1.4"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Salicylate overdose (early presentation)
     %{
@@ -150,8 +159,9 @@ Repo.insert_all(
       chloride: Decimal.new("108"),
       glucose: Decimal.new("7.1"),
       lactate: Decimal.new("3.1"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Severe dehydration / hypovolemic shock
     %{
@@ -173,8 +183,9 @@ Repo.insert_all(
       chloride: Decimal.new("115"),
       glucose: Decimal.new("6.5"),
       lactate: Decimal.new("5.8"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Carbon monoxide poisoning
     %{
@@ -196,8 +207,9 @@ Repo.insert_all(
       chloride: Decimal.new("103"),
       glucose: Decimal.new("8.0"),
       lactate: Decimal.new("3.9"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Pulmonary embolism
     %{
@@ -219,8 +231,9 @@ Repo.insert_all(
       chloride: Decimal.new("106"),
       glucose: Decimal.new("6.1"),
       lactate: Decimal.new("1.7"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Patient on Optiflow (acute asthma attack - improving)
     %{
@@ -242,8 +255,9 @@ Repo.insert_all(
       chloride: Decimal.new("102"),
       glucose: Decimal.new("7.9"),
       lactate: Decimal.new("1.5"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Near-drowning incident (freshwater aspiration)
     %{
@@ -265,8 +279,9 @@ Repo.insert_all(
       chloride: Decimal.new("95"),
       glucose: Decimal.new("4.3"),
       lactate: Decimal.new("6.1"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Normal
     %{
@@ -288,8 +303,9 @@ Repo.insert_all(
       chloride: Decimal.new("103"),
       glucose: Decimal.new("5.1"),
       lactate: Decimal.new("0.9"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     },
     # Normal
     %{
@@ -311,8 +327,9 @@ Repo.insert_all(
       chloride: Decimal.new("105"),
       glucose: Decimal.new("4.8"),
       lactate: Decimal.new("1.2"),
-      inserted_at: ~N[2025-05-27 12:00:00],
-      updated_at: ~N[2025-05-27 12:00:00]
+      inserted_at: now,
+      updated_at: now,
+      checked_at: now
     }
   ]
 )

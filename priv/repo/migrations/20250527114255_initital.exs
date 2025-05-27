@@ -23,8 +23,8 @@ defmodule Astrup.Repo.Migrations.Initital do
       add :lactate, :decimal, null: false
       add :age, :integer
       add :sex, :string
-
-      timestamps()
+      add :checked_at, :utc_datetime
+      timestamps(type: :utc_datetime)
     end
   end
 end
