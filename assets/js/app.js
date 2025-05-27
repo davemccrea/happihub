@@ -38,16 +38,7 @@ window.addEventListener("phx:page-loading-start", (_info) => topbar.show(300));
 window.addEventListener("phx:page-loading-stop", (_info) => topbar.hide());
 
 window.addEventListener("phx:confetti", (_event) => {
-  const congratulations = document.getElementById("congratulations");
-  if (congratulations) {
-    const rect = congratulations.getBoundingClientRect();
-    const x = (rect.left + rect.width / 2) / window.innerWidth;
-    const y = (rect.top + rect.height / 2) / window.innerHeight;
-    window.confetti({ origin: { x, y } });
-  } else {
-    // Fallback to center if the element is not found
-    window.confetti({ origin: { x: 0.5, y: 0.5 } });
-  }
+  window.confetti({ origin: { x: 0.5, y: 0.5 } });
 });
 
 // connect if there are any LiveViews on the page
