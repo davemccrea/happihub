@@ -110,7 +110,9 @@ defmodule AstrupWeb.HomeLive do
           </div>
         </div>
 
-        <article class="relative max-w-2xl flex-1 select-none bg-base-200 py-12 px-12 shadow-xl border border-base-content/10">
+        <article class="relative max-w-2xl flex-1 select-none bg-base-200 py-12 px-12 shadow-xl border border-base-content/10
+                        before:content-[''] before:absolute before:left-0 before:right-0 before:bottom-0 before:top-0 before:bg-base-200 before:border before:border-base-content/10 before:-z-10 before:transform before:translate-x-1 before:translate-y-1
+                        after:content-[''] after:absolute after:left-0 after:right-0 after:bottom-0 after:top-0 after:bg-base-200 after:border after:border-base-content/10 after:-z-20 after:transform after:translate-x-2 after:translate-y-2">
           <header class="text-center">
             <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
             <div class="space-y-1">
