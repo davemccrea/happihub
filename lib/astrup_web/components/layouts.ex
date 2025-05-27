@@ -38,7 +38,7 @@ defmodule AstrupWeb.Layouts do
         </div>
         <nav class="flex-none">
           <ul class="menu menu-horizontal px-1">
-            <li><a>Test</a></li>
+            <li><.link navigate={~p"/submit"}>Submit ABG</.link></li>
           </ul>
         </nav>
       </div>
@@ -48,13 +48,12 @@ defmodule AstrupWeb.Layouts do
       {render_slot(@inner_block)}
     </main>
 
-    <footer class="footer"></footer>
-
     <footer class="footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10">
       <nav class="grid grid-flow-col gap-4">
-        <a class="link link-hover">Resources</a>
         <a class="link link-hover">v{Application.spec(:astrup, :vsn)}</a>
       </nav>
+
+      <Layouts.theme_toggle />
     </footer>
 
     <.flash_group flash={@flash} />

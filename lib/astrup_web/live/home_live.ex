@@ -1,32 +1,44 @@
 defmodule AstrupWeb.HomeLive do
+  @moduledoc """
+  The application can be in one of the following states:
+  - `:ready`: Initial state when the page loads.
+  - `:answering`: When the user is making selections.
+  - `:review`: After the user clicks "Check Answers" and the answers are evaluated.
+  """
+
+  @typedoc "The state of the quiz application"
+  @type state :: :ready | :answering | :review
+
   use AstrupWeb, :live_view
 
-  # parameter_id => {selection, correct_answer?}
+  alias Astrup.{Parameter, Printout}
+
+  # parameter => {selection, correct_answer?}
   @selections %{
-    0 => {nil, nil},
-    1 => {nil, nil},
-    2 => {nil, nil},
-    3 => {nil, nil},
-    4 => {nil, nil},
-    5 => {nil, nil},
-    6 => {nil, nil},
-    7 => {nil, nil},
-    8 => {nil, nil},
-    9 => {nil, nil},
-    10 => {nil, nil},
-    11 => {nil, nil},
-    12 => {nil, nil},
-    13 => {nil, nil},
-    14 => {nil, nil},
-    15 => {nil, nil},
-    16 => {nil, nil},
-    17 => {nil, nil}
+    :ph => {nil, nil},
+    :pco2 => {nil, nil},
+    :po2 => {nil, nil},
+    :bicarbonate => {nil, nil},
+    :base_excess => {nil, nil},
+    :anion_gap => {nil, nil},
+    :hemoglobin => {nil, nil},
+    :oxygen_content => {nil, nil},
+    :oxygen_saturation => {nil, nil},
+    :carboxyhemoglobin => {nil, nil},
+    :methemoglobin => {nil, nil},
+    :potassium => {nil, nil},
+    :sodium => {nil, nil},
+    :ionized_calcium => {nil, nil},
+    :ionized_calcium_corrected_to_ph_7_4 => {nil, nil},
+    :chloride => {nil, nil},
+    :glucose => {nil, nil},
+    :lactate => {nil, nil}
   }
 
   defp setup(socket) do
     sample_number = Enum.random(10000..99999)
-    printout = Astrup.random_printout()
     random_minutes = Enum.random(-60..-2)
+    printout = Printout.get_random_printout()
 
     sample_date =
       "Europe/Helsinki"
@@ -41,7 +53,7 @@ defmodule AstrupWeb.HomeLive do
 
     socket
     |> assign(:selections, @selections)
-    |> assign(:state, :pending)
+    |> assign(:state, :ready)
     |> assign(:printout, printout)
     |> assign(:sample_number, sample_number)
     |> assign(:sample_date, sample_date)
@@ -69,11 +81,11 @@ defmodule AstrupWeb.HomeLive do
               id="check-answers"
               phx-click="check_answers"
               class="btn btn-primary w-full"
-              disabled={@state == :result}
+              disabled={@state == :review}
             >
               Check Answers
             </button>
-            <button phx-click="next" class="btn btn-secondary w-full" disabled={@state != :result}>
+            <button phx-click="next" class="btn btn-secondary w-full" disabled={@state != :review}>
               Next <.icon name="hero-arrow-right" />
             </button>
           </div>
@@ -82,7 +94,7 @@ defmodule AstrupWeb.HomeLive do
               Selections: {number_of_selections_made(@selections)}/18
             </p>
 
-            <%= if @state == :result do %>
+            <%= if @state == :review do %>
               <p>
                 Score: {correct_count(@selections)}/{total_count(@selections)}
               </p>
@@ -92,7 +104,7 @@ defmodule AstrupWeb.HomeLive do
                 id="congratulations"
                 class="text-lg font-semibold text-success mt-2"
               >
-                Congratulations! 🎉
+                {gettext("Nice one!")} 🎉
               </p>
             <% end %>
           </div>
@@ -142,15 +154,15 @@ defmodule AstrupWeb.HomeLive do
             <section class="mb-1">
               <.heading label="Temperature-corrected values" />
               <dl class="space-y-1 ml-8">
-                <.parameter parameter_id={0} {assigns}>
+                <.parameter parameter={:ph} {assigns}>
                   <:label>pH(<i> T </i>)</:label>
                 </.parameter>
-                <.parameter parameter_id={1} {assigns}>
+                <.parameter parameter={:pco2} {assigns}>
                   <:label>
                     <i>p</i>CO<sub>2</sub>(<i> T </i>)
                   </:label>
                 </.parameter>
-                <.parameter parameter_id={2} {assigns}>
+                <.parameter parameter={:po2} {assigns}>
                   <:label>
                     <i>p</i>O<sub>2</sub>(<i> T </i>)
                   </:label>
@@ -161,13 +173,13 @@ defmodule AstrupWeb.HomeLive do
             <section class="mb-1">
               <.heading label="Acid-base status" />
               <dl class="space-y-1 ml-8">
-                <.parameter parameter_id={3} {assigns}>
+                <.parameter parameter={:bicarbonate} {assigns}>
                   <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
                 </.parameter>
-                <.parameter parameter_id={4} {assigns}>
+                <.parameter parameter={:base_excess} {assigns}>
                   <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
                 </.parameter>
-                <.parameter parameter_id={5} {assigns}>
+                <.parameter parameter={:anion_gap} {assigns}>
                   <:label>Anion Gap<i><sub>c</sub></i></:label>
                 </.parameter>
               </dl>
@@ -176,19 +188,19 @@ defmodule AstrupWeb.HomeLive do
             <section class="mb-1">
               <.heading label="Oximetry values" />
               <dl class="space-y-1 ml-8">
-                <.parameter parameter_id={6} {assigns}>
+                <.parameter parameter={:hemoglobin} {assigns}>
                   <:label><i>c</i>tHb</:label>
                 </.parameter>
-                <.parameter parameter_id={7} {assigns}>
+                <.parameter parameter={:oxygen_content} {assigns}>
                   <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
                 </.parameter>
-                <.parameter parameter_id={8} {assigns}>
+                <.parameter parameter={:oxygen_saturation} {assigns}>
                   <:label><i>s</i>O<sub>2</sub></:label>
                 </.parameter>
-                <.parameter parameter_id={9} {assigns}>
+                <.parameter parameter={:carboxyhemoglobin} {assigns}>
                   <:label><i>F</i>COHb</:label>
                 </.parameter>
-                <.parameter parameter_id={10} {assigns}>
+                <.parameter parameter={:methemoglobin} {assigns}>
                   <:label><i>F</i>MetHb</:label>
                 </.parameter>
               </dl>
@@ -197,19 +209,19 @@ defmodule AstrupWeb.HomeLive do
             <section class="mb-1">
               <.heading label="Electrolyte values" />
               <dl class="space-y-1 ml-8">
-                <.parameter parameter_id={11} {assigns}>
+                <.parameter parameter={:potassium} {assigns}>
                   <:label><i>c</i>K<sup>+</sup></:label>
                 </.parameter>
-                <.parameter parameter_id={12} {assigns}>
+                <.parameter parameter={:sodium} {assigns}>
                   <:label><i>c</i>Na<sup>+</sup></:label>
                 </.parameter>
-                <.parameter parameter_id={13} {assigns}>
+                <.parameter parameter={:ionized_calcium} {assigns}>
                   <:label><i>c</i>Ca<sup>2+</sup></:label>
                 </.parameter>
-                <.parameter parameter_id={14} {assigns}>
+                <.parameter parameter={:ionized_calcium_corrected_to_ph_7_4} {assigns}>
                   <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
                 </.parameter>
-                <.parameter parameter_id={15} {assigns}>
+                <.parameter parameter={:chloride} {assigns}>
                   <:label><i>c</i>Cl<sup>-</sup></:label>
                 </.parameter>
               </dl>
@@ -218,10 +230,10 @@ defmodule AstrupWeb.HomeLive do
             <section class="mb-1">
               <.heading label="Metabolite values" />
               <dl class="space-y-1 ml-8">
-                <.parameter parameter_id={16} {assigns}>
+                <.parameter parameter={:glucose} {assigns}>
                   <:label><i>c</i>Glu</:label>
                 </.parameter>
-                <.parameter parameter_id={17} {assigns}>
+                <.parameter parameter={:lactate} {assigns}>
                   <:label><i>c</i>Lac</:label>
                 </.parameter>
               </dl>
@@ -273,40 +285,40 @@ defmodule AstrupWeb.HomeLive do
     """
   end
 
-  attr :parameter_id, :integer, required: true
+  attr :parameter, :atom, required: true
   slot :label, required: true
 
   def parameter(assigns) do
     ~H"""
-    <% {selection, correct_answer?} = @selections[@parameter_id] %>
+    <% {selection, correct_answer?} = @selections[@parameter] %>
 
-    <div id={"param-#{@parameter_id}"} class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4">
+    <div id={"param-#{@parameter}"} class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4">
       <dt>
-        <div class="tooltip tooltip-right" data-tip={Astrup.get_parameter_label(@parameter_id)}>
+        <div class="tooltip tooltip-right" data-tip={Parameter.get_label(@parameter)}>
           {render_slot(@label)}
         </div>
       </dt>
 
-      <dd class="font-bold text-right">{@printout[@parameter_id]}</dd>
+      <dd class="font-bold text-right">{Map.get(@printout, @parameter)}</dd>
 
-      <dd>{Astrup.units_for_parameter(:abl90, @parameter_id)}</dd>
+      <dd>{Parameter.get_unit(@parameter)}</dd>
 
       <dd class="flex flex-row gap-1 items-center">
         <div
-          id={"tooltip-param-#{@parameter_id}"}
+          id={"tooltip-param-#{@parameter}"}
           class={
-            if(show_hint?(@state, correct_answer?),
+            if(@state == :review && not correct_answer?,
               do: "tooltip tooltip-right tooltip-open",
               else: ""
             )
           }
-          data-tip={Astrup.pretty_print_reference_range(@parameter_id)}
+          data-tip={Parameter.pretty_print_reference_range(@parameter)}
         >
           <button
-            id={"btn-param-#{@parameter_id}-low"}
+            id={"btn-param-#{@parameter}-low"}
             phx-click="select"
             phx-value-choice="low"
-            phx-value-parameter_id={@parameter_id}
+            phx-value-parameter={@parameter}
             class={[
               "btn btn-sm btn-square",
               button_colour(selection == :low, correct_answer?, @state)
@@ -316,10 +328,10 @@ defmodule AstrupWeb.HomeLive do
           </button>
 
           <button
-            id={"btn-param-#{@parameter_id}-normal"}
+            id={"btn-param-#{@parameter}-normal"}
             phx-click="select"
             phx-value-choice="normal"
-            phx-value-parameter_id={@parameter_id}
+            phx-value-parameter={@parameter}
             class={[
               "btn btn-sm btn-square",
               button_colour(selection == :normal, correct_answer?, @state)
@@ -329,10 +341,10 @@ defmodule AstrupWeb.HomeLive do
           </button>
 
           <button
-            id={"btn-param-#{@parameter_id}-high"}
+            id={"btn-param-#{@parameter}-high"}
             phx-click="select"
             phx-value-choice="high"
-            phx-value-parameter_id={@parameter_id}
+            phx-value-parameter={@parameter}
             class={[
               "btn btn-sm btn-square",
               button_colour(selection == :high, correct_answer?, @state)
@@ -348,14 +360,14 @@ defmodule AstrupWeb.HomeLive do
 
   @impl true
   def handle_event("select", params, socket) do
-    parameter_id = String.to_integer(params["parameter_id"])
+    parameter = String.to_existing_atom(params["parameter"])
     choice = String.to_existing_atom(params["choice"])
-    selections = Map.put(socket.assigns.selections, parameter_id, {choice, nil})
+    selections = Map.put(socket.assigns.selections, parameter, {choice, nil})
 
     {:noreply,
      socket
      |> assign(:selections, selections)
-     |> assign(:state, :input)}
+     |> assign(:state, :answering)}
   end
 
   def handle_event("next", _params, socket) do
@@ -376,14 +388,17 @@ defmodule AstrupWeb.HomeLive do
     {:noreply,
      socket
      |> assign(:selections, checked_answers)
-     |> assign(:state, :result)}
+     |> assign(:state, :review)}
   end
 
   defp check_answers(%{selections: selections, printout: printout}) do
-    Enum.reduce(selections, %{}, fn {parameter_id, {choice, _}}, acc ->
-      parameter_value = printout[parameter_id]
-      correct_answer = Astrup.check_reference_range(parameter_id, parameter_value)
-      Map.put(acc, parameter_id, {choice, choice == correct_answer})
+    Enum.reduce(selections, %{}, fn {parameter, {choice, _}}, acc ->
+      parameter_value = Map.get(printout, parameter)
+
+      correct_answer =
+        Parameter.check_value_against_reference_range(parameter, parameter_value)
+
+      Map.put(acc, parameter, {choice, choice == correct_answer})
     end)
   end
 
@@ -402,9 +417,9 @@ defmodule AstrupWeb.HomeLive do
   end
 
   # selected?, correct_answer?, state
-  defp button_colour(true, true, :result), do: "border border-success border-2"
-  defp button_colour(true, false, :result), do: "border border-error border-2"
-  defp button_colour(true, _, :input), do: "border border-base-content border-2"
+  defp button_colour(true, true, :review), do: "border border-success border-2"
+  defp button_colour(true, false, :review), do: "border border-error border-2"
+  defp button_colour(true, _, :answering), do: "border border-base-content border-2"
   defp button_colour(_, _, _), do: "border border-transparent border-2"
 
   defp number_of_selections_made(selections) do
@@ -414,6 +429,6 @@ defmodule AstrupWeb.HomeLive do
   end
 
   # state, correct_answer?
-  def show_hint?(:result, correct_answer?), do: not correct_answer?
+  def show_hint?(:review, correct_answer?), do: not correct_answer?
   def show_hint?(_, _), do: false
 end

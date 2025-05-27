@@ -19,6 +19,7 @@ defmodule AstrupWeb.Router do
 
     # get "/", PageController, :home
     live "/", HomeLive
+    live "/submit", SubmitLive
   end
 
   # Other scopes may use custom stacks.
