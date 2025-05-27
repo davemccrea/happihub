@@ -78,7 +78,7 @@ defmodule AstrupWeb.SubmitLive do
             <fieldset class="space-y-4">
               <.legend>Basic info (optional)</.legend>
 
-              <.parameter_input field={@form[:age]} label="Age" />
+              <.input field={@form[:age]} label="Age" type="number" />
 
               <.input
                 type="select"
@@ -113,78 +113,38 @@ defmodule AstrupWeb.SubmitLive do
   attr :name, :any
   attr :label, :string, default: nil
   attr :value, :any
-
-  attr :type, :string,
-    default: "text",
-    values: ~w(checkbox color date datetime-local email file month number password
-               search select tel text textarea time url week)
+  attr :errors, :list, default: []
 
   attr :field, Phoenix.HTML.FormField,
     doc: "a form field struct retrieved from the form, for example: @form[:email]"
 
-  attr :errors, :list, default: []
-  attr :checked, :boolean, doc: "the checked flag for checkbox inputs"
-  attr :prompt, :string, default: nil, doc: "the prompt for select inputs"
-  attr :options, :list, doc: "the options to pass to Phoenix.HTML.Form.options_for_select/2"
-  attr :multiple, :boolean, default: false, doc: "the multiple flag for select inputs"
-  attr :class, :string, default: nil, doc: "the input class to use over defaults"
-  attr :error_class, :string, default: nil, doc: "the input error class to use over defaults"
-
-  attr :rest, :global,
-    include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
-                multiple pattern placeholder readonly required rows size step)
+  attr :rest, :global
 
   defp parameter_input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
     errors = if Phoenix.Component.used_input?(field), do: field.errors, else: []
 
-    assigns
-    |> assign(field: nil, id: field.id)
-    |> assign(:errors, Enum.map(errors, &translate_error(&1)))
-    |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
-    |> assign_new(:value, fn -> field.value end)
-    |> parameter_input()
-  end
+    assigns =
+      assigns
+      |> assign(field: nil, id: field.id)
+      |> assign(:errors, Enum.map(errors, &translate_error(&1)))
+      |> assign_new(:name, fn -> field.name end)
+      |> assign_new(:value, fn -> field.value end)
 
-  defp parameter_input(%{type: "select"} = assigns) do
     ~H"""
     <fieldset class="fieldset mb-2">
-      <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
-        <select
-          id={@id}
+      <label class={["input w-full", @errors != [] && "input-error"]}>
+        <span class="label">
+          <div>{@label}</div>
+        </span>
+        <input
+          type="number"
           name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
-          multiple={@multiple}
+          id={@id}
+          value={Phoenix.HTML.Form.normalize_value("number", @value)}
           {@rest}
-        >
-          <option :if={@prompt} value="">{@prompt}</option>
-          {Phoenix.HTML.Form.options_for_select(@options, @value)}
-        </select>
+        />
       </label>
-      <%!-- <.error :for={msg <- @errors}>{msg}</.error> --%>
     </fieldset>
-    """
-  end
-
-  defp parameter_input(assigns) do
-    ~H"""
-    <label class={["input w-full", @errors != [] && "input-error"]}>
-      <span class="label">
-        <div>{@label}</div>
-      </span>
-      <input
-        type={@type}
-        name={@name}
-        id={@id}
-        value={Phoenix.HTML.Form.normalize_value(@type, @value)}
-        {@rest}
-      />
-    </label>
-
-    <%!-- <p :for={msg <- @errors} class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
-      {msg}
-    </p> --%>
     """
   end
 
