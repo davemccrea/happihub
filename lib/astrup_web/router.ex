@@ -8,6 +8,7 @@ defmodule AstrupWeb.Router do
     plug :put_root_layout, html: {AstrupWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug AstrupWeb.Plugs.LocalePlug
   end
 
   pipeline :api do
@@ -17,9 +18,12 @@ defmodule AstrupWeb.Router do
   scope "/", AstrupWeb do
     pipe_through :browser
 
-    # get "/", PageController, :home
-    live "/", HomeLive
-    live "/submit", SubmitLive
+    live_session :default, on_mount: AstrupWeb.Hooks.LocaleHook do
+      live "/", HomeLive
+      live "/submit", SubmitLive
+    end
+
+    get "/locale/:locale", ChangeLocale, :index
   end
 
   # Other scopes may use custom stacks.
