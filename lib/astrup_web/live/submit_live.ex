@@ -14,7 +14,7 @@ defmodule AstrupWeb.SubmitLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} locale={@locale}>
       <div class="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <h1 class="text-2xl font-semibold mb-6">Submit ABG</h1>
         <.form for={@form} phx-submit="save" phx-change="validate">
@@ -162,11 +162,10 @@ defmodule AstrupWeb.SubmitLive do
 
     case Repo.insert(changeset) do
       {:ok, _} ->
-        {:noreply, socket |> put_flash(:info, "ABG submitted successfully")}
+        {:noreply, socket |> put_flash(:info, "Thanks! Submission successful!")}
 
       {:error, changeset} ->
-        {:noreply,
-         socket |> assign(form: to_form(changeset)) |> put_flash(:error, "Failed to submit ABG")}
+        {:noreply, socket |> assign(form: to_form(changeset))}
     end
   end
 end

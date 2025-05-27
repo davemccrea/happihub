@@ -21,6 +21,8 @@ defmodule AstrupWeb.Router do
     live_session :default, on_mount: AstrupWeb.Hooks.LocaleHook do
       live "/", HomeLive
       live "/submit", SubmitLive
+      live "/abg-reference-values", AbgReferenceValuesLive
+      live "/abg-interpretation", AbgInterpretationLive
     end
 
     get "/locale/:locale", ChangeLocale, :index

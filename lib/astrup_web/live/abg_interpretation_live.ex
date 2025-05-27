@@ -1,4 +1,4 @@
-defmodule AstrupWeb.HomeLive do
+defmodule AstrupWeb.AbgInterpretationLive do
   use AstrupWeb, :live_view
 
   def mount(_params, _session, socket) do
@@ -8,7 +8,7 @@ defmodule AstrupWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
-      <h1>Home</h1>
+      <h1>Blood Gas Interpretation</h1>
     </Layouts.app>
     """
   end

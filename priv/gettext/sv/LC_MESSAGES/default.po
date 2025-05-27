@@ -1,0 +1,188 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: sv\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/astrup_web/components/core_components.ex:339
+#, elixir-autogen, elixir-format
+msgid "Actions"
+msgstr ""
+
+#: lib/astrup/parameter.ex:12
+#, elixir-autogen, elixir-format
+msgid "Anion gap"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:94
+#: lib/astrup_web/components/layouts.ex:106
+#, elixir-autogen, elixir-format
+msgid "Attempting to reconnect"
+msgstr ""
+
+#: lib/astrup/parameter.ex:11
+#, elixir-autogen, elixir-format
+msgid "Base excess"
+msgstr ""
+
+#: lib/astrup/parameter.ex:10
+#, elixir-autogen, elixir-format
+msgid "Bicarbonate"
+msgstr ""
+
+#: lib/astrup/parameter.ex:16
+#, elixir-autogen, elixir-format
+msgid "Carboxyhemoglobin"
+msgstr ""
+
+#: lib/astrup/parameter.ex:22
+#, elixir-autogen, elixir-format
+msgid "Chloride"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:88
+#, elixir-autogen, elixir-format
+msgid "Female"
+msgstr ""
+
+#: lib/astrup/parameter.ex:23
+#, elixir-autogen, elixir-format
+msgid "Glucose"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:356
+#, elixir-autogen, elixir-format
+msgid "H"
+msgstr "H"
+
+#: lib/astrup/parameter.ex:13
+#, elixir-autogen, elixir-format
+msgid "Hemoglobin"
+msgstr ""
+
+#: lib/astrup/parameter.ex:20
+#, elixir-autogen, elixir-format
+msgid "Ionized calcium"
+msgstr ""
+
+#: lib/astrup/parameter.ex:21
+#, elixir-autogen, elixir-format
+msgid "Ionized calcium corrected to pH 7.4"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:330
+#, elixir-autogen, elixir-format
+msgid "L"
+msgstr "L"
+
+#: lib/astrup/parameter.ex:24
+#, elixir-autogen, elixir-format
+msgid "Lactate"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:88
+#, elixir-autogen, elixir-format
+msgid "Male"
+msgstr ""
+
+#: lib/astrup/parameter.ex:17
+#, elixir-autogen, elixir-format
+msgid "Methemoglobin"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:343
+#, elixir-autogen, elixir-format
+msgid "N"
+msgstr "N"
+
+#: lib/astrup_web/live/home_live.ex:108
+#, elixir-autogen, elixir-format
+msgid "Nice one!"
+msgstr "Snyggt!"
+
+#: lib/astrup/parameter.ex:14
+#, elixir-autogen, elixir-format
+msgid "Oxygen content"
+msgstr ""
+
+#: lib/astrup/parameter.ex:15
+#, elixir-autogen, elixir-format
+msgid "Oxygen saturation"
+msgstr ""
+
+#: lib/astrup/parameter.ex:8
+#, elixir-autogen, elixir-format
+msgid "Partial pressure of carbon dioxide"
+msgstr ""
+
+#: lib/astrup/parameter.ex:9
+#, elixir-autogen, elixir-format
+msgid "Partial pressure of oxygen"
+msgstr ""
+
+#: lib/astrup/parameter.ex:18
+#, elixir-autogen, elixir-format
+msgid "Potassium"
+msgstr ""
+
+#: lib/astrup/parameter.ex:19
+#, elixir-autogen, elixir-format
+msgid "Sodium"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:101
+#, elixir-autogen, elixir-format
+msgid "Something went wrong!"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:89
+#, elixir-autogen, elixir-format
+msgid "We can't find the internet"
+msgstr ""
+
+#: lib/astrup_web/components/core_components.ex:74
+#, elixir-autogen, elixir-format
+msgid "close"
+msgstr ""
+
+#: lib/astrup/parameter.ex:7
+#, elixir-autogen, elixir-format
+msgid "pH"
+msgstr "pH"
+
+#: lib/astrup_web/live/home_live.ex:76
+#, elixir-autogen, elixir-format
+msgid "For each parameter on the left, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you've made all 18 selections, click \"Check Answers\"."
+msgstr "För varje parameter till vänster, välj om värdet är Lågt (L), Normalt (N) eller Högt (H) jämfört med referensintervallet. När du har gjort alla 18 val, klicka på \"Kontrollera svar\"."
+
+#: lib/astrup_web/live/home_live.ex:87
+#, elixir-autogen, elixir-format
+msgid "Check Answers"
+msgstr "Kontrollera svar"
+
+#: lib/astrup_web/live/home_live.ex:90
+#, elixir-autogen, elixir-format
+msgid "Next"
+msgstr "Nästa"
+
+#: lib/astrup_web/live/home_live.ex:74
+#, elixir-autogen, elixir-format
+msgid "Reference Values Quiz"
+msgstr "Quiz om referensvärden"
+
+#: lib/astrup_web/live/home_live.ex:100
+#, elixir-autogen, elixir-format
+msgid "Score:"
+msgstr "Poäng:"
+
+#: lib/astrup_web/live/home_live.ex:95
+#, elixir-autogen, elixir-format
+msgid "Answers: "
+msgstr "Svar: "

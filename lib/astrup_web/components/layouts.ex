@@ -27,33 +27,45 @@ defmodule AstrupWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :locale, :string, required: true, doc: "the current locale"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
     <header>
       <div class="navbar bg-base-100 shadow-sm">
-        <div class="flex-1">
-          <.link navigate={~p"/"} class="btn btn-ghost text-xl">ABG</.link>
+        <div class="navbar-start">
+          <.link navigate={~p"/"} class="btn btn-ghost text-xl">My App</.link>
         </div>
-        <nav class="flex-none">
+
+        <nav class="navbar-center">
           <ul class="menu menu-horizontal px-1">
-            <li><.link navigate={~p"/submit"}>Submit ABG</.link></li>
+            <li><.link navigate={~p"/abg-reference-values"}>ABG Reference Values</.link></li>
+            <li><.link navigate={~p"/abg-interpretation"}>ABG Interpretation</.link></li>
           </ul>
         </nav>
+
+        <div class="navbar-end space-x-2">
+          <.live_component
+            module={AstrupWeb.Components.LocalePicker}
+            id="locale-picker"
+            locale={@locale}
+          />
+
+          <Layouts.theme_toggle />
+        </div>
       </div>
     </header>
 
-    <main class="px-4 py-12 sm:px-6 lg:px-8">
+    <main class="px-4 py-12 sm:px-6 lg:px-8 flex-grow">
       {render_slot(@inner_block)}
     </main>
 
     <footer class="footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10">
       <nav class="grid grid-flow-col gap-4">
-        <a class="link link-hover">v{Application.spec(:astrup, :vsn)}</a>
+        <.link navigate="https://github.com/davemccrea">Github</.link>
       </nav>
-
-      <Layouts.theme_toggle />
     </footer>
 
     <.flash_group flash={@flash} />
@@ -111,25 +123,18 @@ defmodule AstrupWeb.Layouts do
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
-
-      <button
-        phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "system"})}
-        class="flex p-2 cursor-pointer w-1/3"
-      >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
+      <div class="absolute w-1/2 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=dark]_&]:left-1/2 transition-[left]" />
 
       <button
         phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "light"})}
-        class="flex p-2 cursor-pointer w-1/3"
+        class="flex p-2 cursor-pointer w-1/2"
       >
         <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
 
       <button
         phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "dark"})}
-        class="flex p-2 cursor-pointer w-1/3"
+        class="flex p-2 cursor-pointer w-1/2"
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>

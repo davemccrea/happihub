@@ -49,8 +49,10 @@ defmodule Astrup.Parameter do
     end
   end
 
-  @spec get_reference_range(atom()) :: {Decimal.t(), Decimal.t(), String.t(), atom()}
-  def get_reference_range(parameter) do
+  # See https://tutkimusohjekirja.fimlab.fi/ohjekirja/nayta.tmpl?sivu_id=322&setid=11549
+
+  @spec get_reference_range(atom(), map()) :: {Decimal.t(), Decimal.t(), String.t(), atom()}
+  def get_reference_range(parameter, %{age_range: age_range}) do
     case parameter do
       :ph ->
         {Decimal.new("7.35"), Decimal.new("7.45"), "", :decimal}
@@ -59,7 +61,35 @@ defmodule Astrup.Parameter do
         {Decimal.new("4.5"), Decimal.new("6.0"), "kPa", :decimal}
 
       :po2 ->
-        {Decimal.new("10.3"), Decimal.new("13.0"), "kPa", :decimal}
+        {min, max} =
+          case age_range do
+            "0-18" ->
+              {Decimal.new("12.0"), Decimal.new("14.0")}
+
+            "18-30" ->
+              {Decimal.new("11.0"), Decimal.new("14.0")}
+
+            # Default
+            "31-50" ->
+              {Decimal.new("10.3"), Decimal.new("13.0")}
+
+            "51-60" ->
+              {Decimal.new("9.7"), Decimal.new("12.7")}
+
+            "61-70" ->
+              {Decimal.new("9.3"), Decimal.new("12.3")}
+
+            "71-80" ->
+              {Decimal.new("8.8"), Decimal.new("11.9")}
+
+            ">80" ->
+              {Decimal.new("8.3"), Decimal.new("11.4")}
+
+            _ ->
+              {Decimal.new("10.3"), Decimal.new("13.0")}
+          end
+
+        {min, max, "kPa", :decimal}
 
       :bicarbonate ->
         {Decimal.new("22.0"), Decimal.new("27.0"), "mmol/l", :integer}
@@ -108,19 +138,19 @@ defmodule Astrup.Parameter do
     end
   end
 
-  @spec check_value_against_reference_range(atom(), Decimal.t()) :: atom()
-  def check_value_against_reference_range(parameter, value) do
-    {min, max, _unit, _display_type} = get_reference_range(parameter)
+  @spec check_value_against_reference_range(atom(), Decimal.t(), map()) :: atom()
+  def check_value_against_reference_range(parameter, value, context \\ %{age_range: "31-50"}) do
+    {min, max, _unit, _display_type} = get_reference_range(parameter, context)
 
     cond do
-      Decimal.gte?(value, max) -> :high
-      Decimal.lte?(value, min) -> :low
+      Decimal.gt?(value, max) -> :high
+      Decimal.lt?(value, min) -> :low
       Decimal.gte?(value, min) and Decimal.lte?(value, max) -> :normal
     end
   end
 
-  def pretty_print_reference_range(parameter) do
-    {min, max, unit, display_type} = get_reference_range(parameter)
+  def pretty_print_reference_range(parameter, context \\ %{age_range: "31-50"}) do
+    {min, max, unit, display_type} = get_reference_range(parameter, context)
 
     case display_type do
       :decimal -> "#{min} - #{max} #{unit}"
