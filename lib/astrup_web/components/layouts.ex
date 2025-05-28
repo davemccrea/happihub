@@ -34,17 +34,14 @@ defmodule AstrupWeb.Layouts do
   def app(assigns) do
     ~H"""
     <header>
-      <div class="navbar bg-base-100 shadow-sm">
+      <div class="navbar bg-base-200 px-4">
         <div class="navbar-start">
-          <.link navigate={~p"/"} class="btn btn-ghost text-xl">My App</.link>
-        </div>
-
-        <nav class="navbar-center">
-          <ul class="menu menu-horizontal px-1">
-            <li><.link navigate={~p"/abg-reference-values"}>ABG Reference Values</.link></li>
-            <li><.link navigate={~p"/abg-interpretation"}>ABG Interpretation</.link></li>
+          <.link class="btn btn-ghost" navigate={~p"/?mode=learn"}>{gettext("ABG Practice")}</.link>
+          <ul class="menu menu-horizontal">
+            <li><.link navigate={~p"/?mode=learn"}>{gettext("Learn")}</.link></li>
+            <li><.link navigate={~p"/?mode=quiz"}>{gettext("Quiz")}</.link></li>
           </ul>
-        </nav>
+        </div>
 
         <div class="navbar-end space-x-2">
           <.live_component
@@ -64,7 +61,8 @@ defmodule AstrupWeb.Layouts do
 
     <footer class="footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10">
       <nav class="grid grid-flow-col gap-4">
-        <.link navigate="https://github.com/davemccrea">Github</.link>
+        <a href="https://github.com/davemccrea">GitHub</a>
+        <.link navigate={~p"/submit"}>{gettext("Submit an ABG")}</.link>
       </nav>
     </footer>
 

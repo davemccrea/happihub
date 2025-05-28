@@ -1,8 +1,20 @@
 defmodule Astrup.Lab.Fimlab do
   @behaviour Astrup.Lab
 
+  def get_age_ranges() do
+    [
+      "0-18",
+      "18-30",
+      "31-50",
+      "51-60",
+      "61-70",
+      "71-80",
+      ">80"
+    ]
+  end
+
   @impl Astrup.Lab
-  def get_reference_range(parameter, %{age_range: age_range, sex: _sex}) do
+  def get_reference_range(parameter, %{age_range: age_range, sex: sex}) do
     case parameter do
       :ph ->
         {Decimal.new("7.35"), Decimal.new("7.45"), "", :decimal}
@@ -51,7 +63,13 @@ defmodule Astrup.Lab.Fimlab do
         {Decimal.new("8.0"), Decimal.new("16.0"), "mmol/l", :integer}
 
       :hemoglobin ->
-        {Decimal.new("134.0"), Decimal.new("167.0"), "g/l", :integer}
+        {min, max} =
+          case sex do
+            :male -> {Decimal.new("134.0"), Decimal.new("167.0")}
+            :female -> {Decimal.new("117.0"), Decimal.new("150.0")}
+          end
+
+        {min, max, "g/l", :integer}
 
       :oxygen_content ->
         {Decimal.new("18.0"), Decimal.new("23.0"), "%", :integer}

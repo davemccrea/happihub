@@ -5,12 +5,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
   - `:answering`: When the user is making selections.
   - `:review`: After the user clicks "Check Answers" and the answers are evaluated.
   """
-
-  @typedoc "The state of the quiz application"
-  @type state :: :ready | :answering | :review
-
   use AstrupWeb, :live_view
-
   alias Astrup.{Parameter, Printout}
 
   defp setup(socket) do
@@ -18,8 +13,9 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     random_minutes = Enum.random(-60..-2)
     printout = Printout.get_random_printout()
     lab_module = Astrup.Lab.Fimlab
+    analyzer = Astrup.Analyzer.RadiometerAbl90FlexPlus
     age_range = "31-50"
-    sex = "male"
+    sex = :male
 
     sample_date =
       "Europe/Helsinki"
@@ -36,6 +32,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
 
     socket
     |> assign(:selections, selections)
+    |> assign(:number_of_parameters, map_size(selections))
     |> assign(:state, :ready)
     |> assign(:printout, printout)
     |> assign(:sample_number, sample_number)
@@ -44,6 +41,8 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     |> assign(:lab_module, lab_module)
     |> assign(:age_range, age_range)
     |> assign(:sex, sex)
+    |> assign(:analyzer, analyzer)
+    |> assign(:mode, :quiz)
   end
 
   @impl true
@@ -52,248 +51,288 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
   end
 
   @impl true
+  def handle_params(params, _uri, socket) do
+    mode =
+      params
+      |> Map.get("mode", "learn")
+      |> String.to_existing_atom()
+
+    {:noreply, assign(socket, :mode, mode)}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
-      <div class="flex flex-row gap-8 justify-center">
-        <div class="sticky top-4 self-start space-y-4 w-64">
-          <h2 class="text-xl font-semibold mb-3">{gettext("Reference Values Quiz")}</h2>
-          <p class="text-sm mb-4">
-            {gettext(
-              "For each parameter on the left, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you\'ve made all 18 selections, click \"Check Answers\"."
-            )}
-          </p>
+      <div class="container mx-auto px-4 py-8 flex flex-col gap-8">
+        <h1 class="text-2xl font-semibold mb-3 text-center">
+          <%= if @mode == :quiz do %>
+            {gettext("Reference Values — Quiz")}
+          <% else %>
+            {gettext("Reference Values — Learn")}
+          <% end %>
+        </h1>
 
-          <.form for={%{}} phx-change="update_settings" class="space-y-2 mb-4">
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">{gettext("Lab")}</legend>
-              <select name="lab_module" class="select">
-                <option value="Astrup.Lab.Fimlab" selected={@lab_module == Astrup.Lab.Fimlab}>
-                  {gettext("Fimlab")}
-                </option>
-              </select>
-            </fieldset>
-
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">{gettext("Age Range")}</legend>
-              <select name="age_range" class="select">
-                <option value="0-18" selected={@age_range == "0-18"}>0-18</option>
-                <option value="18-30" selected={@age_range == "18-30"}>18-30</option>
-                <option value="31-50" selected={@age_range == "31-50"}>31-50</option>
-                <option value="51-60" selected={@age_range == "51-60"}>51-60</option>
-                <option value="61-70" selected={@age_range == "61-70"}>61-70</option>
-                <option value="71-80" selected={@age_range == "71-80"}>71-80</option>
-                <option value=">80" selected={@age_range == ">80"}>&gt;80</option>
-              </select>
-            </fieldset>
-
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">{gettext("Sex")}</legend>
-              <select name="sex" class="select">
-                <option value="male" selected={@sex == "male"}>{gettext("Male")}</option>
-                <option value="female" selected={@sex == "female"}>{gettext("Female")}</option>
-              </select>
-            </fieldset>
-          </.form>
-
-          <div class="flex flex-col gap-3">
-            <button
-              id="check-answers"
-              phx-click="check_answers"
-              class="btn btn-primary w-full"
-              disabled={@state == :review}
-            >
-              {gettext("Check Answers")}
-            </button>
-            <button phx-click="next" class="btn btn-secondary w-full" disabled={@state != :review}>
-              {gettext("Next")} <.icon name="hero-arrow-right" />
-            </button>
-          </div>
-          <div class="mt-4 pt-4 border-t">
-            <p>
-              {gettext("Answers: ")} {number_of_selections_made(@selections)}/18
-            </p>
-
-            <%= if @state == :review do %>
-              <p>
-                {gettext("Score:")} {correct_count(@selections)}/{total_count(@selections)}
+        <div class="flex flex-row gap-8 justify-center">
+          <div class="sticky top-4 self-start space-y-4 w-64">
+            <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
+              <h1 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h1>
+              <p class="mb-4">
+                {gettext(
+                  "For each parameter, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you\'ve made all 18 selections, click \"Check Answers\"."
+                )}
               </p>
 
-              <p
-                :if={full_score?(@selections)}
-                id="congratulations"
-                class="text-lg font-semibold text-success mt-2"
-              >
-                {gettext("Nice one!")} 🎉
-              </p>
-            <% end %>
-          </div>
-        </div>
-
-        <article class="relative max-w-2xl flex-1 select-none py-12 px-12 shadow-xl border border-base-content/20">
-          <header class="text-center">
-            <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
-            <div class="space-y-1">
-              <div class="flex justify-between">
-                <span>ABL90 ABL TeVa I393-092R0178N0019</span>
-                <time>{Calendar.strftime(@sample_date, "%H:%M")}</time>
-                <time>{Calendar.strftime(@sample_date, "%d.%m.%Y")}</time>
+              <div class="flex flex-col gap-3">
+                <button
+                  id="check-answers"
+                  phx-click="check_answers"
+                  class="btn btn-primary w-full"
+                  disabled={@state == :review}
+                >
+                  {gettext("Check Answers")}
+                </button>
+                <button phx-click="next" class="btn btn-secondary w-full" disabled={@state != :review}>
+                  {gettext("Next")} <.icon name="hero-arrow-right" />
+                </button>
               </div>
-              <div class="flex justify-between">
-                <span>PATIENT REPORT</span>
-                <span>Syringe - S 65uL</span>
-                <span>Sample #</span>
-                <span>{@printout.id}</span>
-              </div>
-            </div>
-          </header>
-
-          <hr class="border-[1.5px] mb-1 mt-1" />
-
-          <section class="px-2">
-            <.heading label="Identifications" />
-            <dl class="ml-4">
-              <div class="grid grid-cols-[1fr_2fr] gap-4">
-                <dt>Patient ID</dt>
-                <dd>XXXXXX-XXXX</dd>
-              </div>
-              <div class="grid grid-cols-[1fr_2fr] gap-4">
-                <dt>Sample type</dt>
-                <dd>Arterial</dd>
-              </div>
-              <div class="grid grid-cols-[1fr_2fr] gap-4">
-                <dt class="italic">T</dt>
-                <dd>37,0 °C</dd>
-              </div>
-            </dl>
-          </section>
-
-          <hr class="mb-1 mt-2 border-[1.5px]" />
-
-          <div class="px-4">
-            <section class="mb-1">
-              <.heading label="Temperature-corrected values" />
-              <dl class="space-y-1 ml-8">
-                <.parameter parameter={:ph} {assigns}>
-                  <:label>pH(<i> T </i>)</:label>
-                </.parameter>
-                <.parameter parameter={:pco2} {assigns}>
-                  <:label>
-                    <i>p</i>CO<sub>2</sub>(<i> T </i>)
-                  </:label>
-                </.parameter>
-                <.parameter parameter={:po2} {assigns}>
-                  <:label>
-                    <i>p</i>O<sub>2</sub>(<i> T </i>)
-                  </:label>
-                </.parameter>
-              </dl>
             </section>
 
-            <section class="mb-1">
-              <.heading label="Acid-base status" />
-              <dl class="space-y-1 ml-8">
-                <.parameter parameter={:bicarbonate} {assigns}>
-                  <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
-                </.parameter>
-                <.parameter parameter={:base_excess} {assigns}>
-                  <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
-                </.parameter>
-                <.parameter parameter={:anion_gap} {assigns}>
-                  <:label>Anion Gap<i><sub>c</sub></i></:label>
-                </.parameter>
-              </dl>
+            <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
+              <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Progress")}</h2>
+
+              <ul>
+                <li>{gettext("Answers: ")} {number_of_selections_made(@selections)}/18</li>
+                <%= if @state == :review do %>
+                  <li>{gettext("Score:")} {correct_count(@selections)}/{total_count(@selections)}</li>
+                  <li
+                    :if={full_score?(@selections)}
+                    id="congratulations"
+                    class="text-lg font-semibold text-success"
+                  >
+                    {gettext("Nice one!")} 🎉
+                  </li>
+                <% end %>
+              </ul>
             </section>
 
-            <section class="mb-1">
-              <.heading label="Oximetry values" />
-              <dl class="space-y-1 ml-8">
-                <.parameter parameter={:hemoglobin} {assigns}>
-                  <:label><i>c</i>tHb</:label>
-                </.parameter>
-                <.parameter parameter={:oxygen_content} {assigns}>
-                  <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
-                </.parameter>
-                <.parameter parameter={:oxygen_saturation} {assigns}>
-                  <:label><i>s</i>O<sub>2</sub></:label>
-                </.parameter>
-                <.parameter parameter={:carboxyhemoglobin} {assigns}>
-                  <:label><i>F</i>COHb</:label>
-                </.parameter>
-                <.parameter parameter={:methemoglobin} {assigns}>
-                  <:label><i>F</i>MetHb</:label>
-                </.parameter>
-              </dl>
-            </section>
+            <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
+              <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Settings")}</h2>
 
-            <section class="mb-1">
-              <.heading label="Electrolyte values" />
-              <dl class="space-y-1 ml-8">
-                <.parameter parameter={:potassium} {assigns}>
-                  <:label><i>c</i>K<sup>+</sup></:label>
-                </.parameter>
-                <.parameter parameter={:sodium} {assigns}>
-                  <:label><i>c</i>Na<sup>+</sup></:label>
-                </.parameter>
-                <.parameter parameter={:ionized_calcium} {assigns}>
-                  <:label><i>c</i>Ca<sup>2+</sup></:label>
-                </.parameter>
-                <.parameter parameter={:ionized_calcium_corrected_to_ph_7_4} {assigns}>
-                  <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
-                </.parameter>
-                <.parameter parameter={:chloride} {assigns}>
-                  <:label><i>c</i>Cl<sup>-</sup></:label>
-                </.parameter>
-              </dl>
-            </section>
+              <.form for={%{}} phx-change="update_settings" class="mb-4">
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{gettext("Laboratory")}</legend>
+                  <select name="lab_module" class="select">
+                    <option value="Astrup.Lab.Fimlab" selected={@lab_module == Astrup.Lab.Fimlab}>
+                      {gettext("Fimlab VCS")}
+                    </option>
+                  </select>
+                </fieldset>
 
-            <section class="mb-1">
-              <.heading label="Metabolite values" />
-              <dl class="space-y-1 ml-8">
-                <.parameter parameter={:glucose} {assigns}>
-                  <:label><i>c</i>Glu</:label>
-                </.parameter>
-                <.parameter parameter={:lactate} {assigns}>
-                  <:label><i>c</i>Lac</:label>
-                </.parameter>
-              </dl>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{gettext("Analyzer")}</legend>
+                  <select name="analyzer" class="select">
+                    <option
+                      value="Astrup.Analyzer.RadiometerAbl90FlexPlus"
+                      selected={@analyzer == Astrup.Analyzer.RadiometerAbl90FlexPlus}
+                    >
+                      {gettext("Radiometer ABL90 Flex Plus")}
+                    </option>
+                  </select>
+                </fieldset>
+
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{gettext("Age Range")}</legend>
+                  <select name="age_range" class="select">
+                    <option value="0-18" selected={@age_range == "0-18"}>0-18</option>
+                    <option value="18-30" selected={@age_range == "18-30"}>18-30</option>
+                    <option value="31-50" selected={@age_range == "31-50"}>31-50</option>
+                    <option value="51-60" selected={@age_range == "51-60"}>51-60</option>
+                    <option value="61-70" selected={@age_range == "61-70"}>61-70</option>
+                    <option value="71-80" selected={@age_range == "71-80"}>71-80</option>
+                    <option value=">80" selected={@age_range == ">80"}>&gt;80</option>
+                  </select>
+                  <p class="text-sm text-base-content/50">
+                    {gettext("")}
+                  </p>
+                </fieldset>
+
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">{gettext("Sex")}</legend>
+                  <select name="sex" class="select">
+                    <option value={:male} selected={@sex == :male}>{gettext("Male")}</option>
+                    <option value={:female} selected={@sex == :female}>{gettext("Female")}</option>
+                  </select>
+                </fieldset>
+              </.form>
             </section>
           </div>
 
-          <hr class="border-dashed mb-1" />
-
-          <section class="mb-2">
-            <.heading label="Notes" />
-            <dl>
-              <div class="flex flex-row gap-24">
-                <dt class="italic">c</dt>
-                <dd>Calculated value(s)</dd>
-              </div>
-            </dl>
-          </section>
-
-          <hr class="mb-14 border-[1.5px]" />
-
-          <hr class="mb-2 border-[1.5px]" />
-
-          <footer>
-            <div class="flex justify-between">
-              <div>
-                <div>Solution pack lot: DX-20</div>
-                <div class="flex flex-row gap-12">
-                  <span>Printed</span>
-                  <time datetime={@printed_date}>{Calendar.strftime(@printed_date, "%H:%M")}</time>
-                  <time datetime={@printed_date}>
-                    {Calendar.strftime(@printed_date, "%d.%m.%Y")}
-                  </time>
+          <article class="relative max-w-2xl flex-1 select-none py-12 px-12 shadow-lg border border-base-content/20">
+            <header class="text-center">
+              <h2 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h2>
+              <div class="space-y-1">
+                <div class="flex justify-between">
+                  <span>ABL90 ABL TeVa I393-092R0178N0019</span>
+                  <time>{Calendar.strftime(@sample_date, "%H:%M")}</time>
+                  <time>{Calendar.strftime(@sample_date, "%d.%m.%Y")}</time>
+                </div>
+                <div class="flex justify-between">
+                  <span>PATIENT REPORT</span>
+                  <span>Syringe - S 65uL</span>
+                  <span>Sample #</span>
+                  <span>{@printout.id}</span>
                 </div>
               </div>
-              <div class="text-right">
-                <div>Sensor cassette run #: 2496-39</div>
-              </div>
+            </header>
+
+            <hr class="border-[1.5px] mb-1 mt-1" />
+
+            <section class="px-2">
+              <.heading label="Identifications" />
+              <dl class="ml-4">
+                <div class="grid grid-cols-[1fr_2fr] gap-4">
+                  <dt>Patient ID</dt>
+                  <dd>XXXXXX-XXXX</dd>
+                </div>
+                <div class="grid grid-cols-[1fr_2fr] gap-4">
+                  <dt>Sample type</dt>
+                  <dd>Arterial</dd>
+                </div>
+                <div class="grid grid-cols-[1fr_2fr] gap-4">
+                  <dt class="italic">T</dt>
+                  <dd>37,0 °C</dd>
+                </div>
+              </dl>
+            </section>
+
+            <hr class="mb-1 mt-2 border-[1.5px]" />
+
+            <div class="px-4">
+              <section class="mb-1">
+                <.heading label="Temperature-corrected values" />
+                <dl class="space-y-1 ml-8">
+                  <.parameter parameter={:ph} {assigns}>
+                    <:label>pH(<i> T </i>)</:label>
+                  </.parameter>
+                  <.parameter parameter={:pco2} {assigns}>
+                    <:label>
+                      <i>p</i>CO<sub>2</sub>(<i> T </i>)
+                    </:label>
+                  </.parameter>
+                  <.parameter parameter={:po2} {assigns}>
+                    <:label>
+                      <i>p</i>O<sub>2</sub>(<i> T </i>)
+                    </:label>
+                  </.parameter>
+                </dl>
+              </section>
+
+              <section class="mb-1">
+                <.heading label="Acid-base status" />
+                <dl class="space-y-1 ml-8">
+                  <.parameter parameter={:bicarbonate} {assigns}>
+                    <:label><i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i></:label>
+                  </.parameter>
+                  <.parameter parameter={:base_excess} {assigns}>
+                    <:label><i>c</i>Base(Ecf)<i><sub>c</sub></i></:label>
+                  </.parameter>
+                  <.parameter parameter={:anion_gap} {assigns}>
+                    <:label>Anion Gap<i><sub>c</sub></i></:label>
+                  </.parameter>
+                </dl>
+              </section>
+
+              <section class="mb-1">
+                <.heading label="Oximetry values" />
+                <dl class="space-y-1 ml-8">
+                  <.parameter parameter={:hemoglobin} {assigns}>
+                    <:label><i>c</i>tHb</:label>
+                  </.parameter>
+                  <.parameter parameter={:oxygen_content} {assigns}>
+                    <:label><i>c</i>tO<sub>2</sub><i>c</i></:label>
+                  </.parameter>
+                  <.parameter parameter={:oxygen_saturation} {assigns}>
+                    <:label><i>s</i>O<sub>2</sub></:label>
+                  </.parameter>
+                  <.parameter parameter={:carboxyhemoglobin} {assigns}>
+                    <:label><i>F</i>COHb</:label>
+                  </.parameter>
+                  <.parameter parameter={:methemoglobin} {assigns}>
+                    <:label><i>F</i>MetHb</:label>
+                  </.parameter>
+                </dl>
+              </section>
+
+              <section class="mb-1">
+                <.heading label="Electrolyte values" />
+                <dl class="space-y-1 ml-8">
+                  <.parameter parameter={:potassium} {assigns}>
+                    <:label><i>c</i>K<sup>+</sup></:label>
+                  </.parameter>
+                  <.parameter parameter={:sodium} {assigns}>
+                    <:label><i>c</i>Na<sup>+</sup></:label>
+                  </.parameter>
+                  <.parameter parameter={:ionized_calcium} {assigns}>
+                    <:label><i>c</i>Ca<sup>2+</sup></:label>
+                  </.parameter>
+                  <.parameter parameter={:ionized_calcium_corrected_to_ph_7_4} {assigns}>
+                    <:label><i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i></:label>
+                  </.parameter>
+                  <.parameter parameter={:chloride} {assigns}>
+                    <:label><i>c</i>Cl<sup>-</sup></:label>
+                  </.parameter>
+                </dl>
+              </section>
+
+              <section class="mb-1">
+                <.heading label="Metabolite values" />
+                <dl class="space-y-1 ml-8">
+                  <.parameter parameter={:glucose} {assigns}>
+                    <:label><i>c</i>Glu</:label>
+                  </.parameter>
+                  <.parameter parameter={:lactate} {assigns}>
+                    <:label><i>c</i>Lac</:label>
+                  </.parameter>
+                </dl>
+              </section>
             </div>
-          </footer>
-        </article>
+
+            <hr class="border-dashed mb-1" />
+
+            <section class="mb-2">
+              <.heading label="Notes" />
+              <dl>
+                <div class="flex flex-row gap-24">
+                  <dt class="italic">c</dt>
+                  <dd>Calculated value(s)</dd>
+                </div>
+              </dl>
+            </section>
+
+            <hr class="mb-14 border-[1.5px]" />
+
+            <hr class="mb-2 border-[1.5px]" />
+
+            <footer>
+              <div class="flex justify-between">
+                <div>
+                  <div>Solution pack lot: DX-20</div>
+                  <div class="flex flex-row gap-12">
+                    <span>Printed</span>
+                    <time datetime={@printed_date}>{Calendar.strftime(@printed_date, "%H:%M")}</time>
+                    <time datetime={@printed_date}>
+                      {Calendar.strftime(@printed_date, "%d.%m.%Y")}
+                    </time>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div>Sensor cassette run #: 2496-39</div>
+                </div>
+              </div>
+            </footer>
+          </article>
+        </div>
       </div>
     </Layouts.app>
     """
@@ -301,7 +340,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
 
   def heading(assigns) do
     ~H"""
-    <h2 class="text-xl mb-1">{@label}</h2>
+    <h3 class="text-xl mb-1">{@label}</h3>
     """
   end
 
@@ -384,21 +423,12 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
   end
 
   @impl true
-  def handle_event("select", params, socket) do
-    parameter = String.to_existing_atom(params["parameter"])
-    choice = String.to_existing_atom(params["choice"])
-    selections = Map.put(socket.assigns.selections, parameter, {choice, nil})
-
-    {:noreply,
-     socket
-     |> assign(:selections, selections)
-     |> assign(:state, :answering)}
-  end
-
-  def handle_event("update_settings", params, socket) do
-    lab_module = Module.concat([String.to_atom(params["lab_module"])])
-    age_range = params["age_range"]
-    sex = params["sex"]
+  def handle_event(
+        "update_settings",
+        %{"lab_module" => lab_module, "age_range" => age_range, "sex" => sex},
+        socket
+      ) do
+    lab_module = Module.concat([String.to_atom(lab_module)])
 
     socket =
       socket
@@ -414,8 +444,16 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     {:noreply, socket}
   end
 
-  def handle_event("next", _params, socket) do
-    {:noreply, setup(socket)}
+  @impl true
+  def handle_event("select", params, socket) do
+    parameter = String.to_existing_atom(params["parameter"])
+    choice = String.to_existing_atom(params["choice"])
+    selections = Map.put(socket.assigns.selections, parameter, {choice, nil})
+
+    {:noreply,
+     socket
+     |> assign(:selections, selections)
+     |> assign(:state, :answering)}
   end
 
   @impl true
@@ -433,6 +471,16 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
      socket
      |> assign(:selections, checked_answers)
      |> assign(:state, :review)}
+  end
+
+  @impl true
+  def handle_event("next", _params, socket) do
+    {:noreply, setup(socket)}
+  end
+
+  def handle_event("toggle_mode", %{"mode" => mode_string}, socket) do
+    mode = String.to_atom(mode_string)
+    {:noreply, assign(socket, :mode, mode)}
   end
 
   defp check_answers(%{

@@ -6,7 +6,7 @@ defmodule Astrup.Lab do
   @callback get_reference_range(parameter :: atom(), context :: map()) ::
               {Decimal.t(), Decimal.t(), String.t(), atom()}
 
-  @defaults %{age_range: "31-50", sex: "male"}
+  @defaults %{age_range: "31-50", sex: :male}
 
   @spec check_value_against_reference_range(module(), atom(), Decimal.t(), map()) :: atom()
   def check_value_against_reference_range(lab, parameter, value, context \\ @defaults) do
