@@ -13,28 +13,6 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
 
   alias Astrup.{Parameter, Printout}
 
-  # parameter => {selection, correct_answer?}
-  @selections %{
-    :ph => {nil, nil},
-    :pco2 => {nil, nil},
-    :po2 => {nil, nil},
-    :bicarbonate => {nil, nil},
-    :base_excess => {nil, nil},
-    :anion_gap => {nil, nil},
-    :hemoglobin => {nil, nil},
-    :oxygen_content => {nil, nil},
-    :oxygen_saturation => {nil, nil},
-    :carboxyhemoglobin => {nil, nil},
-    :methemoglobin => {nil, nil},
-    :potassium => {nil, nil},
-    :sodium => {nil, nil},
-    :ionized_calcium => {nil, nil},
-    :ionized_calcium_corrected_to_ph_7_4 => {nil, nil},
-    :chloride => {nil, nil},
-    :glucose => {nil, nil},
-    :lactate => {nil, nil}
-  }
-
   defp setup(socket) do
     sample_number = Enum.random(10000..99999)
     random_minutes = Enum.random(-60..-2)
@@ -51,8 +29,10 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
       |> DateTime.add(random_minutes, :minute)
       |> DateTime.add(2, :minute)
 
+    selections = Astrup.Analyzer.RadiometerAbl90FlexPlus.blank_parameter_quiz_selections()
+
     socket
-    |> assign(:selections, @selections)
+    |> assign(:selections, selections)
     |> assign(:state, :ready)
     |> assign(:printout, printout)
     |> assign(:sample_number, sample_number)
@@ -302,7 +282,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
 
       <dd class="font-bold text-right">{Map.get(@printout, @parameter)}</dd>
 
-      <dd>{Parameter.get_unit(@parameter)}</dd>
+      <dd>{Astrup.Analyzer.RadiometerAbl90FlexPlus.get_unit_by_parameter(@parameter)}</dd>
 
       <dd class="flex flex-row gap-1 items-center">
         <div
@@ -313,7 +293,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
               else: ""
             )
           }
-          data-tip={Parameter.pretty_print_reference_range(@parameter)}
+          data-tip={Astrup.Lab.pretty_print_reference_range(Astrup.Lab.Fimlab, @parameter)}
         >
           <button
             id={"btn-param-#{@parameter}-low"}
@@ -397,7 +377,11 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
       parameter_value = Map.get(printout, parameter)
 
       correct_answer =
-        Parameter.check_value_against_reference_range(parameter, parameter_value)
+        Astrup.Lab.check_value_against_reference_range(
+          Astrup.Lab.Fimlab,
+          parameter,
+          parameter_value
+        )
 
       Map.put(acc, parameter, {choice, choice == correct_answer})
     end)
