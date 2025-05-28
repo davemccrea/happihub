@@ -65,8 +65,8 @@ defmodule Astrup.Lab.Fimlab do
       :hemoglobin ->
         {min, max} =
           case sex do
-            :male -> {Decimal.new("134.0"), Decimal.new("167.0")}
-            :female -> {Decimal.new("117.0"), Decimal.new("150.0")}
+            "male" -> {Decimal.new("134.0"), Decimal.new("167.0")}
+            "female" -> {Decimal.new("117.0"), Decimal.new("150.0")}
           end
 
         {min, max, "g/l", :integer}

@@ -8,6 +8,9 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
   use AstrupWeb, :live_view
   alias Astrup.{Parameter, Printout}
 
+  @type mode :: :learn | :quiz
+  @type state :: :ready | :answering | :review
+
   defp setup(socket) do
     sample_number = Enum.random(10000..99999)
     random_minutes = Enum.random(-60..-2)
@@ -15,7 +18,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     lab_module = Astrup.Lab.Fimlab
     analyzer = Astrup.Analyzer.RadiometerAbl90FlexPlus
     age_range = "31-50"
-    sex = :male
+    sex = "male"
 
     sample_date =
       "Europe/Helsinki"
@@ -28,7 +31,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
       |> DateTime.add(random_minutes, :minute)
       |> DateTime.add(2, :minute)
 
-    selections = Astrup.Analyzer.RadiometerAbl90FlexPlus.blank_parameter_quiz_selections()
+    selections = analyzer.blank_parameter_quiz_selections()
 
     socket
     |> assign(:selections, selections)
@@ -43,6 +46,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     |> assign(:sex, sex)
     |> assign(:analyzer, analyzer)
     |> assign(:mode, :quiz)
+    |> assign(:hints_enabled, false)
   end
 
   @impl true
@@ -88,7 +92,10 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
                   id="check-answers"
                   phx-click="check_answers"
                   class="btn btn-primary w-full"
-                  disabled={@state == :review}
+                  disabled={
+                    @state == :review or
+                      number_of_selections_made(@selections) != @number_of_parameters
+                  }
                 >
                   {gettext("Check Answers")}
                 </button>
@@ -99,8 +106,9 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
             </section>
 
             <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
-              <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Progress")}</h2>
-
+              <h2 class="text-lg font-semibold mb-3 text-primary">
+                {gettext("Progress")}
+              </h2>
               <ul>
                 <li>{gettext("Answers: ")} {number_of_selections_made(@selections)}/18</li>
                 <%= if @state == :review do %>
@@ -116,10 +124,12 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
               </ul>
             </section>
 
-            <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
-              <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Settings")}</h2>
+            <section class="border rounded-none border-base-content/20 shadow-lg p-4">
+              <h2 class="text-lg font-semibold mb-3 text-primary">
+                {gettext("Settings")}
+              </h2>
 
-              <.form for={%{}} phx-change="update_settings" class="mb-4">
+              <.form for={%{}} phx-change="update_settings">
                 <fieldset class="fieldset">
                   <legend class="fieldset-legend">{gettext("Laboratory")}</legend>
                   <select name="lab_module" class="select">
@@ -153,16 +163,37 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
                     <option value=">80" selected={@age_range == ">80"}>&gt;80</option>
                   </select>
                   <p class="text-sm text-base-content/50">
-                    {gettext("")}
+                    {gettext("Note: affects pO2")}
                   </p>
                 </fieldset>
 
                 <fieldset class="fieldset">
                   <legend class="fieldset-legend">{gettext("Sex")}</legend>
                   <select name="sex" class="select">
-                    <option value={:male} selected={@sex == :male}>{gettext("Male")}</option>
-                    <option value={:female} selected={@sex == :female}>{gettext("Female")}</option>
+                    <option value="male" selected={@sex == "male"}>{gettext("Male")}</option>
+                    <option value="female" selected={@sex == "female"}>{gettext("Female")}</option>
                   </select>
+                  <p class="text-sm text-base-content/50">
+                    {gettext("Note: affects Hb")}
+                  </p>
+                </fieldset>
+
+                <fieldset class="fieldset mt-4">
+                  <% checked = Phoenix.HTML.Form.normalize_value("checkbox", @hints_enabled) %>
+
+                  <label>
+                    <input type="hidden" name="hints_enabled" value="false" />
+                    <span class="label">
+                      <input
+                        type="checkbox"
+                        name="hints_enabled"
+                        value="true"
+                        checked={checked}
+                        class="checkbox checkbox-sm"
+                      />
+                      {gettext("Show hover hints")}
+                    </span>
+                  </label>
                 </fieldset>
               </.form>
             </section>
@@ -352,15 +383,37 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     <% {selection, correct_answer?} = @selections[@parameter] %>
 
     <div id={"param-#{@parameter}"} class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4">
-      <dt>
-        <div class="tooltip tooltip-right" data-tip={Parameter.get_label(@parameter)}>
-          {render_slot(@label)}
-        </div>
-      </dt>
+      <%= if @hints_enabled do %>
+        <dt class="cursor-pointer">
+          <div class="tooltip tooltip-right" data-tip={Parameter.get_label(@parameter)}>
+            {render_slot(@label)}
+          </div>
+        </dt>
+      <% else %>
+        <dt>{render_slot(@label)}</dt>
+      <% end %>
 
-      <dd class="font-bold text-right">{Map.get(@printout, @parameter)}</dd>
+      <%= if @hints_enabled do %>
+        <dd class="cursor-pointer font-bold text-right">
+          <div
+            class="tooltip tooltip-left"
+            data-tip={
+              Astrup.Lab.pretty_print_reference_range(@lab_module, @parameter, %{
+                age_range: @age_range,
+                sex: @sex
+              })
+            }
+          >
+            {Map.get(@printout, @parameter)}
+          </div>
+        </dd>
+      <% else %>
+        <dd class="font-bold text-right">
+          {Map.get(@printout, @parameter)}
+        </dd>
+      <% end %>
 
-      <dd>{Astrup.Analyzer.RadiometerAbl90FlexPlus.get_unit_by_parameter(@parameter)}</dd>
+      <dd>{@analyzer.get_unit_by_parameter(@parameter)}</dd>
 
       <dd class="flex flex-row gap-1 items-center">
         <div
@@ -423,11 +476,21 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
   end
 
   @impl true
-  def handle_event(
-        "update_settings",
-        %{"lab_module" => lab_module, "age_range" => age_range, "sex" => sex},
-        socket
-      ) do
+  def handle_event("update_settings", params, socket) do
+    %{
+      "lab_module" => lab_module,
+      "age_range" => age_range,
+      "sex" => sex,
+      "hints_enabled" => hints_enabled
+    } = params
+
+    hints_enabled =
+      case hints_enabled do
+        "true" -> true
+        "false" -> false
+        _ -> false
+      end
+
     lab_module = Module.concat([String.to_atom(lab_module)])
 
     socket =
@@ -435,6 +498,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
       |> assign(:lab_module, lab_module)
       |> assign(:age_range, age_range)
       |> assign(:sex, sex)
+      |> assign(:hints_enabled, hints_enabled)
       |> assign(
         :selections,
         Astrup.Analyzer.RadiometerAbl90FlexPlus.blank_parameter_quiz_selections()
@@ -531,8 +595,4 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     |> Enum.filter(fn {_, {selection, _}} -> not is_nil(selection) end)
     |> length()
   end
-
-  # state, correct_answer?
-  def show_hint?(:review, correct_answer?), do: not correct_answer?
-  def show_hint?(_, _), do: false
 end
