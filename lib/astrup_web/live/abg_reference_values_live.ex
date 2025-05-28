@@ -17,6 +17,9 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     sample_number = Enum.random(10000..99999)
     random_minutes = Enum.random(-60..-2)
     printout = Printout.get_random_printout()
+    lab_module = Astrup.Lab.Fimlab
+    age_range = "31-50"
+    sex = "male"
 
     sample_date =
       "Europe/Helsinki"
@@ -38,6 +41,9 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     |> assign(:sample_number, sample_number)
     |> assign(:sample_date, sample_date)
     |> assign(:printed_date, printed_date)
+    |> assign(:lab_module, lab_module)
+    |> assign(:age_range, age_range)
+    |> assign(:sex, sex)
   end
 
   @impl true
@@ -57,6 +63,39 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
               "For each parameter on the left, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you\'ve made all 18 selections, click \"Check Answers\"."
             )}
           </p>
+
+          <.form for={%{}} phx-change="update_settings" class="space-y-2 mb-4">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">{gettext("Lab")}</legend>
+              <select name="lab_module" class="select">
+                <option value="Astrup.Lab.Fimlab" selected={@lab_module == Astrup.Lab.Fimlab}>
+                  {gettext("Fimlab")}
+                </option>
+              </select>
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">{gettext("Age Range")}</legend>
+              <select name="age_range" class="select">
+                <option value="0-18" selected={@age_range == "0-18"}>0-18</option>
+                <option value="18-30" selected={@age_range == "18-30"}>18-30</option>
+                <option value="31-50" selected={@age_range == "31-50"}>31-50</option>
+                <option value="51-60" selected={@age_range == "51-60"}>51-60</option>
+                <option value="61-70" selected={@age_range == "61-70"}>61-70</option>
+                <option value="71-80" selected={@age_range == "71-80"}>71-80</option>
+                <option value=">80" selected={@age_range == ">80"}>&gt;80</option>
+              </select>
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">{gettext("Sex")}</legend>
+              <select name="sex" class="select">
+                <option value="male" selected={@sex == "male"}>{gettext("Male")}</option>
+                <option value="female" selected={@sex == "female"}>{gettext("Female")}</option>
+              </select>
+            </fieldset>
+          </.form>
+
           <div class="flex flex-col gap-3">
             <button
               id="check-answers"
@@ -293,7 +332,12 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
               else: ""
             )
           }
-          data-tip={Astrup.Lab.pretty_print_reference_range(Astrup.Lab.Fimlab, @parameter)}
+          data-tip={
+            Astrup.Lab.pretty_print_reference_range(@lab_module, @parameter, %{
+              age_range: @age_range,
+              sex: @sex
+            })
+          }
         >
           <button
             id={"btn-param-#{@parameter}-low"}
@@ -351,6 +395,25 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
      |> assign(:state, :answering)}
   end
 
+  def handle_event("update_settings", params, socket) do
+    lab_module = Module.concat([String.to_atom(params["lab_module"])])
+    age_range = params["age_range"]
+    sex = params["sex"]
+
+    socket =
+      socket
+      |> assign(:lab_module, lab_module)
+      |> assign(:age_range, age_range)
+      |> assign(:sex, sex)
+      |> assign(
+        :selections,
+        Astrup.Analyzer.RadiometerAbl90FlexPlus.blank_parameter_quiz_selections()
+      )
+      |> assign(:state, :ready)
+
+    {:noreply, socket}
+  end
+
   def handle_event("next", _params, socket) do
     {:noreply, setup(socket)}
   end
@@ -372,15 +435,23 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
      |> assign(:state, :review)}
   end
 
-  defp check_answers(%{selections: selections, printout: printout}) do
+  defp check_answers(%{
+         selections: selections,
+         printout: printout,
+         lab_module: lab_module,
+         age_range: age_range,
+         sex: sex
+       }) do
     Enum.reduce(selections, %{}, fn {parameter, {choice, _}}, acc ->
       parameter_value = Map.get(printout, parameter)
+      context = %{age_range: age_range, sex: sex}
 
       correct_answer =
         Astrup.Lab.check_value_against_reference_range(
-          Astrup.Lab.Fimlab,
+          lab_module,
           parameter,
-          parameter_value
+          parameter_value,
+          context
         )
 
       Map.put(acc, parameter, {choice, choice == correct_answer})

@@ -2,7 +2,7 @@ defmodule Astrup.Lab.Fimlab do
   @behaviour Astrup.Lab
 
   @impl Astrup.Lab
-  def get_reference_range(parameter, %{age_range: age_range}) do
+  def get_reference_range(parameter, %{age_range: age_range, sex: _sex}) do
     case parameter do
       :ph ->
         {Decimal.new("7.35"), Decimal.new("7.45"), "", :decimal}
