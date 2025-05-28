@@ -91,7 +91,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
           </div>
         </div>
 
-        <article class="relative max-w-2xl flex-1 select-none bg-base-200 py-12 px-12 shadow-xl border border-base-content/10">
+        <article class="relative max-w-2xl flex-1 select-none py-12 px-12 shadow-xl border border-base-content/20">
           <header class="text-center">
             <h1 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h1>
             <div class="space-y-1">
