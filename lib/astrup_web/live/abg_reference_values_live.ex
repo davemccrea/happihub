@@ -14,11 +14,6 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
   defp setup(socket) do
     sample_number = Enum.random(10000..99999)
     random_minutes = Enum.random(-60..-2)
-    printout = Printout.get_random_printout()
-    lab_module = Astrup.Lab.Fimlab
-    analyzer = Astrup.Analyzer.RadiometerAbl90FlexPlus
-    age_range = "31-50"
-    sex = "male"
 
     sample_date =
       "Europe/Helsinki"
@@ -31,19 +26,20 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
       |> DateTime.add(random_minutes, :minute)
       |> DateTime.add(2, :minute)
 
+    analyzer = Astrup.Analyzer.RadiometerAbl90FlexPlus
     selections = analyzer.blank_parameter_quiz_selections()
 
     socket
+    |> assign(:state, :ready)
     |> assign(:selections, selections)
     |> assign(:number_of_parameters, map_size(selections))
-    |> assign(:state, :ready)
-    |> assign(:printout, printout)
     |> assign(:sample_number, sample_number)
     |> assign(:sample_date, sample_date)
     |> assign(:printed_date, printed_date)
-    |> assign(:lab_module, lab_module)
-    |> assign(:age_range, age_range)
-    |> assign(:sex, sex)
+    |> assign(:printout, Printout.get_random_printout())
+    |> assign(:lab_module, Astrup.Lab.Fimlab)
+    |> assign(:age_range, "31-50")
+    |> assign(:sex, "female")
     |> assign(:analyzer, analyzer)
     |> assign(:mode, :quiz)
     |> assign(:hints_enabled, false)
@@ -129,7 +125,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
                 {gettext("Settings")}
               </h2>
 
-              <.form for={%{}} phx-change="update_settings">
+              <.form for={%{}} class="-space-y-1" phx-change="update_settings">
                 <fieldset class="fieldset">
                   <legend class="fieldset-legend">{gettext("Laboratory")}</legend>
                   <select name="lab_module" class="select">
@@ -163,7 +159,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
                     <option value=">80" selected={@age_range == ">80"}>&gt;80</option>
                   </select>
                   <p class="text-sm text-base-content/50">
-                    {gettext("Note: affects pO2")}
+                    {gettext("Note: determines pO2")}
                   </p>
                 </fieldset>
 
@@ -174,7 +170,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
                     <option value="female" selected={@sex == "female"}>{gettext("Female")}</option>
                   </select>
                   <p class="text-sm text-base-content/50">
-                    {gettext("Note: affects Hb")}
+                    {gettext("Note: determines Hb")}
                   </p>
                 </fieldset>
 
@@ -493,19 +489,12 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
 
     lab_module = Module.concat([String.to_atom(lab_module)])
 
-    socket =
-      socket
-      |> assign(:lab_module, lab_module)
-      |> assign(:age_range, age_range)
-      |> assign(:sex, sex)
-      |> assign(:hints_enabled, hints_enabled)
-      |> assign(
-        :selections,
-        Astrup.Analyzer.RadiometerAbl90FlexPlus.blank_parameter_quiz_selections()
-      )
-      |> assign(:state, :ready)
-
-    {:noreply, socket}
+    {:noreply,
+     socket
+     |> assign(:lab_module, lab_module)
+     |> assign(:age_range, age_range)
+     |> assign(:sex, sex)
+     |> assign(:hints_enabled, hints_enabled)}
   end
 
   @impl true
