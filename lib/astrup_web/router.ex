@@ -20,6 +20,7 @@ defmodule AstrupWeb.Router do
 
     live_session :default, on_mount: AstrupWeb.Hooks.LocaleHook do
       live "/", AbgReferenceValuesLive
+      # live "/interpretation", AbgInterpretationLive
       live "/submit", SubmitLive
     end
 

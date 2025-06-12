@@ -36,10 +36,10 @@ defmodule AstrupWeb.Layouts do
     <header>
       <div class="navbar bg-base-200 px-4">
         <div class="navbar-start">
-          <.link class="btn btn-ghost" navigate={~p"/?mode=learn"}>{gettext("ABG Practice")}</.link>
+          <%!-- TODO: link to home? --%>
+          <button class="btn btn-ghost">{gettext("ABG Practice")}</button>
           <ul class="menu menu-horizontal">
-            <li><.link navigate={~p"/?mode=learn"}>{gettext("Learn")}</.link></li>
-            <li><.link navigate={~p"/?mode=quiz"}>{gettext("Quiz")}</.link></li>
+            <%!-- TODO --%>
           </ul>
         </div>
 
@@ -86,7 +86,7 @@ defmodule AstrupWeb.Layouts do
       <.flash kind={:info} flash={@flash} />
       <.flash kind={:error} flash={@flash} />
 
-      <.flash
+      <%!-- <.flash
         id="client-error"
         kind={:error}
         title={gettext("We can't find the internet")}
@@ -108,7 +108,7 @@ defmodule AstrupWeb.Layouts do
       >
         {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
-      </.flash>
+      </.flash> --%>
     </div>
     """
   end

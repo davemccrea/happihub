@@ -55,7 +55,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
     mode =
       params
       |> Map.get("mode", "learn")
-      |> String.to_existing_atom()
+      |> String.to_atom()
 
     {:noreply, assign(socket, :mode, mode)}
   end
@@ -394,7 +394,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
           <div
             class="tooltip tooltip-left"
             data-tip={
-              Astrup.Lab.pretty_print_reference_range(@lab_module, @parameter, %{
+              Astrup.pretty_print_reference_range(@lab_module, @parameter, %{
                 age_range: @age_range,
                 sex: @sex
               })
@@ -421,7 +421,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
             )
           }
           data-tip={
-            Astrup.Lab.pretty_print_reference_range(@lab_module, @parameter, %{
+            Astrup.pretty_print_reference_range(@lab_module, @parameter, %{
               age_range: @age_range,
               sex: @sex
             })
@@ -499,8 +499,8 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
 
   @impl true
   def handle_event("select", params, socket) do
-    parameter = String.to_existing_atom(params["parameter"])
-    choice = String.to_existing_atom(params["choice"])
+    parameter = String.to_atom(params["parameter"])
+    choice = String.to_atom(params["choice"])
     selections = Map.put(socket.assigns.selections, parameter, {choice, nil})
 
     {:noreply,
@@ -548,7 +548,7 @@ defmodule AstrupWeb.AbgReferenceValuesLive do
       context = %{age_range: age_range, sex: sex}
 
       correct_answer =
-        Astrup.Lab.check_value_against_reference_range(
+        Astrup.check_value_against_reference_range(
           lab_module,
           parameter,
           parameter_value,
