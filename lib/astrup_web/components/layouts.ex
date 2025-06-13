@@ -113,6 +113,40 @@ defmodule AstrupWeb.Layouts do
     """
   end
 
+  def admin(assigns) do
+    ~H"""
+    <Backpex.HTML.Layout.app_shell fluid={true}>
+      <:topbar>
+        <Backpex.HTML.Layout.topbar_branding />
+
+        <Backpex.HTML.Layout.topbar_dropdown class="mr-2 md:mr-0">
+          <:label>
+            <label tabindex="0" class="btn btn-square btn-ghost">
+              <.icon name="hero-user" class="size-6" />
+            </label>
+          </:label>
+          <li>
+            <.link navigate={~p"/"} class="text-error flex justify-between hover:bg-base-200">
+              <p>Logout</p>
+              <.icon name="hero-arrow-right-on-rectangle" class="size-5" />
+            </.link>
+          </li>
+        </Backpex.HTML.Layout.topbar_dropdown>
+      </:topbar>
+
+      <:sidebar>
+        <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/posts"}>
+          <.icon name="hero-book-open" class="size-5" /> Posts
+        </Backpex.HTML.Layout.sidebar_item>
+      </:sidebar>
+
+      <Backpex.HTML.Layout.flash_messages flash={@flash} />
+
+      {@inner_content}
+    </Backpex.HTML.Layout.app_shell>
+    """
+  end
+
   @doc """
   Provides dark vs light theme toggle based on themes defined in app.css.
 

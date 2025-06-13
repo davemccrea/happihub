@@ -1,6 +1,8 @@
 defmodule AstrupWeb.Router do
   use AstrupWeb, :router
 
+  import Backpex.Router
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -15,10 +17,22 @@ defmodule AstrupWeb.Router do
     plug :accepts, ["json"]
   end
 
+  scope "/admin", AstrupWeb do
+    pipe_through :browser
+
+    backpex_routes()
+
+    get "/", RedirectController, :redirect_to_printouts
+
+    live_session :admin_session, on_mount: Backpex.InitAssigns do
+      live_resources "/printouts", PrintoutsLive
+    end
+  end
+
   scope "/", AstrupWeb do
     pipe_through :browser
 
-    live_session :default, on_mount: AstrupWeb.Hooks.LocaleHook do
+    live_session :regular_session, on_mount: AstrupWeb.Hooks.LocaleHook do
       live "/", AbgReferenceValuesLive
       # live "/interpretation", AbgInterpretationLive
       live "/submit", SubmitLive

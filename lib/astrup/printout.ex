@@ -58,7 +58,7 @@ defmodule Astrup.Printout do
     :checked_at
   ]
 
-  def changeset(printout, params \\ %{}) do
+  def changeset(printout, params \\ %{}, _metadata \\ []) do
     printout
     |> cast(params, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
