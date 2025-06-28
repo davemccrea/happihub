@@ -19,76 +19,75 @@ defmodule AstrupWeb.PrintoutsLive do
     [
       ph: %{
         module: Backpex.Fields.Number,
-        # TODO: how do I convert {:safe, "..."} to string?
-        label: raw("pH(<i>T</i>)")
+        label: "pH"
       },
       pco2: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>p</i>CO<sub>2</sub>(<i>T</i>)")
+        label: "pCO2"
       },
       po2: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>p</i>O<sub>2</sub>(<i>T</i>)")
+        label: "pO2"
       },
       bicarbonate: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>HCO<sub>3</sub><sup>-</sup>(P)<i><sub>c</sub></i>")
+        label: "Bicarbonate"
       },
       base_excess: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>Base(Ecf)<i><sub>c</sub></i>")
+        label: "Base excess"
       },
       anion_gap: %{
         module: Backpex.Fields.Number,
-        label: raw("Anion Gap<i><sub>c</sub></i>")
+        label: "Anion gap"
       },
       hemoglobin: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>tHb")
+        label: "Hemoglobin"
       },
       oxygen_content: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>tO<sub>2</sub><i>c</i>")
+        label: "Oxygen content"
       },
       oxygen_saturation: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>s</i>O<sub>2</sub>")
+        label: "Oxygen saturation"
       },
       carboxyhemoglobin: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>F</i>COHb")
+        label: "Carboxyhemoglobin"
       },
       methemoglobin: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>F</i>MetHb")
+        label: "Methomoglobin"
       },
       potassium: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>K<sup>+</sup>")
+        label: "Potassium"
       },
       sodium: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>Na<sup>+</sup>")
+        label: "Sodium"
       },
       ionized_calcium: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>Ca<sup>2+</sup>")
+        label: "Ionized calcium"
       },
       ionized_calcium_corrected_to_ph_7_4: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>Ca<sup>2+</sup>(7.4)<i>c</i>")
+        label: "Ionized calcium corrected to pH 7.4"
       },
       chloride: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>Cl<sup>-</sup>")
+        label: "Chloride"
       },
       glucose: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>Glu")
+        label: "Glucose"
       },
       lactate: %{
         module: Backpex.Fields.Number,
-        label: raw("<i>c</i>Lac")
+        label: "Lactate"
       }
     ]
   end

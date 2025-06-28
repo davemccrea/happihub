@@ -25,7 +25,7 @@ defmodule AstrupWeb.Router do
     get "/", RedirectController, :redirect_to_printouts
 
     live_session :admin_session, on_mount: Backpex.InitAssigns do
-      live_resources "/printouts", PrintoutsLive
+      # live_resources "/printouts", PrintoutsLive
     end
   end
 
@@ -33,7 +33,8 @@ defmodule AstrupWeb.Router do
     pipe_through :browser
 
     live_session :regular_session, on_mount: AstrupWeb.Hooks.LocaleHook do
-      live "/", AbgReferenceValuesLive
+      live "/quiz", ReferenceValuesQuizLive
+      live "/learn", ReferenceValuesLearnLive
       # live "/interpretation", AbgInterpretationLive
       live "/submit", SubmitLive
     end
