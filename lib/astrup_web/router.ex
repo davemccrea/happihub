@@ -33,8 +33,8 @@ defmodule AstrupWeb.Router do
     pipe_through :browser
 
     live_session :regular_session, on_mount: AstrupWeb.Hooks.LocaleHook do
-      live "/quiz", ReferenceValuesQuizLive
-      live "/learn", ReferenceValuesLearnLive
+      live "/quiz", BloodGasQuizLive
+      live "/guide", ParameterGuideLive
       # live "/interpretation", AbgInterpretationLive
       live "/submit", SubmitLive
     end

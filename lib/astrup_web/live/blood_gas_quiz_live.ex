@@ -1,5 +1,7 @@
-defmodule AstrupWeb.ReferenceValuesQuizLive do
+defmodule AstrupWeb.BloodGasQuizLive do
   @moduledoc """
+  Blood gas quiz for testing knowledge of reference values.
+  
   The application can be in one of the following states:
   - `:ready`: Initial state when the page loads.
   - `:answering`: When the user is making selections.
@@ -53,13 +55,24 @@ defmodule AstrupWeb.ReferenceValuesQuizLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
-      <div class="container mx-auto px-4 py-8 flex flex-col gap-8">
-        <h1 class="text-2xl font-semibold mb-3 text-center">
-          {gettext("Reference Values — Quiz")}
-        </h1>
+      <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8 flex flex-col gap-4 sm:gap-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+          <h1 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-0">
+            {gettext("Blood Gas Quiz")}
+          </h1>
+          
+          <div class="flex gap-2">
+            <span class="btn btn-primary btn-sm">
+              {gettext("Quiz Mode")}
+            </span>
+            <a href="/guide" class="btn btn-outline btn-sm">
+              {gettext("Learning Mode")}
+            </a>
+          </div>
+        </div>
 
-        <div class="flex flex-row gap-8 justify-center">
-          <div class="sticky top-4 self-start space-y-4 w-64">
+        <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 lg:justify-center max-w-7xl mx-auto">
+          <div class="lg:sticky lg:top-4 lg:self-start space-y-4 w-full lg:w-72 order-1 lg:order-1">
             <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
               <h1 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h1>
               <p class="mb-4">
@@ -104,7 +117,30 @@ defmodule AstrupWeb.ReferenceValuesQuizLive do
                 <% end %>
               </ul>
             </section>
+          </div>
 
+          <div class="w-full lg:flex-1 order-2 lg:order-2">
+            <AstrupWeb.Components.RadiometerABL90FlexPlus.render
+            printout={@printout}
+            selections={@selections}
+            state={@state}
+            hints_enabled={@hints_enabled}
+            get_reference_range={
+              fn parameter ->
+                Astrup.pretty_print_reference_range(@lab_module, parameter, %{
+                  age_range: @age_range,
+                  sex: @sex
+                })
+              end
+            }
+            get_unit={fn parameter -> @analyzer.get_unit_by_parameter(parameter) end}
+            sample_date={@sample_date}
+            printed_date={@printed_date}
+            quiz?={true}
+          />
+          </div>
+
+          <div class="w-full lg:w-72 order-3 lg:order-3">
             <section class="border rounded-none border-base-content/20 shadow-lg p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">
                 {gettext("Settings")}
@@ -179,25 +215,6 @@ defmodule AstrupWeb.ReferenceValuesQuizLive do
               </.form>
             </section>
           </div>
-
-          <AstrupWeb.Components.RadiometerABL90FlexPlus.render
-            printout={@printout}
-            selections={@selections}
-            state={@state}
-            hints_enabled={@hints_enabled}
-            get_reference_range={
-              fn parameter ->
-                Astrup.pretty_print_reference_range(@lab_module, parameter, %{
-                  age_range: @age_range,
-                  sex: @sex
-                })
-              end
-            }
-            get_unit={fn parameter -> @analyzer.get_unit_by_parameter(parameter) end}
-            sample_date={@sample_date}
-            printed_date={@printed_date}
-            quiz?={true}
-          />
         </div>
       </div>
     </Layouts.app>

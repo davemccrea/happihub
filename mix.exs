@@ -60,7 +60,8 @@ defmodule Astrup.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:tzdata, "~> 1.1"},
-      {:backpex, "~> 0.13.0"}
+      {:backpex, "~> 0.13.0"},
+      {:earmark, "~> 1.4"}
     ]
   end
 

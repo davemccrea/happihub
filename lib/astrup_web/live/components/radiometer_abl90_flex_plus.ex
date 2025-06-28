@@ -5,7 +5,7 @@ defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
   alias Astrup.Parameter
 
   attr :printout, :map, required: true
-  attr :selections, :list, required: true
+  attr :selections, :map, required: true
   attr :state, :atom, values: [:ready, :answering, :review], required: true
   attr :hints_enabled, :boolean, required: true
   attr :get_reference_range, :fun, required: true
@@ -13,10 +13,11 @@ defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
   attr :sample_date, :any, required: true
   attr :printed_date, :any, required: true
   attr :quiz?, :boolean, required: true
+  attr :explorer?, :boolean, default: false
 
   def render(assigns) do
     ~H"""
-    <article class="relative max-w-2xl flex-1 select-none py-12 px-12 shadow-lg border border-base-content/20">
+    <article class="relative max-w-4xl flex-1 select-none py-12 px-12 shadow-lg border border-base-content/20">
       <header class="text-center">
         <h2 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h2>
         <div class="space-y-1">
@@ -194,35 +195,47 @@ defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
 
   defp parameter(assigns) do
     ~H"""
-    <% {selection, correct_answer?} = @selections[@parameter] %>
+    <% {selection, correct_answer?} = Map.get(@selections, @parameter, {nil, nil}) %>
 
-    <div id={"param-#{@parameter}"} class="grid grid-cols-[1fr_1fr_1fr_1fr] gap-4">
-      <%= if @hints_enabled do %>
-        <dt class="cursor-pointer">
-          <div class="tooltip tooltip-right" data-tip={Parameter.get_label(@parameter)}>
-            {render_slot(@label)}
-          </div>
+    <div id={"param-#{@parameter}"} class={if @explorer?, do: "grid grid-cols-[1fr_1fr_1fr] gap-4", else: "grid grid-cols-[1fr_1fr_1fr_1fr] gap-4"}>
+      <%= if @explorer? do %>
+        <dt class="cursor-pointer text-primary hover:text-primary-focus transition-colors" phx-click="select_parameter" phx-value-parameter={@parameter}>
+          {render_slot(@label)}
         </dt>
       <% else %>
-        <dt>{render_slot(@label)}</dt>
+        <%= if @hints_enabled do %>
+          <dt class="cursor-pointer">
+            <div class="tooltip tooltip-right" data-tip={Parameter.get_label(@parameter)}>
+              {render_slot(@label)}
+            </div>
+          </dt>
+        <% else %>
+          <dt>{render_slot(@label)}</dt>
+        <% end %>
       <% end %>
 
-      <%= if @hints_enabled do %>
-        <dd class="cursor-pointer font-bold text-right">
-          <div class="tooltip tooltip-left" data-tip={@get_reference_range.(@parameter)}>
-            {Map.get(@printout, @parameter)}
-          </div>
-        </dd>
-      <% else %>
+      <%= if @explorer? do %>
         <dd class="font-bold text-right">
           {Map.get(@printout, @parameter)}
         </dd>
-      <% end %>
+        <dd>{@get_unit.(@parameter)}</dd>
+      <% else %>
+        <%= if @hints_enabled do %>
+          <dd class="cursor-pointer font-bold text-right">
+            <div class="tooltip tooltip-left" data-tip={@get_reference_range.(@parameter)}>
+              {Map.get(@printout, @parameter)}
+            </div>
+          </dd>
+        <% else %>
+          <dd class="font-bold text-right">
+            {Map.get(@printout, @parameter)}
+          </dd>
+        <% end %>
 
-      <dd>{@get_unit.(@parameter)}</dd>
+        <dd>{@get_unit.(@parameter)}</dd>
 
-      <%= if @quiz? do %>
-        <dd class="flex flex-row gap-1 items-center">
+        <%= if @quiz? do %>
+        <dd class="flex flex-row flex-nowrap gap-1 items-center">
           <div
             id={"tooltip-param-#{@parameter}"}
             class={
@@ -273,6 +286,7 @@ defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
             </button>
           </div>
         </dd>
+        <% end %>
       <% end %>
     </div>
     """
