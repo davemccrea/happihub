@@ -471,40 +471,4 @@ defmodule AstrupWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
-
-  @doc """
-  Renders a toggle button group for Quiz, Learning, and Case Interpretation modes.
-
-  ## Examples
-
-      <.mode_toggle active_mode={:quiz} />
-      <.mode_toggle active_mode={:learn} />
-      <.mode_toggle active_mode={:case_interpretation} />
-  """
-  attr :active_mode, :atom, required: true, values: [:quiz, :learn, :case_interpretation], doc: "which mode is currently active"
-
-  def mode_toggle(assigns) do
-    ~H"""
-    <div class="join">
-      <.link
-        navigate={~p"/learn"}
-        class={["btn btn-sm join-item", if(@active_mode == :learn, do: "btn-primary btn-active", else: "btn-outline")]}
-      >
-        {gettext("Learn")}
-      </.link>
-      <.link
-        navigate={~p"/quiz"}
-        class={["btn btn-sm join-item", if(@active_mode == :quiz, do: "btn-primary btn-active", else: "btn-outline")]}
-      >
-        {gettext("Quiz")}
-      </.link>
-      <.link
-        navigate={~p"/case-interpretation"}
-        class={["btn btn-sm join-item", if(@active_mode == :case_interpretation, do: "btn-primary btn-active", else: "btn-outline")]}
-      >
-        {gettext("Case Interpretation")}
-      </.link>
-    </div>
-    """
-  end
 end
