@@ -42,19 +42,10 @@ defmodule AstrupWeb.ParameterGuideLive do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h1 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-0">
-            {gettext("Parameter Guide")}
+        <div class="mb-6">
+          <h1 class="text-2xl sm:text-3xl font-bold text-center">
+            {gettext("Learn")}
           </h1>
-
-          <div class="flex gap-2">
-            <.link navigate={~p"/quiz"} class="btn btn-outline btn-sm">
-              {gettext("Quiz Mode")}
-            </.link>
-            <.link navigate={~p"/guide"} class="btn btn-primary btn-sm">
-              {gettext("Learning Mode")}
-            </.link>
-          </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
@@ -171,212 +162,164 @@ defmodule AstrupWeb.ParameterGuideLive do
     case parameter do
       :ph ->
         """
-        #### Summary
+        **Summary:** The pH value represents the acidity or alkalinity of the blood, which is a function of its hydrogen ion (H+) concentration. Maintaining a stable pH is crucial for normal bodily function as even minor deviations can negatively impact cellular metabolism and organ function. The body's acid-base homeostasis, a complex process involving the lungs, kidneys, and blood buffers, keeps the pH within a very narrow range (typically 7.35-7.45 for arterial blood).
 
-        The pH value represents the acidity or alkalinity of the blood, which is a function of its hydrogen ion (H+) concentration . Maintaining a stable pH is crucial for normal bodily function as even minor deviations can negatively impact cellular metabolism and organ function. The body's acid-base homeostasis, a complex process involving the lungs, kidneys, and blood buffers, keeps the pH within a very narrow range (typically 7.35-7.45 for arterial blood).
+        **Clinical Significance:** Measuring pH, along with pCO₂ and bicarbonate (HCO₃⁻), is essential for diagnosing and monitoring acid-base disturbances. Abnormal pH levels can indicate serious conditions like respiratory or kidney failure, diabetic ketoacidosis, or circulatory shock. It is a critical parameter in emergency and intensive care settings to guide medical interventions.
 
-        #### Clinical Significance
-
-        Measuring pH, along with pCO₂ and bicarbonate (HCO₃⁻), is essential for diagnosing and monitoring acid-base disturbances . Abnormal pH levels can indicate serious conditions like respiratory or kidney failure, diabetic ketoacidosis, or circulatory shock . It is a critical parameter in emergency and intensive care settings to guide medical interventions.
-
-        #### Interesting Fact
-
-        In high-risk pregnancies, fetal scalp pH can be monitored during labor to detect fetal hypoxia . A low fetal pH may indicate fetal distress and the need for an urgent delivery.
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :pco2 ->
         """
-        Partial pressure of CO2 reflects respiratory function and ventilation adequacy (normal: 35-45 mmHg). It's the respiratory component of acid-base balance. Increased pCO2 (>45 mmHg) indicates hypoventilation and respiratory acidosis, while decreased pCO2 (<35 mmHg) suggests hyperventilation and respiratory alkalosis. Essential for distinguishing Type I and Type II respiratory failure and monitoring mechanical ventilation effectiveness.
+        **Summary:** pCO₂ is the partial pressure of carbon dioxide (CO₂) dissolved in the blood, representing about 5% of the total CO₂. As CO₂ is an acidic gas, pCO₂ is the respiratory component of the acid-base balance and reflects the effectiveness of pulmonary ventilation. The body regulates ventilation to match CO₂ production and maintain a stable pH.
+
+        **Clinical Significance:** pCO₂ measurement is crucial for diagnosing and monitoring acid-base disturbances, providing insight into the respiratory contribution to the patient's condition. It helps differentiate between type I and type II respiratory failure and is vital for monitoring patients on mechanical ventilation. Abnormal pCO₂ can affect the cardiovascular and central nervous systems, causing symptoms like confusion, headaches, or muscle cramps.
+
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :po2 ->
         """
-        Oxygen partial pressure reflects oxygen uptake in lungs (normal: 80-100 mmHg). Though it represents only 1-2% of total blood oxygen, it determines hemoglobin oxygen saturation. pO2 <60 mmHg defines respiratory failure. Critical for assessing oxygenation, guiding oxygen therapy, and calculating the A-a gradient. Decreases with age (~2.2 mmHg per decade after 40).
+        **Summary:** pO₂ is the partial pressure of oxygen dissolved in blood plasma. Although this represents only a small fraction (1-2%) of the total oxygen in the blood, it is a key determinant of how much oxygen binds to hemoglobin. Thus, pO₂ primarily reflects the efficiency of oxygen uptake in the lungs.
+
+        **Clinical Significance:** pO₂ is a critical parameter for assessing the adequacy of blood oxygenation and diagnosing respiratory failure. It is used to monitor the effectiveness of supplemental oxygen therapy. A pO₂(a) below 8 kPa (60 mmHg) defines respiratory failure and indicates an increased risk of tissue hypoxia.
+
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :bicarbonate ->
         """
-        Bicarbonate is the major buffer in blood and represents the metabolic component of acid-base balance. Normal range is 22-26 mmol/L.
+        **Summary:** Bicarbonate (HCO₃⁻) is the second most abundant anion in plasma and a key component of the blood's buffering system. It plays a crucial role in maintaining the body's acid-base balance by neutralizing excess acid or base. About 70-80% of the carbon dioxide produced by the body is transported in the blood as bicarbonate.
 
+        **Clinical Significance:** Along with pH and pCO₂, bicarbonate measurement is essential for diagnosing and monitoring metabolic acid-base disturbances. Decreased bicarbonate levels can be seen in conditions like diabetic ketoacidosis or kidney failure, while increased levels can be due to prolonged vomiting or diuretic use. It is also a necessary component for calculating the anion gap.
 
-        #### Clinical Interpretation
-
-        - Metabolic acidosis: HCO₃⁻ < 22 mmol/L
-        - Metabolic alkalosis: HCO₃⁻ > 26 mmol/L
-
-
-        #### Buffer System
-
-        The bicarbonate buffer system is the most important extracellular buffer:
-
-        - CO₂ + H₂O ⇌ H₂CO₃ ⇌ H⁺ + HCO₃⁻
-        - Regulated by the kidneys (slow, 24-48 hours)
-        - Accounts for ~75% of blood buffering capacity
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :base_excess ->
         """
-        Base excess represents the amount of acid or base needed to normalize blood pH to 7.40 at standard conditions. Normal range is -2 to +2 mEq/L.
+        **Summary:** Base excess (BE) is a calculated parameter that quantifies the metabolic (non-respiratory) component of an acid-base disturbance. It represents the theoretical amount of acid or base that would need to be added to a blood sample to return its pH to 7.4 at a normal pCO₂. A value of zero indicates a normal metabolic balance.
 
-        - **Negative base excess**: Metabolic acidosis
-        - **Positive base excess**: Metabolic alkalosis
+        **Clinical Significance:** Base excess is used to assess the severity of metabolic acidosis and alkalosis. A negative BE (base deficit) indicates metabolic acidosis, while a positive BE indicates metabolic alkalosis. It is also helpful in identifying metabolic compensation in patients with primary respiratory acid-base disorders.
 
-        Base excess is independent of respiratory compensation and reflects pure metabolic disturbances.
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :anion_gap ->
         """
-        Anion gap represents unmeasured anions in blood and helps classify metabolic acidosis. Normal range is 8-12 mEq/L.
+        **Summary:** The anion gap (AG) is a calculated value representing the difference between the measured major plasma cation (sodium) and the measured major plasma anions (chloride and bicarbonate). It essentially reflects the concentration of "unmeasured" anions, such as proteins and organic acids, in the plasma.
 
-        - **High anion gap**: Suggests organic acid accumulation
-        - **Normal anion gap**: Suggests bicarbonate loss or chloride retention
+        **Clinical Significance:** The primary use of the anion gap is in the differential diagnosis of metabolic acidosis. A "high-AG" metabolic acidosis is typically caused by the accumulation of acids like lactate or ketones, while a "normal-AG" metabolic acidosis is usually due to a loss of bicarbonate, often with a corresponding increase in chloride.
 
-        Calculated as: (Na⁺ + K⁺) - (Cl⁻ + HCO₃⁻)
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :hemoglobin ->
         """
-        Hemoglobin is the oxygen-carrying protein in red blood cells. Normal ranges vary by sex and age.
+        **Summary:** Hemoglobin (Hb) is a protein within red blood cells that is responsible for transporting the vast majority (>98%) of oxygen from the lungs to the body's tissues. Each hemoglobin molecule can bind up to four oxygen molecules. Total hemoglobin (ctHb) includes all forms of hemoglobin in the blood, including functional and dysfunctional types.
 
-        - **Men**: 13.8-17.2 g/dL
-        - **Women**: 12.1-15.1 g/dL
+        **Clinical Significance:** Measuring hemoglobin concentration is essential for diagnosing and assessing the severity of anemia (low hemoglobin). It is also a critical parameter for calculating the total oxygen content of the blood and determining the need for red blood cell transfusions. Abnormally low hemoglobin can lead to anemic hypoxia.
 
-        Hemoglobin levels affect oxygen delivery capacity and are crucial for tissue oxygenation.
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
+        """
+
+      :oxygen_content ->
+        """
+        **Summary:** Oxygen content (ctO₂) is the total amount of oxygen present in the blood. It is the sum of the oxygen dissolved in the plasma and the oxygen bound to hemoglobin. It is a calculated parameter derived from the measured values of pO₂, oxygen saturation (sO₂), and hemoglobin concentration (ctHb).
+
+        **Clinical Significance:** Oxygen content is a key parameter for evaluating the oxygen transport capacity of the blood and assessing the risk of tissue hypoxia. A low oxygen content can be caused by a reduction in pO₂, hemoglobin, or oxygen saturation, and may necessitate supplemental oxygen therapy or blood transfusion.
+
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :oxygen_saturation ->
         """
-        Oxygen saturation represents the percentage of hemoglobin bound to oxygen. Normal arterial saturation is 95-100%.
+        **Summary:** Oxygen saturation (sO₂) is the ratio of oxyhemoglobin (hemoglobin bound to oxygen) to the total amount of functional hemoglobin (hemoglobin capable of binding oxygen). It reflects the percentage of available hemoglobin that is carrying oxygen. The relationship between sO₂ and pO₂ is described by the sigmoidal oxyhemoglobin dissociation curve.
 
-        - **Hypoxemia**: sO₂ < 95%
-        - **Severe hypoxemia**: sO₂ < 90%
+        **Clinical Significance:** Oxygen saturation, along with pO₂, is used to assess blood oxygenation. It is particularly useful for monitoring the effectiveness of supplemental oxygen therapy. A low sO₂ indicates impaired oxygen uptake in the lungs, which can be caused by various respiratory or cardiac conditions.
 
-        Oxygen saturation follows the oxygen-hemoglobin dissociation curve and is affected by pH, temperature, and 2,3-DPG.
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
+        """
+
+      :carboxyhemoglobin ->
+        """
+        **Summary:** Carboxyhemoglobin (COHb) is a dysfunctional form of hemoglobin that is formed when carbon monoxide (CO) binds to it. CO has an affinity for hemoglobin that is about 250 times higher than that of oxygen, and once bound, the hemoglobin can no longer carry oxygen.
+
+        **Clinical Significance:** Measurement of COHb is the primary method for diagnosing and monitoring carbon monoxide poisoning. Increased levels of COHb reduce the oxygen-carrying capacity of the blood, leading to tissue hypoxia. Symptoms of CO poisoning range from headache and dizziness at lower levels to convulsions, coma, and death at higher concentrations.
+
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
+        """
+
+      :methemoglobin ->
+        """
+        **Summary:** Methemoglobin (MetHb) is a dysfunctional form of hemoglobin in which the iron ion is in the ferric (Fe³⁺) state instead of the normal ferrous (Fe²⁺) state. This change prevents the hemoglobin from binding to and transporting oxygen.
+
+        **Clinical Significance:** Increased levels of MetHb, a condition known as methemoglobinemia, can be either inherited or acquired, with the acquired form being much more common. It is often caused by exposure to certain drugs or chemicals. The primary clinical sign is cyanosis (a bluish discoloration of the skin) that does not improve with oxygen therapy.
+
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :potassium ->
         """
-        Potassium is the major intracellular cation that regulates neuromuscular excitability.
+        **Summary:** Potassium (K⁺) is the major intracellular cation, with a concentration inside cells that is about 25-37 times higher than in the extracellular fluid. This concentration gradient, maintained by the Na⁺/K⁺-ATPase pump, is vital for neuromuscular excitability, heart rhythm, and maintaining cell volume.
 
-        #### Clinical Significance
+        **Clinical Significance:** Both high (hyperkalemia) and low (hypokalemia) potassium levels can have serious consequences, particularly on the heart. Abnormal potassium levels are common in hospitalized patients and can be caused by various diseases (especially kidney disease) and medications (like diuretics).
 
-        - Normal range: 3.5-5.0 mmol/L
-        - Hypokalemia: K⁺ < 3.5 mmol/L (cardiac arrhythmias, muscle weakness)
-        - Hyperkalemia: K⁺ > 5.0 mmol/L (cardiac arrest risk)
-
-        #### Physiology
-
-        - Major intracellular cation
-        - Crucial for cardiac rhythm and muscle function
-        - Regulates neuromuscular excitability
-        - Levels affected by pH, insulin, and kidney function
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :sodium ->
         """
-        Sodium is the dominant extracellular cation that controls water balance and blood pressure.
+        **Summary:** Sodium (Na⁺) is the most abundant cation in the extracellular fluid and a major determinant of its osmolality. Its primary functions include regulating water balance, maintaining blood pressure, and transmitting nerve impulses.
 
-        #### Clinical Significance
+        **Clinical Significance:** Abnormal sodium levels (dysnatremia) are common in hospitalized patients and are often a result of disturbances in water balance rather than sodium balance. Hyponatremia (low sodium) can cause cells to swell, which is particularly dangerous in the brain, while hypernatremia (high sodium) can cause cells to shrink. Both conditions can lead to significant neurological symptoms if severe.
 
-        - **Normal range**: 136-145 mmol/L
-        - **Hyponatremia**: Na⁺ < 136 mmol/L (confusion, seizures)
-        - **Hypernatremia**: Na⁺ > 145 mmol/L (dehydration, altered mental status)
-
-        #### Physiology
-
-        - Dominant extracellular cation
-        - Controls water balance and blood pressure
-        - Regulated by the kidneys
-        - Affects water distribution between compartments
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :ionized_calcium ->
         """
-        Ionized calcium is vital for bone mineralization and crucial for cellular processes.
+        **Summary:** Ionized calcium (Ca²⁺) is the physiologically active form of calcium in the body, making up about 50% of the total calcium in the blood. It plays a vital role in numerous cellular processes, including muscle contraction, nerve signal transmission, and blood coagulation. The body tightly regulates ionized calcium levels through the actions of parathyroid hormone (PTH) and vitamin D.
 
-        #### Clinical Significance
+        **Clinical Significance:** Both hypocalcemia (low ionized calcium) and hypercalcemia (high ionized calcium) are common in hospitalized patients, especially the critically ill, and can be life-threatening if severe. Symptoms of hypocalcemia include muscle twitching and spasms, while hypercalcemia can cause muscle weakness, constipation, and kidney stones.
 
-        - **Normal range**: 1.15-1.35 mmol/L
-        - **Hypocalcemia**: Ca²⁺ < 1.15 mmol/L (tetany, seizures)
-        - **Hypercalcemia**: Ca²⁺ > 1.35 mmol/L (kidney stones, confusion)
-
-        #### Physiology
-
-        - Physiologically active form of calcium
-        - Vital for bone mineralization
-        - Crucial for cellular processes and muscle contraction
-        - Regulated by parathyroid hormone and vitamin D
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :ionized_calcium_corrected_to_ph_7_4 ->
         """
-        Ionized calcium corrected to pH 7.4 provides a standardized measurement independent of patient's actual pH.
+        **Summary:** Ionized calcium corrected to pH 7.4 provides a standardized measurement independent of patient's actual pH. The clinical significance of correcting ionized calcium for pH is to account for the fact that changes in blood pH alter the binding of calcium to albumin.
 
-        #### Clinical Significance
+        **Clinical Significance:** Acidosis decreases binding, increasing ionized calcium, while alkalosis increases binding, decreasing ionized calcium. Correcting to a standard pH of 7.4 allows for a more accurate assessment of the true calcium status, independent of acute pH changes.
 
-        - **Normal range**: 1.15-1.35 mmol/L (corrected to pH 7.4)
-        - Eliminates pH effect on calcium binding
-        - More accurate assessment of calcium status
-
-        #### Technical Notes
-
-        - Corrects for pH-dependent protein binding
-        - Standard reference for calcium interpretation
-        - Used when patient pH differs significantly from 7.4
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :chloride ->
         """
-        Chloride is the major extracellular fluid anion that maintains osmotic pressure and fluid balance.
+        **Summary:** Chloride (Cl⁻) is the most abundant anion in the extracellular fluid. It is essential for maintaining osmotic pressure, fluid balance, and electrochemical neutrality in the plasma. It is also a key component of gastric acid and is involved in the "chloride shift," a process important for carbon dioxide transport and acid-base balance.
 
-        #### Clinical Significance
+        **Clinical Significance:** Chloride levels often parallel sodium levels, so its measurement is most valuable in the context of acid-base disturbances, where it can deviate from sodium. It is particularly useful for differentiating between "high-AG" and "normal-AG" (hyperchloremic) metabolic acidosis.
 
-        - **Normal range**: 98-107 mmol/L
-        - **Hypochloremia**: Cl⁻ < 98 mmol/L
-        - **Hyperchloremia**: Cl⁻ > 107 mmol/L
-
-        #### Physiology
-
-        - Major extracellular fluid anion
-        - Maintains osmotic pressure and fluid balance
-        - Works with sodium to regulate fluid distribution
-        - Important component of anion gap calculation
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :glucose ->
         """
-        Glucose is the major intracellular energy source, produced via gluconeogenesis and glycogen breakdown.
+        **Summary:** Glucose is the body's primary source of energy for cellular function. It is derived from dietary carbohydrates and is also produced by the body through gluconeogenesis and glycogenolysis, mainly in the liver. Blood glucose levels are tightly regulated by the pancreatic hormones insulin and glucagon.
 
-        #### Clinical Significance
+        **Clinical Significance:** Measuring blood glucose is primarily for the diagnosis and monitoring of diabetes mellitus, a condition of chronic hyperglycemia. However, abnormal glucose levels are also common in other settings. Stress-related hyperglycemia is frequent in critically ill patients, while hypoglycemia is a significant risk for neonates and a common complication of diabetes treatment.
 
-        - **Normal fasting range**: 3.9-5.6 mmol/L (70-100 mg/dL)
-        - **Hypoglycemia**: < 3.9 mmol/L (< 70 mg/dL)
-        - **Hyperglycemia**: > 7.8 mmol/L (> 140 mg/dL)
-
-        #### Physiology
-
-        - Primary cellular fuel source
-        - Regulated by insulin, glucagon, and other hormones
-        - Critical for brain and red blood cell metabolism
-        - Produced through gluconeogenesis and glycogen breakdown
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       :lactate ->
         """
-        Lactate is produced during anaerobic energy production and formed from pyruvate in intracellular fluid.
+        **Summary:** Lactate is an intracellular metabolite of glucose produced during anaerobic energy production (glycolysis). It is continuously produced by tissues like skeletal muscle and red blood cells and is cleared from the blood primarily by the liver and kidneys.
 
-        #### Clinical Significance
+        **Clinical Significance:** Elevated blood lactate levels (hyperlactatemia) are an early and sensitive indicator of tissue hypoperfusion and an imbalance between oxygen supply and demand. It is a valuable prognostic marker in critically ill patients, particularly those with sepsis or shock, and is used to monitor the adequacy of resuscitation efforts.
 
-        - **Normal range**: 0.5-2.2 mmol/L
-        - **Hyperlactatemia**: > 2.2 mmol/L
-        - **Lactic acidosis**: > 4.0 mmol/L with acidosis
-
-        #### Physiology
-
-        - Produced during anaerobic metabolism
-        - Formed from pyruvate in intracellular fluid
-        - Indicates tissue hypoxia or metabolic stress
-        - Elevated levels suggest inadequate oxygen delivery or utilization
+        **Source:** Seeger C, Higgins C. Acute Care Testing Handbook. Brønshøj, Denmark: Radiometer Medical ApS; 2014.
         """
 
       _ ->

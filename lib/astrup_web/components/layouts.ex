@@ -36,10 +36,22 @@ defmodule AstrupWeb.Layouts do
     <header>
       <div class="navbar bg-base-200 px-4">
         <div class="navbar-start">
-          <%!-- TODO: link to home? --%>
-          <button class="btn btn-ghost">{gettext("ABG Practice")}</button>
           <ul class="menu menu-horizontal">
-            <%!-- TODO --%>
+            <li>
+              <.link navigate={~p"/guide"} class="btn btn-ghost">
+                {gettext("Learn")}
+              </.link>
+            </li>
+            <li>
+              <.link navigate={~p"/quiz"} class="btn btn-ghost">
+                {gettext("Quiz")}
+              </.link>
+            </li>
+            <li>
+              <.link navigate={~p"/case-interpretation"} class="btn btn-ghost">
+                {gettext("Interpret")}
+              </.link>
+            </li>
           </ul>
         </div>
 
@@ -136,7 +148,7 @@ defmodule AstrupWeb.Layouts do
 
       <:sidebar>
         <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/printouts"}>
-        <%!-- TODO: choose appropriate icon --%>
+          <%!-- TODO: choose appropriate icon --%>
           <.icon name="hero-book-open" class="size-5" /> Printouts
         </Backpex.HTML.Layout.sidebar_item>
       </:sidebar>

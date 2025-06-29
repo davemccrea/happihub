@@ -55,23 +55,14 @@ defmodule AstrupWeb.BloodGasQuizLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
-      <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8 flex flex-col gap-4 sm:gap-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
-          <h1 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-0">
-            {gettext("Blood Gas Quiz")}
+      <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div class="mb-6">
+          <h1 class="text-2xl sm:text-3xl font-bold text-center">
+            {gettext("Quiz")}
           </h1>
-
-          <div class="flex gap-2">
-            <.link navigate={~p"/quiz"} class="btn btn-outline btn-sm">
-              {gettext("Quiz Mode")}
-            </.link>
-            <.link navigate={~p"/guide"} class="btn btn-primary btn-sm">
-              {gettext("Learning Mode")}
-            </.link>
-          </div>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 lg:justify-center max-w-7xl mx-auto">
+        <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
           <div class="lg:sticky lg:top-4 lg:self-start space-y-4 w-full lg:w-72 order-1 lg:order-1">
             <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
               <h1 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h1>
