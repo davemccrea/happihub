@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme={assigns[:theme] || "light"}>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -28,15 +28,25 @@
         const setTheme = (theme) => {
           if (theme === "system") {
             localStorage.removeItem("phx:theme");
-            document.documentElement.removeAttribute("data-theme");
+            if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+              document.documentElement.setAttribute("data-theme", "dark");
+            } else {
+              document.documentElement.setAttribute("data-theme", "light");
+            }
           } else {
             localStorage.setItem("phx:theme", theme);
             document.documentElement.setAttribute("data-theme", theme);
           }
         };
-        if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
+        
+        // Apply theme on initial load
+        const storedTheme = localStorage.getItem("phx:theme");
+        if (storedTheme) {
+          setTheme(storedTheme);
+        } else {
+          setTheme("system");
         }
+        
         window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
         window.addEventListener("phx:set-theme", ({ detail: { theme } }) => setTheme(theme));
       })();

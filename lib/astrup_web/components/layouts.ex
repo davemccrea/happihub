@@ -161,6 +161,7 @@ defmodule AstrupWeb.Layouts do
       <button
         phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "light"})}
         class="flex p-2 cursor-pointer w-1/2"
+        aria-label="Light theme"
       >
         <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
@@ -168,6 +169,7 @@ defmodule AstrupWeb.Layouts do
       <button
         phx-click={JS.dispatch("phx:set-theme", detail: %{theme: "dark"})}
         class="flex p-2 cursor-pointer w-1/2"
+        aria-label="Dark theme"
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
