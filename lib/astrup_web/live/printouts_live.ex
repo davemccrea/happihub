@@ -59,7 +59,7 @@ defmodule AstrupWeb.PrintoutsLive do
       },
       methemoglobin: %{
         module: Backpex.Fields.Number,
-        label: "Methomoglobin"
+        label: "Methemoglobin"
       },
       potassium: %{
         module: Backpex.Fields.Number,
