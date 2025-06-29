@@ -46,7 +46,7 @@ defmodule AstrupWeb.ParameterGuideLive do
           <h1 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-0">
             {gettext("Parameter Guide")}
           </h1>
-          
+
           <div class="flex gap-2">
             <a href="/quiz" class="btn btn-outline btn-sm">
               {gettext("Quiz Mode")}
@@ -93,10 +93,7 @@ defmodule AstrupWeb.ParameterGuideLive do
                 </div>
               <% else %>
                 <div class="text-center text-base-content/60 mt-12">
-                  <div class="text-6xl mb-4">📋</div>
-                  <h2 class="text-lg font-semibold mb-2">
-                    {gettext("Click on a parameter")}
-                  </h2>
+                  <div class="text-4xl mb-4">📋</div>
                   <p>
                     {gettext("Click on any parameter in the printout to learn more about it.")}
                   </p>
