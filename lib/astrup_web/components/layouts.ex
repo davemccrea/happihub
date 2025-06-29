@@ -48,7 +48,7 @@ defmodule AstrupWeb.Layouts do
               </.link>
             </li>
             <li>
-              <.link navigate={~p"/case-interpretation"} class="btn btn-ghost">
+              <.link navigate={~p"/interpret"} class="btn btn-ghost">
                 {gettext("Interpret")}
               </.link>
             </li>
