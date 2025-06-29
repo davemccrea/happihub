@@ -21,12 +21,6 @@ msgstr ""
 msgid "Anion gap"
 msgstr ""
 
-#: lib/astrup_web/components/layouts.ex:94
-#: lib/astrup_web/components/layouts.ex:106
-#, elixir-autogen, elixir-format
-msgid "Attempting to reconnect"
-msgstr ""
-
 #: lib/astrup/parameter.ex:11
 #, elixir-autogen, elixir-format
 msgid "Base excess"
@@ -47,6 +41,7 @@ msgstr ""
 msgid "Chloride"
 msgstr ""
 
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:191
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Female"
@@ -57,7 +52,7 @@ msgstr ""
 msgid "Glucose"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:356
+#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:285
 #, elixir-autogen, elixir-format
 msgid "H"
 msgstr ""
@@ -77,7 +72,7 @@ msgstr ""
 msgid "Ionized calcium corrected to pH 7.4"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:330
+#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:259
 #, elixir-autogen, elixir-format
 msgid "L"
 msgstr ""
@@ -87,6 +82,7 @@ msgstr ""
 msgid "Lactate"
 msgstr ""
 
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:190
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Male"
@@ -97,12 +93,12 @@ msgstr ""
 msgid "Methemoglobin"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:343
+#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:272
 #, elixir-autogen, elixir-format
 msgid "N"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:108
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:115
 #, elixir-autogen, elixir-format
 msgid "Nice one!"
 msgstr ""
@@ -137,16 +133,6 @@ msgstr ""
 msgid "Sodium"
 msgstr ""
 
-#: lib/astrup_web/components/layouts.ex:101
-#, elixir-autogen, elixir-format
-msgid "Something went wrong!"
-msgstr ""
-
-#: lib/astrup_web/components/layouts.ex:89
-#, elixir-autogen, elixir-format
-msgid "We can't find the internet"
-msgstr ""
-
 #: lib/astrup_web/components/core_components.ex:74
 #, elixir-autogen, elixir-format
 msgid "close"
@@ -157,32 +143,124 @@ msgstr ""
 msgid "pH"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:76
-#, elixir-autogen, elixir-format
-msgid "For each parameter on the left, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you've made all 18 selections, click \"Check Answers\"."
-msgstr ""
-
-#: lib/astrup_web/live/home_live.ex:87
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:94
 #, elixir-autogen, elixir-format
 msgid "Check Answers"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:90
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:74
-#, elixir-autogen, elixir-format
-msgid "Reference Values Quiz"
-msgstr ""
-
-#: lib/astrup_web/live/home_live.ex:100
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:109
 #, elixir-autogen, elixir-format
 msgid "Score:"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:95
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "Answers: "
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:40
+#, elixir-autogen, elixir-format
+msgid "ABG Practice"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:172
+#, elixir-autogen, elixir-format
+msgid "Age Range"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:160
+#, elixir-autogen, elixir-format
+msgid "Analyzer"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:61
+#, elixir-autogen, elixir-format
+msgid "Blood Gas Quiz"
+msgstr ""
+
+#: lib/astrup_web/live/parameter_guide_live.ex:98
+#, elixir-autogen, elixir-format
+msgid "Click on any parameter in the printout to learn more about it."
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:154
+#, elixir-autogen, elixir-format
+msgid "Fimlab VCS"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:79
+#, elixir-autogen, elixir-format
+msgid "For each parameter, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you've made all 18 selections, click \"Check Answers\"."
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:77
+#, elixir-autogen, elixir-format
+msgid "Instructions"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:151
+#, elixir-autogen, elixir-format
+msgid "Laboratory"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:69
+#: lib/astrup_web/live/parameter_guide_live.ex:55
+#, elixir-autogen, elixir-format
+msgid "Learning Mode"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:194
+#, elixir-autogen, elixir-format
+msgid "Note: determines Hb"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:183
+#, elixir-autogen, elixir-format
+msgid "Note: determines pO2"
+msgstr ""
+
+#: lib/astrup_web/live/parameter_guide_live.ex:47
+#, elixir-autogen, elixir-format
+msgid "Parameter Guide"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:104
+#, elixir-autogen, elixir-format
+msgid "Progress"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:66
+#: lib/astrup_web/live/parameter_guide_live.ex:52
+#, elixir-autogen, elixir-format
+msgid "Quiz Mode"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:166
+#, elixir-autogen, elixir-format
+msgid "Radiometer ABL90 Flex Plus"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:146
+#, elixir-autogen, elixir-format
+msgid "Settings"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:188
+#, elixir-autogen, elixir-format
+msgid "Sex"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_quiz_live.ex:211
+#, elixir-autogen, elixir-format
+msgid "Show hover hints"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:65
+#, elixir-autogen, elixir-format
+msgid "Submit an ABG"
 msgstr ""
