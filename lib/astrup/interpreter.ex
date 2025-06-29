@@ -87,4 +87,48 @@ defmodule Astrup.Interpreter do
         nil
     end
   end
+
+  def get_correct_parameter_classifications(case_data) do
+    context = %{age_range: get_age_range(case_data.age), sex: case_data.sex}
+    
+    checks = Astrup.check_values_against_reference_range(
+      Astrup.Lab.Fimlab,
+      %{
+        ph: case_data.ph,
+        pco2: case_data.pco2,
+        bicarbonate: case_data.bicarbonate
+      },
+      context
+    )
+    
+    %{
+      ph: convert_ph_classification(checks.ph),
+      pco2: convert_respiratory_classification(checks.pco2),
+      bicarbonate: convert_metabolic_classification(checks.bicarbonate)
+    }
+  end
+
+  def get_age_range(age) do
+    cond do
+      age <= 18 -> "0-18"
+      age <= 30 -> "18-30"
+      age <= 50 -> "31-50"
+      age <= 60 -> "51-60"
+      age <= 70 -> "61-70"
+      age <= 80 -> "71-80"
+      true -> ">80"
+    end
+  end
+
+  def convert_ph_classification(:low), do: :acidosis
+  def convert_ph_classification(:normal), do: :normal
+  def convert_ph_classification(:high), do: :alkalosis
+
+  def convert_respiratory_classification(:low), do: :alkalosis
+  def convert_respiratory_classification(:normal), do: :normal
+  def convert_respiratory_classification(:high), do: :acidosis
+
+  def convert_metabolic_classification(:low), do: :acidosis
+  def convert_metabolic_classification(:normal), do: :normal
+  def convert_metabolic_classification(:high), do: :alkalosis
 end

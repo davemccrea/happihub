@@ -1,4 +1,4 @@
-defmodule AstrupWeb.CaseInterpretationLive do
+defmodule AstrupWeb.InterpretLive do
   @moduledoc """
   Case-based ABG interpretation quiz where users are presented with clinical scenarios
   and asked to classify parameters and provide interpretations.
@@ -30,38 +30,43 @@ defmodule AstrupWeb.CaseInterpretationLive do
             <section class="border border-base-content/20 shadow-lg p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h2>
               <p class="mb-4 text-sm">
-                {gettext("Read the clinical case, classify each parameter, and select the most appropriate interpretation.")}
+                {gettext(
+                  "Read the clinical case, classify each parameter, and select the most appropriate interpretation."
+                )}
               </p>
-              
+
               <div class="flex flex-col gap-3">
-                <button 
+                <button
                   class="btn btn-primary gap-2 w-full"
                   phx-click="check_answers"
-                  disabled={@state == :review or not all_selections_made?(@selections, @selected_interpretation)}
+                  disabled={
+                    @state == :review or
+                      not all_selections_made?(@selections, @selected_interpretation)
+                  }
                 >
                   <.icon name="hero-check-circle" class="w-4 h-4" />
                   {gettext("Check Answers")}
                 </button>
-                
-                <button 
+
+                <button
                   class="btn btn-secondary gap-2 w-full"
                   phx-click="next_case"
                   disabled={@state != :review}
                 >
-                  {gettext("Next Case")} 
+                  {gettext("Next Case")}
                   <.icon name="hero-arrow-right" class="w-4 h-4" />
                 </button>
               </div>
-              
+
               <div class="divider"></div>
-              
+
               <.form for={%{}} phx-change="toggle_reference_values">
                 <label class="label cursor-pointer">
                   <span class="label-text text-sm">{gettext("Show reference values")}</span>
-                  <input 
-                    type="checkbox" 
-                    name="show_reference_values" 
-                    class="checkbox checkbox-sm" 
+                  <input
+                    type="checkbox"
+                    name="show_reference_values"
+                    class="checkbox checkbox-sm"
                     checked={@show_reference_values}
                   />
                 </label>
@@ -84,8 +89,8 @@ defmodule AstrupWeb.CaseInterpretationLive do
               </section>
             <% end %>
           </div>
-
-          <!-- Main Content Section -->
+          
+    <!-- Main Content Section -->
           <div class="w-full lg:flex-1 order-2 lg:order-2 space-y-6">
             <!-- Case Interpretation -->
             <div class="border border-base-content/20 shadow-lg p-6 space-y-8">
@@ -98,47 +103,49 @@ defmodule AstrupWeb.CaseInterpretationLive do
               </div>
 
               <div class="divider"></div>
-
-              <!-- Parameter Classification -->
+              
+    <!-- Parameter Classification -->
               <div>
-                <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Parameter Classification")}</h2>
+                <h2 class="text-lg font-semibold mb-4 text-primary">
+                  {gettext("Parameter Classification")}
+                </h2>
                 <p class="text-sm opacity-70 mb-4">
                   {gettext("Classify each parameter as acidosis, normal, or alkalosis:")}
                 </p>
-                
+
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <.parameter_card 
-                    parameter={:ph} 
-                    value={@case_data.ph} 
+                  <.parameter_card
+                    parameter={:ph}
+                    value={@case_data.ph}
                     selection={@selections.ph}
                     disabled={@state == :review}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
                   />
-                  <.parameter_card 
-                    parameter={:pco2} 
-                    value={@case_data.pco2} 
+                  <.parameter_card
+                    parameter={:pco2}
+                    value={@case_data.pco2}
                     selection={@selections.pco2}
                     disabled={@state == :review}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
                   />
-                  <.parameter_card 
-                    parameter={:bicarbonate} 
-                    value={@case_data.bicarbonate} 
+                  <.parameter_card
+                    parameter={:bicarbonate}
+                    value={@case_data.bicarbonate}
                     selection={@selections.bicarbonate}
                     disabled={@state == :review}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
                   />
-                  <.parameter_display 
-                    parameter={:po2} 
+                  <.parameter_display
+                    parameter={:po2}
                     value={@case_data.po2}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
                   />
-                  <.parameter_display 
-                    parameter={:base_excess} 
+                  <.parameter_display
+                    parameter={:base_excess}
                     value={@case_data.base_excess}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
@@ -147,16 +154,16 @@ defmodule AstrupWeb.CaseInterpretationLive do
               </div>
 
               <div class="divider"></div>
-
-              <!-- Interpretation -->
+              
+    <!-- Interpretation -->
               <div>
                 <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Interpretation")}</h2>
                 <p class="text-sm opacity-70 mb-4">
                   {gettext("Select the most appropriate interpretation:")}
                 </p>
-                
+
                 <.form for={%{}} phx-change="select_interpretation">
-                  <select 
+                  <select
                     name="interpretation"
                     class="select select-bordered w-full max-w-md"
                     disabled={@state == :review}
@@ -164,7 +171,7 @@ defmodule AstrupWeb.CaseInterpretationLive do
                     <option value="" selected={@selected_interpretation == nil}>
                       {gettext("Choose interpretation...")}
                     </option>
-                    <option 
+                    <option
                       :for={interpretation <- @interpretation_options}
                       value={interpretation}
                       selected={@selected_interpretation == interpretation}
@@ -175,56 +182,61 @@ defmodule AstrupWeb.CaseInterpretationLive do
                 </.form>
               </div>
             </div>
-
-            <!-- Results (shown after checking answers) -->
+            
+    <!-- Results (shown after checking answers) -->
             <%= if @state == :review do %>
               <div class="border border-base-content/20 shadow-lg p-6">
-              <h2 class="text-lg font-semibold mb-4 text-primary">
-                <.icon name="hero-clipboard-document-check" class="w-5 h-5 inline mr-2" />
-                {gettext("Results")}
-              </h2>
-              <div class="space-y-6">
-                <div>
-                  <h3 class="text-lg font-semibold mb-3">{gettext("Parameter Classifications:")}</h3>
-                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <.parameter_result 
-                      :for={{param, user_selection} <- @selections}
-                      parameter={param}
-                      user_selection={user_selection}
-                      correct_selection={Map.get(@correct_parameter_classifications, param)}
-                      value={Map.get(@case_data, param)}
-                    />
+                <h2 class="text-lg font-semibold mb-4 text-primary">
+                  <.icon name="hero-clipboard-document-check" class="w-5 h-5 inline mr-2" />
+                  {gettext("Results")}
+                </h2>
+                <div class="space-y-6">
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">
+                      {gettext("Parameter Classifications:")}
+                    </h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <.parameter_result
+                        :for={{param, user_selection} <- @selections}
+                        parameter={param}
+                        user_selection={user_selection}
+                        correct_selection={Map.get(@correct_parameter_classifications, param)}
+                        value={Map.get(@case_data, param)}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div class="divider"></div>
-                <div>
-                  <h3 class="text-lg font-semibold mb-3">{gettext("Interpretation:")}</h3>
-                  <div class="space-y-3">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="text-sm font-medium">{gettext("Your answer:")}</span>
-                      <div class={["badge badge-lg", if(@interpretation_correct, do: "badge-success", else: "badge-error")]}>
-                        {@selected_interpretation || gettext("No selection")}
+                  <div class="divider"></div>
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">{gettext("Interpretation:")}</h3>
+                    <div class="space-y-3">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-medium">{gettext("Your answer:")}</span>
+                        <div class={[
+                          "badge badge-lg",
+                          if(@interpretation_correct, do: "badge-success", else: "badge-error")
+                        ]}>
+                          {@selected_interpretation || gettext("No selection")}
+                        </div>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-medium">{gettext("Correct answer:")}</span>
+                        <div class="badge badge-lg badge-success">{@correct_interpretation}</div>
                       </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="text-sm font-medium">{gettext("Correct answer:")}</span>
-                      <div class="badge badge-lg badge-success">{@correct_interpretation}</div>
+                  </div>
+                  <div class="divider"></div>
+                  <div class="text-center">
+                    <h3 class="text-lg font-semibold mb-3">{gettext("Your Score:")}</h3>
+                    <div class="stat-value text-4xl">
+                      <span class={if @score >= 3, do: "text-success", else: "text-warning"}>
+                        {@score}/4
+                      </span>
+                    </div>
+                    <div class="stat-desc text-base mt-2">
+                      {score_message(@score)}
                     </div>
                   </div>
                 </div>
-                <div class="divider"></div>
-                <div class="text-center">
-                  <h3 class="text-lg font-semibold mb-3">{gettext("Your Score:")}</h3>
-                  <div class="stat-value text-4xl">
-                    <span class={if @score >= 3, do: "text-success", else: "text-warning"}>
-                      {@score}/4
-                    </span>
-                  </div>
-                  <div class="stat-desc text-base mt-2">
-                    {score_message(@score)}
-                  </div>
-                </div>
-              </div>
               </div>
             <% end %>
           </div>
@@ -249,16 +261,23 @@ defmodule AstrupWeb.CaseInterpretationLive do
         <h3 class="card-title text-sm">
           {parameter_name(@parameter)}
           <%= if @show_reference_values do %>
-            <span class="text-xs font-normal opacity-60">({get_fimlab_reference_range(@parameter, @case_data)})</span>
+            <span class="text-xs font-normal opacity-60">
+              ({get_fimlab_reference_range(@parameter, @case_data)})
+            </span>
           <% end %>
         </h3>
-        <div class="stat-value text-lg font-mono text-primary">{format_value(@value, @parameter)}</div>
-        
+        <div class="stat-value text-lg font-mono text-primary">
+          {format_value(@value, @parameter)}
+        </div>
+
         <div class="card-actions justify-start mt-4">
           <div class="btn-group">
-            <button 
+            <button
               type="button"
-              class={["btn btn-sm", if(@selection == :acidosis, do: "btn-error btn-active", else: "btn-outline")]}
+              class={[
+                "btn btn-sm",
+                if(@selection == :acidosis, do: "btn-error btn-active", else: "btn-outline")
+              ]}
               phx-click="select_parameter"
               phx-value-parameter={@parameter}
               phx-value-selection="acidosis"
@@ -266,10 +285,13 @@ defmodule AstrupWeb.CaseInterpretationLive do
             >
               {gettext("Acidosis")}
             </button>
-            
-            <button 
+
+            <button
               type="button"
-              class={["btn btn-sm", if(@selection == :normal, do: "btn-success btn-active", else: "btn-outline")]}
+              class={[
+                "btn btn-sm",
+                if(@selection == :normal, do: "btn-success btn-active", else: "btn-outline")
+              ]}
               phx-click="select_parameter"
               phx-value-parameter={@parameter}
               phx-value-selection="normal"
@@ -277,10 +299,13 @@ defmodule AstrupWeb.CaseInterpretationLive do
             >
               {gettext("Normal")}
             </button>
-            
-            <button 
+
+            <button
               type="button"
-              class={["btn btn-sm", if(@selection == :alkalosis, do: "btn-info btn-active", else: "btn-outline")]}
+              class={[
+                "btn btn-sm",
+                if(@selection == :alkalosis, do: "btn-info btn-active", else: "btn-outline")
+              ]}
               phx-click="select_parameter"
               phx-value-parameter={@parameter}
               phx-value-selection="alkalosis"
@@ -308,11 +333,15 @@ defmodule AstrupWeb.CaseInterpretationLive do
         <h3 class="card-title text-sm">
           {parameter_name(@parameter)}
           <%= if @show_reference_values do %>
-            <span class="text-xs font-normal opacity-60">({get_fimlab_reference_range(@parameter, @case_data)})</span>
+            <span class="text-xs font-normal opacity-60">
+              ({get_fimlab_reference_range(@parameter, @case_data)})
+            </span>
           <% end %>
         </h3>
-        <div class="stat-value text-lg font-mono text-primary">{format_value(@value, @parameter)}</div>
-        
+        <div class="stat-value text-lg font-mono text-primary">
+          {format_value(@value, @parameter)}
+        </div>
+
         <div class="card-actions justify-start mt-4">
           <div class="badge badge-ghost badge-sm">
             {gettext("Reference only")}
@@ -334,15 +363,22 @@ defmodule AstrupWeb.CaseInterpretationLive do
     <div class="card bg-base-200 shadow-sm">
       <div class="card-body">
         <h3 class="card-title text-sm">{parameter_name(@parameter)}</h3>
-        <div class="stat-value text-lg font-mono text-primary">{format_value(@value, @parameter)}</div>
-        
+        <div class="stat-value text-lg font-mono text-primary">
+          {format_value(@value, @parameter)}
+        </div>
+
         <div class="space-y-3 mt-4">
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-xs font-medium">{gettext("Your answer:")}</span>
-            <div class={["badge", if(@user_selection == @correct_selection, do: "badge-success", else: "badge-error")]}>
-              <.icon 
-                name={if(@user_selection == @correct_selection, do: "hero-check", else: "hero-x-mark")} 
-                class="w-3 h-3 mr-1" 
+            <div class={[
+              "badge",
+              if(@user_selection == @correct_selection, do: "badge-success", else: "badge-error")
+            ]}>
+              <.icon
+                name={
+                  if(@user_selection == @correct_selection, do: "hero-check", else: "hero-x-mark")
+                }
+                class="w-3 h-3 mr-1"
               />
               {classification_label(@user_selection)}
             </div>
@@ -364,9 +400,9 @@ defmodule AstrupWeb.CaseInterpretationLive do
   def handle_event("select_parameter", %{"parameter" => param, "selection" => selection}, socket) do
     parameter = String.to_atom(param)
     selection_atom = String.to_atom(selection)
-    
+
     new_selections = Map.put(socket.assigns.selections, parameter, selection_atom)
-    
+
     {:noreply, assign(socket, :selections, new_selections)}
   end
 
@@ -377,11 +413,11 @@ defmodule AstrupWeb.CaseInterpretationLive do
 
   def handle_event("check_answers", _params, socket) do
     # Calculate score and show results
-    socket = 
+    socket =
       socket
       |> calculate_score()
       |> assign(:state, :review)
-    
+
     {:noreply, socket}
   end
 
@@ -401,7 +437,7 @@ defmodule AstrupWeb.CaseInterpretationLive do
   defp setup_new_case(socket) do
     case_data = generate_case()
     correct_interpretation = get_correct_interpretation(case_data)
-    
+
     socket
     |> assign(:state, :ready)
     |> assign(:case_data, case_data)
@@ -484,7 +520,7 @@ defmodule AstrupWeb.CaseInterpretationLive do
         sex: Enum.random(["male", "female"])
       }
     ]
-    
+
     Enum.random(case_templates)
   end
 
@@ -512,27 +548,47 @@ defmodule AstrupWeb.CaseInterpretationLive do
 
   defp get_correct_interpretation(case_data) do
     # Use existing Interpreter module to determine correct answer
-    checks = Astrup.check_values_against_reference_range(
-      Astrup.Lab.Fimlab,
-      %{
-        ph: case_data.ph,
-        pco2: case_data.pco2, 
-        bicarbonate: case_data.bicarbonate
-      },
-      %{age_range: "31-50", sex: case_data.sex}
-    )
-    
+    checks =
+      Astrup.check_values_against_reference_range(
+        Astrup.Lab.Fimlab,
+        %{
+          ph: case_data.ph,
+          pco2: case_data.pco2,
+          bicarbonate: case_data.bicarbonate
+        },
+        %{age_range: "31-50", sex: case_data.sex}
+      )
+
     case Interpreter.primary_disorder(checks) do
-      {:respiratory_acidosis, :uncompensated} -> "Respiratory acidosis (uncompensated)"
-      {:respiratory_acidosis, :partially_compensated} -> "Respiratory acidosis with partial metabolic compensation"
-      {:respiratory_alkalosis, :uncompensated} -> "Respiratory alkalosis (uncompensated)"
-      {:respiratory_alkalosis, :partially_compensated} -> "Respiratory alkalosis with partial metabolic compensation"
-      {:metabolic_acidosis, :uncompensated} -> "Metabolic acidosis (uncompensated)"
-      {:metabolic_acidosis, :partially_compensated} -> "Metabolic acidosis with partial respiratory compensation"
-      {:metabolic_alkalosis, :uncompensated} -> "Metabolic alkalosis (uncompensated)"
-      {:metabolic_alkalosis, :partially_compensated} -> "Metabolic alkalosis with partial respiratory compensation"
-      :normal -> "Normal acid-base balance"
-      _ -> "Mixed acid-base disorder"
+      {:respiratory_acidosis, :uncompensated} ->
+        "Respiratory acidosis (uncompensated)"
+
+      {:respiratory_acidosis, :partially_compensated} ->
+        "Respiratory acidosis with partial metabolic compensation"
+
+      {:respiratory_alkalosis, :uncompensated} ->
+        "Respiratory alkalosis (uncompensated)"
+
+      {:respiratory_alkalosis, :partially_compensated} ->
+        "Respiratory alkalosis with partial metabolic compensation"
+
+      {:metabolic_acidosis, :uncompensated} ->
+        "Metabolic acidosis (uncompensated)"
+
+      {:metabolic_acidosis, :partially_compensated} ->
+        "Metabolic acidosis with partial respiratory compensation"
+
+      {:metabolic_alkalosis, :uncompensated} ->
+        "Metabolic alkalosis (uncompensated)"
+
+      {:metabolic_alkalosis, :partially_compensated} ->
+        "Metabolic alkalosis with partial respiratory compensation"
+
+      :normal ->
+        "Normal acid-base balance"
+
+      _ ->
+        "Mixed acid-base disorder"
     end
   end
 
@@ -542,7 +598,7 @@ defmodule AstrupWeb.CaseInterpretationLive do
       "Respiratory acidosis (uncompensated)",
       "Respiratory acidosis with partial metabolic compensation",
       "Respiratory alkalosis (uncompensated)",
-      "Respiratory alkalosis with partial metabolic compensation", 
+      "Respiratory alkalosis with partial metabolic compensation",
       "Metabolic acidosis (uncompensated)",
       "Metabolic acidosis with partial respiratory compensation",
       "Metabolic alkalosis (uncompensated)",
@@ -555,7 +611,7 @@ defmodule AstrupWeb.CaseInterpretationLive do
     required_params = [:ph, :pco2, :bicarbonate]
     all_params_selected = Enum.all?(required_params, &(Map.get(selections, &1) != nil))
     interpretation_selected = selected_interpretation != nil
-    
+
     all_params_selected and interpretation_selected
   end
 
@@ -564,73 +620,27 @@ defmodule AstrupWeb.CaseInterpretationLive do
     selections = socket.assigns.selections
     selected_interpretation = socket.assigns.selected_interpretation
     correct_interpretation = socket.assigns.correct_interpretation
-    
+
     # Calculate correct parameter classifications
-    correct_classifications = get_correct_parameter_classifications(case_data)
-    
+    correct_classifications = Interpreter.get_correct_parameter_classifications(case_data)
+
     # Count correct parameter classifications (3 parameters)
-    parameter_score = Enum.count(selections, fn {param, user_selection} ->
-      Map.get(correct_classifications, param) == user_selection
-    end)
-    
+    parameter_score =
+      Enum.count(selections, fn {param, user_selection} ->
+        Map.get(correct_classifications, param) == user_selection
+      end)
+
     # Check interpretation (1 point)
     interpretation_correct = selected_interpretation == correct_interpretation
     interpretation_score = if interpretation_correct, do: 1, else: 0
-    
+
     total_score = parameter_score + interpretation_score
-    
+
     socket
     |> assign(:score, total_score)
     |> assign(:correct_parameter_classifications, correct_classifications)
     |> assign(:interpretation_correct, interpretation_correct)
   end
-
-  defp get_correct_parameter_classifications(case_data) do
-    # Use the lab reference ranges to determine correct classifications
-    context = %{age_range: get_age_range(case_data.age), sex: case_data.sex}
-    
-    checks = Astrup.check_values_against_reference_range(
-      Astrup.Lab.Fimlab,
-      %{
-        ph: case_data.ph,
-        pco2: case_data.pco2,
-        bicarbonate: case_data.bicarbonate
-      },
-      context
-    )
-    
-    # Convert the :low/:normal/:high classifications to acidosis/normal/alkalosis
-    %{
-      ph: convert_ph_classification(checks.ph),
-      pco2: convert_respiratory_classification(checks.pco2),
-      bicarbonate: convert_metabolic_classification(checks.bicarbonate)
-    }
-  end
-
-  defp get_age_range(age) do
-    cond do
-      age <= 18 -> "0-18"
-      age <= 30 -> "18-30"
-      age <= 50 -> "31-50"
-      age <= 60 -> "51-60"
-      age <= 70 -> "61-70"
-      age <= 80 -> "71-80"
-      true -> ">80"
-    end
-  end
-
-  defp convert_ph_classification(:low), do: :acidosis
-  defp convert_ph_classification(:normal), do: :normal
-  defp convert_ph_classification(:high), do: :alkalosis
-
-  defp convert_respiratory_classification(:low), do: :alkalosis  # Low CO2 = respiratory alkalosis
-  defp convert_respiratory_classification(:normal), do: :normal
-  defp convert_respiratory_classification(:high), do: :acidosis  # High CO2 = respiratory acidosis
-
-
-  defp convert_metabolic_classification(:low), do: :acidosis   # Low HCO3/BE = metabolic acidosis
-  defp convert_metabolic_classification(:normal), do: :normal
-  defp convert_metabolic_classification(:high), do: :alkalosis # High HCO3/BE = metabolic alkalosis
 
   defp parameter_name(parameter) do
     case parameter do
@@ -643,22 +653,27 @@ defmodule AstrupWeb.CaseInterpretationLive do
   end
 
   defp format_value(value, parameter) do
-    formatted = Decimal.round(value, case parameter do
-      :ph -> 2
-      :pco2 -> 1
-      :po2 -> 1  
-      :bicarbonate -> 0
-      :base_excess -> 1
-    end)
-    
-    unit = case parameter do
-      :ph -> ""
-      :pco2 -> " kPa"
-      :po2 -> " kPa"
-      :bicarbonate -> " mmol/L"
-      :base_excess -> " mmol/L"
-    end
-    
+    formatted =
+      Decimal.round(
+        value,
+        case parameter do
+          :ph -> 2
+          :pco2 -> 1
+          :po2 -> 1
+          :bicarbonate -> 0
+          :base_excess -> 1
+        end
+      )
+
+    unit =
+      case parameter do
+        :ph -> ""
+        :pco2 -> " kPa"
+        :po2 -> " kPa"
+        :bicarbonate -> " mmol/L"
+        :base_excess -> " mmol/L"
+      end
+
     "#{formatted}#{unit}"
   end
 
@@ -668,20 +683,20 @@ defmodule AstrupWeb.CaseInterpretationLive do
 
   defp score_message(score) do
     case score do
-      4 -> gettext("Perfect! Excellent understanding of ABG interpretation.")
-      3 -> gettext("Great job! You have a solid grasp of ABG analysis.")
-      2 -> gettext("Good effort! Review the feedback and keep practicing.")
-      0..1 -> gettext("Keep studying! ABG interpretation takes practice.")
+      4 -> gettext("Perfect!")
+      3 -> gettext("Great job!")
+      2 -> gettext("Good effort!")
+      0..1 -> gettext("Keep studying!")
     end
   end
 
   defp get_fimlab_reference_range(parameter, case_data) do
     # Create context based on case data
     context = %{
-      age_range: get_age_range(case_data.age),
+      age_range: Interpreter.get_age_range(case_data.age),
       sex: case_data.sex
     }
-    
+
     # Get the reference range from Fimlab
     Astrup.pretty_print_reference_range(Astrup.Lab.Fimlab, parameter, context)
   end

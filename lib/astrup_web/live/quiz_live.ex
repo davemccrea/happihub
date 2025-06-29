@@ -1,4 +1,4 @@
-defmodule AstrupWeb.BloodGasQuizLive do
+defmodule AstrupWeb.QuizLive do
   @moduledoc """
   Blood gas quiz for testing knowledge of reference values.
 

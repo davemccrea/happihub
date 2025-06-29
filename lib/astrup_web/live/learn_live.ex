@@ -1,4 +1,4 @@
-defmodule AstrupWeb.ParameterGuideLive do
+defmodule AstrupWeb.LearnLive do
   @moduledoc """
   Interactive parameter guide that allows users to click on parameters
   to see detailed descriptions and information.

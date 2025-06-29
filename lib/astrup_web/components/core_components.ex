@@ -478,17 +478,17 @@ defmodule AstrupWeb.CoreComponents do
   ## Examples
 
       <.mode_toggle active_mode={:quiz} />
-      <.mode_toggle active_mode={:guide} />
+      <.mode_toggle active_mode={:learn} />
       <.mode_toggle active_mode={:case_interpretation} />
   """
-  attr :active_mode, :atom, required: true, values: [:quiz, :guide, :case_interpretation], doc: "which mode is currently active"
+  attr :active_mode, :atom, required: true, values: [:quiz, :learn, :case_interpretation], doc: "which mode is currently active"
 
   def mode_toggle(assigns) do
     ~H"""
     <div class="join">
       <.link
-        navigate={~p"/guide"}
-        class={["btn btn-sm join-item", if(@active_mode == :guide, do: "btn-primary btn-active", else: "btn-outline")]}
+        navigate={~p"/learn"}
+        class={["btn btn-sm join-item", if(@active_mode == :learn, do: "btn-primary btn-active", else: "btn-outline")]}
       >
         {gettext("Learn")}
       </.link>

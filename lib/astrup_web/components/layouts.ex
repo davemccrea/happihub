@@ -38,7 +38,7 @@ defmodule AstrupWeb.Layouts do
         <div class="navbar-start">
           <ul class="menu menu-horizontal">
             <li>
-              <.link navigate={~p"/guide"} class="btn btn-ghost">
+              <.link navigate={~p"/learn"} class="btn btn-ghost">
                 {gettext("Learn")}
               </.link>
             </li>
