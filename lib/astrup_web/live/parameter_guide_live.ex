@@ -48,12 +48,12 @@ defmodule AstrupWeb.ParameterGuideLive do
           </h1>
 
           <div class="flex gap-2">
-            <a href="/quiz" class="btn btn-outline btn-sm">
+            <.link navigate={~p"/quiz"} class="btn btn-outline btn-sm">
               {gettext("Quiz Mode")}
-            </a>
-            <span class="btn btn-primary btn-sm">
+            </.link>
+            <.link navigate={~p"/guide"} class="btn btn-primary btn-sm">
               {gettext("Learning Mode")}
-            </span>
+            </.link>
           </div>
         </div>
 
@@ -123,39 +123,22 @@ defmodule AstrupWeb.ParameterGuideLive do
     %{
       id: "12345",
       ph: 7.40,
-      # 40 mmHg = ~5.3 kPa
       pco2: 5.3,
-      # 85 mmHg = ~11.3 kPa
       po2: 11.3,
-      # mmol/L
       bicarbonate: 24.0,
-      # mmol/L
       base_excess: 0.0,
-      # mmol/L
       anion_gap: 10.0,
-      # g/L (14.5 g/dL = 145 g/L)
       hemoglobin: 145,
-      # Vol%
       oxygen_content: 19.5,
-      # %
       oxygen_saturation: 98.0,
-      # %
       carboxyhemoglobin: 1.0,
-      # %
       methemoglobin: 1.0,
-      # mmol/L
       potassium: 4.0,
-      # mmol/L
       sodium: 140.0,
-      # mmol/L
       ionized_calcium: 1.25,
-      # mmol/L
       ionized_calcium_corrected_to_ph_7_4: 1.25,
-      # mmol/L
       chloride: 105.0,
-      # mmol/L (90 mg/dL = ~5.0 mmol/L)
       glucose: 5.0,
-      # mmol/L
       lactate: 1.5
     }
   end
@@ -188,60 +171,27 @@ defmodule AstrupWeb.ParameterGuideLive do
     case parameter do
       :ph ->
         """
-        pH measures the hydrogen ion concentration in blood and indicates acid-base balance.
+        #### Summary
+
+        The pH value represents the acidity or alkalinity of the blood, which is a function of its hydrogen ion (H+) concentration . Maintaining a stable pH is crucial for normal bodily function as even minor deviations can negatively impact cellular metabolism and organ function. The body's acid-base homeostasis, a complex process involving the lungs, kidneys, and blood buffers, keeps the pH within a very narrow range (typically 7.35-7.45 for arterial blood).
 
         #### Clinical Significance
 
-        - Low pH is associated with acidosis
-        - High pH is associated with alkalosis
-        - Normal arterial blood pH ranges from 7.35-7.45
+        Measuring pH, along with pCO₂ and bicarbonate (HCO₃⁻), is essential for diagnosing and monitoring acid-base disturbances . Abnormal pH levels can indicate serious conditions like respiratory or kidney failure, diabetic ketoacidosis, or circulatory shock . It is a critical parameter in emergency and intensive care settings to guide medical interventions.
 
-        #### Key Points
+        #### Interesting Fact
 
-        - Critical for enzyme function and metabolic processes
-        - Tightly regulated by respiratory and renal systems
-        - Compatible with life: 6.8-7.8
-        - Small changes have significant physiological effects
+        In high-risk pregnancies, fetal scalp pH can be monitored during labor to detect fetal hypoxia . A low fetal pH may indicate fetal distress and the need for an urgent delivery.
         """
 
       :pco2 ->
         """
-        Partial pressure of carbon dioxide reflects the respiratory component of acid-base balance and indicates pulmonary ventilation adequacy.
-
-        #### Clinical Significance
-
-        - Measures pressure of CO₂ dissolved in blood plasma
-        - Normal range: 4.7-6.0 kPa (35-45 mmHg)
-        - Hypercapnia: pCO₂ > 6.0 kPa (respiratory acidosis)
-        - Hypocapnia: pCO₂ < 4.7 kPa (respiratory alkalosis)
-
-        #### Physiology
-
-        - Regulated by ventilation
-        - Primary respiratory buffer system
-        - Immediate response to acid-base disturbances
+        Partial pressure of CO2 reflects respiratory function and ventilation adequacy (normal: 35-45 mmHg). It's the respiratory component of acid-base balance. Increased pCO2 (>45 mmHg) indicates hypoventilation and respiratory acidosis, while decreased pCO2 (<35 mmHg) suggests hyperventilation and respiratory alkalosis. Essential for distinguishing Type I and Type II respiratory failure and monitoring mechanical ventilation effectiveness.
         """
 
       :po2 ->
         """
-        Partial pressure of oxygen reflects oxygen uptake in the lungs and indicates oxygen transfer in the respiratory system.
-
-        #### Clinical Significance
-
-        - Normal range: 10.7-13.3 kPa (80-100 mmHg)
-        - Hypoxemia: pO₂ < 10.7 kPa (80 mmHg)
-        - Severe hypoxemia: pO₂ < 8.0 kPa (60 mmHg)
-
-        #### Important Notes
-
-        - Only 1-2% of oxygen is dissolved in blood plasma ¹
-        - Most oxygen is bound to hemoglobin
-        - Decreases with age and altitude
-        - Independent of hemoglobin concentration
-
-        <footer class="mt-6 pt-4 border-t border-base-content/20 text-xs text-base-content/70">
-        ¹ Radiometer ABL90 FLEX PLUS technical specifications
-        </footer>
+        Oxygen partial pressure reflects oxygen uptake in lungs (normal: 80-100 mmHg). Though it represents only 1-2% of total blood oxygen, it determines hemoglobin oxygen saturation. pO2 <60 mmHg defines respiratory failure. Critical for assessing oxygenation, guiding oxygen therapy, and calculating the A-a gradient. Decreases with age (~2.2 mmHg per decade after 40).
         """
 
       :bicarbonate ->

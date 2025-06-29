@@ -1,7 +1,7 @@
 defmodule AstrupWeb.BloodGasQuizLive do
   @moduledoc """
   Blood gas quiz for testing knowledge of reference values.
-  
+
   The application can be in one of the following states:
   - `:ready`: Initial state when the page loads.
   - `:answering`: When the user is making selections.
@@ -60,14 +60,14 @@ defmodule AstrupWeb.BloodGasQuizLive do
           <h1 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-0">
             {gettext("Blood Gas Quiz")}
           </h1>
-          
+
           <div class="flex gap-2">
-            <span class="btn btn-primary btn-sm">
+            <.link navigate={~p"/quiz"} class="btn btn-outline btn-sm">
               {gettext("Quiz Mode")}
-            </span>
-            <a href="/guide" class="btn btn-outline btn-sm">
+            </.link>
+            <.link navigate={~p"/guide"} class="btn btn-primary btn-sm">
               {gettext("Learning Mode")}
-            </a>
+            </.link>
           </div>
         </div>
 
@@ -121,23 +121,23 @@ defmodule AstrupWeb.BloodGasQuizLive do
 
           <div class="w-full lg:flex-1 order-2 lg:order-2">
             <AstrupWeb.Components.RadiometerABL90FlexPlus.render
-            printout={@printout}
-            selections={@selections}
-            state={@state}
-            hints_enabled={@hints_enabled}
-            get_reference_range={
-              fn parameter ->
-                Astrup.pretty_print_reference_range(@lab_module, parameter, %{
-                  age_range: @age_range,
-                  sex: @sex
-                })
-              end
-            }
-            get_unit={fn parameter -> @analyzer.get_unit_by_parameter(parameter) end}
-            sample_date={@sample_date}
-            printed_date={@printed_date}
-            quiz?={true}
-          />
+              printout={@printout}
+              selections={@selections}
+              state={@state}
+              hints_enabled={@hints_enabled}
+              get_reference_range={
+                fn parameter ->
+                  Astrup.pretty_print_reference_range(@lab_module, parameter, %{
+                    age_range: @age_range,
+                    sex: @sex
+                  })
+                end
+              }
+              get_unit={fn parameter -> @analyzer.get_unit_by_parameter(parameter) end}
+              sample_date={@sample_date}
+              printed_date={@printed_date}
+              quiz?={true}
+            />
           </div>
 
           <div class="w-full lg:w-72 order-3 lg:order-3">
