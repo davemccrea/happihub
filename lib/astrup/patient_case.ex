@@ -12,7 +12,7 @@ defmodule Astrup.PatientCase do
     field :case_summary, :string
     field :primary_disorder, :string
     field :compensation, :string
-    
+
     # Shared fields from both schemas
     field :ph, :decimal
     field :pco2, :decimal
@@ -21,7 +21,7 @@ defmodule Astrup.PatientCase do
     field :base_excess, :decimal
     field :age, :integer
     field :sex, :string
-    
+
     # From Printout schema (additional lab values)
     field :anion_gap, :decimal
     field :hemoglobin, :decimal
@@ -37,9 +37,10 @@ defmodule Astrup.PatientCase do
     field :glucose, :decimal
     field :lactate, :decimal
     field :checked_at, :utc_datetime
-    
+
     # New field for case type
-    field :case_type, :string, default: "reference"  # "reference", "interpretation", "mixed"
+    # "reference", "interpretation", "mixed"
+    field :case_type, :string, default: "reference"
 
     timestamps(type: :utc_datetime)
   end
@@ -88,10 +89,10 @@ defmodule Astrup.PatientCase do
   """
   def get_random_case do
     case_count = Repo.aggregate(PatientCase, :count, :id)
-    
+
     if case_count > 0 do
       offset = :rand.uniform(case_count) - 1
-      
+
       PatientCase
       |> limit(1)
       |> offset(^offset)

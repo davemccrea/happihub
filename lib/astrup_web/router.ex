@@ -11,6 +11,7 @@ defmodule AstrupWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug AstrupWeb.Plugs.LocalePlug
+    plug AstrupWeb.Plugs.LabAnalyzerPlug
   end
 
   pipeline :api do
@@ -38,9 +39,13 @@ defmodule AstrupWeb.Router do
       live "/quiz", QuizLive
       live "/interpretation", InterpretationLearnLive
       live "/interpretation-quiz", InterpretLive
-      live "/interpret", InterpretLive  # legacy route
+      # legacy route
+      live "/interpret", InterpretLive
       live "/submit", SubmitLive
+      live "/settings", SettingsLive
     end
+
+    get "/update_settings", SettingsController, :update
 
     get "/locale/:locale", ChangeLocale, :index
   end

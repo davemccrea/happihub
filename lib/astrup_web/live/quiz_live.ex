@@ -12,8 +12,11 @@ defmodule AstrupWeb.QuizLive do
 
   @type state :: :ready | :answering | :review
 
-  defp setup(socket) do
-    analyzer = Astrup.Analyzer.RadiometerAbl90FlexPlus
+  defp setup(socket, session) do
+    current_lab = session["current_lab"] || "Astrup.Lab.Fimlab"
+    lab_module = Module.concat([current_lab])
+    current_analyzer = session["current_analyzer"] || "Astrup.Analyzer.RadiometerAbl90FlexPlus"
+    analyzer = Module.concat([current_analyzer])
     selections = analyzer.blank_parameter_quiz_selections()
 
     sample_number = Enum.random(10000..99999)
@@ -39,7 +42,7 @@ defmodule AstrupWeb.QuizLive do
     |> assign(:selections, selections)
     |> assign(:number_of_parameters, map_size(selections))
     |> assign(:printout, PatientCase.get_random_checked_case())
-    |> assign(:lab_module, Astrup.Lab.Fimlab)
+    |> assign(:lab_module, lab_module)
     |> assign(:age_range, "31-50")
     |> assign(:sex, "female")
     |> assign(:analyzer, analyzer)
@@ -47,8 +50,8 @@ defmodule AstrupWeb.QuizLive do
   end
 
   @impl true
-  def mount(_, _, socket) do
-    {:ok, setup(socket)}
+  def mount(_, session, socket) do
+    {:ok, setup(socket, session)}
   end
 
   @impl true
@@ -64,11 +67,20 @@ defmodule AstrupWeb.QuizLive do
             {gettext("Test your knowledge of ABG parameter reference ranges")}
           </p>
           
-          <!-- Navigation back to Learn -->
+    <!-- Navigation back to Learn -->
           <div class="mb-8">
             <.link navigate={~p"/learn"} class="btn btn-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                  clip-rule="evenodd"
+                />
               </svg>
               {gettext("Back to Learning")}
             </.link>
@@ -282,7 +294,13 @@ defmodule AstrupWeb.QuizLive do
 
   @impl true
   def handle_event("next", _params, socket) do
-    {:noreply, setup(socket)}
+    # Create a fake session from current socket assigns for setup function
+    session = %{
+      "current_lab" => socket.assigns.lab_module |> Atom.to_string(),
+      "current_analyzer" => socket.assigns.analyzer |> Atom.to_string()
+    }
+
+    {:noreply, setup(socket, session)}
   end
 
   defp check_answers(%{

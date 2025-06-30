@@ -9,8 +9,18 @@ defmodule AstrupWeb.InterpretLive do
 
   @type state :: :ready | :answering | :review
 
-  def mount(_, _, socket) do
-    socket = assign(socket, :show_reference_values, false)
+  def mount(_, session, socket) do
+    current_lab = session["current_lab"] || "Astrup.Lab.Fimlab"
+    lab_module = Module.concat([current_lab])
+    current_analyzer = session["current_analyzer"] || "Astrup.Analyzer.RadiometerAbl90FlexPlus"
+    analyzer = Module.concat([current_analyzer])
+
+    socket =
+      socket
+      |> assign(:show_reference_values, false)
+      |> assign(:lab_module, lab_module)
+      |> assign(:analyzer, analyzer)
+
     {:ok, setup_new_case(socket)}
   end
 
@@ -26,11 +36,20 @@ defmodule AstrupWeb.InterpretLive do
             {gettext("Practice interpreting ABG results with clinical cases")}
           </p>
           
-          <!-- Navigation back to Learn -->
+    <!-- Navigation back to Learn -->
           <div class="mb-8">
             <.link navigate={~p"/interpretation"} class="btn btn-primary">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                  clip-rule="evenodd"
+                />
               </svg>
               {gettext("Back to Learning")}
             </.link>
@@ -54,7 +73,11 @@ defmodule AstrupWeb.InterpretLive do
                   phx-click="check_answers"
                   disabled={
                     @state == :review or
-                      not all_selections_made?(@selections, @selected_primary_disorder, @selected_compensation)
+                      not all_selections_made?(
+                        @selections,
+                        @selected_primary_disorder,
+                        @selected_compensation
+                      )
                   }
                 >
                   {gettext("Check Answers")}
@@ -119,7 +142,7 @@ defmodule AstrupWeb.InterpretLive do
               />
             <% end %>
             
-            <!-- Case Interpretation -->
+    <!-- Case Interpretation -->
             <div class="border border-base-content/20 shadow p-6 space-y-8">
               <!-- Clinical Case -->
               <div>
@@ -153,7 +176,11 @@ defmodule AstrupWeb.InterpretLive do
                       disabled={@state == :review}
                       show_reference_values={@show_reference_values}
                       case_data={@case_data}
-                      correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :ph), else: nil}
+                      correct_selection={
+                        if @state == :review,
+                          do: Map.get(@correct_parameter_classifications, :ph),
+                          else: nil
+                      }
                     />
                     <.parameter_card
                       parameter={:pco2}
@@ -162,7 +189,11 @@ defmodule AstrupWeb.InterpretLive do
                       disabled={@state == :review}
                       show_reference_values={@show_reference_values}
                       case_data={@case_data}
-                      correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :pco2), else: nil}
+                      correct_selection={
+                        if @state == :review,
+                          do: Map.get(@correct_parameter_classifications, :pco2),
+                          else: nil
+                      }
                     />
                     <.parameter_card
                       parameter={:bicarbonate}
@@ -171,11 +202,15 @@ defmodule AstrupWeb.InterpretLive do
                       disabled={@state == :review}
                       show_reference_values={@show_reference_values}
                       case_data={@case_data}
-                      correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :bicarbonate), else: nil}
+                      correct_selection={
+                        if @state == :review,
+                          do: Map.get(@correct_parameter_classifications, :bicarbonate),
+                          else: nil
+                      }
                     />
                   </div>
                   
-                  <!-- Reference parameters -->
+    <!-- Reference parameters -->
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <.parameter_display
                       parameter={:po2}
@@ -205,10 +240,7 @@ defmodule AstrupWeb.InterpretLive do
                     </div>
 
                     <.form for={%{}} phx-change="select_primary_disorder">
-                      <select
-                        name="primary_disorder"
-                        class="select select-bordered w-full max-w-md"
-                      >
+                      <select name="primary_disorder" class="select select-bordered w-full max-w-md">
                         <option value="" selected={@selected_primary_disorder == nil}>
                           {gettext("Choose primary disorder...")}
                         </option>
@@ -222,8 +254,8 @@ defmodule AstrupWeb.InterpretLive do
                       </select>
                     </.form>
                   </div>
-
-                  <!-- Step 3: Compensation -->
+                  
+    <!-- Step 3: Compensation -->
                   <div>
                     <div class="flex items-center gap-3 mb-4">
                       <div class="badge badge-primary badge-lg font-bold">3</div>
@@ -236,7 +268,10 @@ defmodule AstrupWeb.InterpretLive do
                       <select
                         name="compensation"
                         class="select select-bordered w-full max-w-md"
-                        disabled={@selected_primary_disorder == nil or @selected_primary_disorder == "Normal acid-base balance"}
+                        disabled={
+                          @selected_primary_disorder == nil or
+                            @selected_primary_disorder == "Normal acid-base balance"
+                        }
                       >
                         <option value="" selected={@selected_compensation == nil}>
                           {gettext("Choose compensation level...")}
@@ -253,10 +288,12 @@ defmodule AstrupWeb.InterpretLive do
                   </div>
                 </div>
               <% end %>
-              
+
               <div class="mt-8 pt-4 border-t border-base-content/10">
                 <p class="text-xs text-base-content/60 italic">
-                  {gettext("Note: Mixed acid-base disorders and fully compensated conditions exist in clinical practice but are not addressed here for educational simplicity.")}
+                  {gettext(
+                    "Note: Mixed acid-base disorders and fully compensated conditions exist in clinical practice but are not addressed here for educational simplicity."
+                  )}
                 </p>
               </div>
             </div>
@@ -336,7 +373,6 @@ defmodule AstrupWeb.InterpretLive do
             </div>
           </div>
         <% end %>
-
       </div>
     </div>
     """
@@ -372,7 +408,7 @@ defmodule AstrupWeb.InterpretLive do
           </div>
         </div>
       </div>
-      
+
       <div class="overflow-x-auto">
         <table class="table table-zebra w-full">
           <thead>
@@ -499,7 +535,6 @@ defmodule AstrupWeb.InterpretLive do
     """
   end
 
-
   # Event handlers
   def handle_event("select_parameter", %{"parameter" => param, "selection" => selection}, socket) do
     parameter = String.to_atom(param)
@@ -512,12 +547,13 @@ defmodule AstrupWeb.InterpretLive do
 
   def handle_event("select_primary_disorder", %{"primary_disorder" => disorder}, socket) do
     disorder_value = if disorder == "", do: nil, else: disorder
-    
+
     # Reset compensation if primary disorder changes
-    socket = socket
-    |> assign(:selected_primary_disorder, disorder_value)
-    |> assign(:selected_compensation, nil)
-    
+    socket =
+      socket
+      |> assign(:selected_primary_disorder, disorder_value)
+      |> assign(:selected_compensation, nil)
+
     {:noreply, socket}
   end
 
@@ -551,7 +587,7 @@ defmodule AstrupWeb.InterpretLive do
   # Helper functions
   defp setup_new_case(socket) do
     case_data = PatientCase.get_random_case_by_type("interpretation")
-    
+
     if case_data do
       socket
       |> assign(:state, :ready)
@@ -574,13 +610,11 @@ defmodule AstrupWeb.InterpretLive do
     end
   end
 
-
-
   defp get_primary_disorder_options do
     [
       "Normal acid-base balance",
       "Respiratory acidosis",
-      "Respiratory alkalosis", 
+      "Respiratory alkalosis",
       "Metabolic acidosis",
       "Metabolic alkalosis"
     ]
@@ -593,12 +627,11 @@ defmodule AstrupWeb.InterpretLive do
     ]
   end
 
-
   defp all_selections_made?(selections, selected_primary_disorder, selected_compensation) do
     required_params = [:ph, :pco2, :bicarbonate]
     all_params_selected = Enum.all?(required_params, &(Map.get(selections, &1) != nil))
     primary_disorder_selected = selected_primary_disorder != nil
-    
+
     # Compensation is only required if the primary disorder is not normal
     compensation_required = selected_primary_disorder not in ["Normal acid-base balance", nil]
     compensation_selected = selected_compensation != nil or not compensation_required
@@ -628,11 +661,13 @@ defmodule AstrupWeb.InterpretLive do
     primary_disorder_score = if primary_disorder_correct, do: 1, else: 0
 
     # Check compensation (1 point) - only if compensation is expected
-    compensation_score = cond do
-      correct_compensation == nil -> 1  # No compensation expected, automatic point
-      selected_compensation == correct_compensation -> 1
-      true -> 0
-    end
+    compensation_score =
+      cond do
+        # No compensation expected, automatic point
+        correct_compensation == nil -> 1
+        selected_compensation == correct_compensation -> 1
+        true -> 0
+      end
 
     total_score = parameter_score + primary_disorder_score + compensation_score
 
@@ -704,7 +739,7 @@ defmodule AstrupWeb.InterpretLive do
   end
 
   # Private functions moved from Astrup.Interpreter for better organization
-  
+
   defp get_correct_classifications(case_data) do
     context = %{age_range: categorize_age(case_data.age), sex: case_data.sex}
 

@@ -88,7 +88,7 @@ defmodule Astrup.Release do
                 updated_at: now,
                 checked_at: now
               },
-              
+
               # Interpretation cases with clinical scenarios (from abg_cases)
               # COPD exacerbation - respiratory acidosis with partial compensation
               %{
@@ -144,7 +144,7 @@ defmodule Astrup.Release do
                 inserted_at: now,
                 updated_at: now
               },
-              
+
               # Mixed cases with both lab data and clinical context
               %{
                 scenario: "normal",

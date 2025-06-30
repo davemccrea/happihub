@@ -197,9 +197,20 @@ defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
     ~H"""
     <% {selection, correct_answer?} = Map.get(@selections, @parameter, {nil, nil}) %>
 
-    <div id={"param-#{@parameter}"} class={if @explorer?, do: "grid grid-cols-[1fr_1fr_1fr] gap-4", else: "grid grid-cols-[1fr_1fr_1fr_1fr] gap-4"}>
+    <div
+      id={"param-#{@parameter}"}
+      class={
+        if @explorer?,
+          do: "grid grid-cols-[1fr_1fr_1fr] gap-4",
+          else: "grid grid-cols-[1fr_1fr_1fr_1fr] gap-4"
+      }
+    >
       <%= if @explorer? do %>
-        <dt class="cursor-pointer text-primary hover:text-primary-focus transition-colors" phx-click="select_parameter" phx-value-parameter={@parameter}>
+        <dt
+          class="cursor-pointer text-primary hover:text-primary-focus transition-colors"
+          phx-click="select_parameter"
+          phx-value-parameter={@parameter}
+        >
           {render_slot(@label)}
         </dt>
       <% else %>
@@ -235,57 +246,57 @@ defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
         <dd>{@get_unit.(@parameter)}</dd>
 
         <%= if @quiz? do %>
-        <dd class="flex flex-row flex-nowrap gap-1 items-center">
-          <div
-            id={"tooltip-param-#{@parameter}"}
-            class={
-              if(@state == :review && not correct_answer?,
-                do: "tooltip tooltip-right tooltip-open",
-                else: ""
-              )
-            }
-            data-tip={@get_reference_range.(@parameter)}
-          >
-            <button
-              id={"btn-param-#{@parameter}-low"}
-              phx-click="select"
-              phx-value-choice="low"
-              phx-value-parameter={@parameter}
-              class={[
-                "btn btn-sm btn-square",
-                button_colour(selection == :low, correct_answer?, @state)
-              ]}
+          <dd class="flex flex-row flex-nowrap gap-1 items-center">
+            <div
+              id={"tooltip-param-#{@parameter}"}
+              class={
+                if(@state == :review && not correct_answer?,
+                  do: "tooltip tooltip-right tooltip-open",
+                  else: ""
+                )
+              }
+              data-tip={@get_reference_range.(@parameter)}
             >
-              {gettext("L")}
-            </button>
+              <button
+                id={"btn-param-#{@parameter}-low"}
+                phx-click="select"
+                phx-value-choice="low"
+                phx-value-parameter={@parameter}
+                class={[
+                  "btn btn-sm btn-square",
+                  button_colour(selection == :low, correct_answer?, @state)
+                ]}
+              >
+                {gettext("L")}
+              </button>
 
-            <button
-              id={"btn-param-#{@parameter}-normal"}
-              phx-click="select"
-              phx-value-choice="normal"
-              phx-value-parameter={@parameter}
-              class={[
-                "btn btn-sm btn-square",
-                button_colour(selection == :normal, correct_answer?, @state)
-              ]}
-            >
-              {gettext("N")}
-            </button>
+              <button
+                id={"btn-param-#{@parameter}-normal"}
+                phx-click="select"
+                phx-value-choice="normal"
+                phx-value-parameter={@parameter}
+                class={[
+                  "btn btn-sm btn-square",
+                  button_colour(selection == :normal, correct_answer?, @state)
+                ]}
+              >
+                {gettext("N")}
+              </button>
 
-            <button
-              id={"btn-param-#{@parameter}-high"}
-              phx-click="select"
-              phx-value-choice="high"
-              phx-value-parameter={@parameter}
-              class={[
-                "btn btn-sm btn-square",
-                button_colour(selection == :high, correct_answer?, @state)
-              ]}
-            >
-              {gettext("H")}
-            </button>
-          </div>
-        </dd>
+              <button
+                id={"btn-param-#{@parameter}-high"}
+                phx-click="select"
+                phx-value-choice="high"
+                phx-value-parameter={@parameter}
+                class={[
+                  "btn btn-sm btn-square",
+                  button_colour(selection == :high, correct_answer?, @state)
+                ]}
+              >
+                {gettext("H")}
+              </button>
+            </div>
+          </dd>
         <% end %>
       <% end %>
     </div>

@@ -47,10 +47,10 @@ defmodule Astrup.Case do
   """
   def get_random_case do
     case_count = Repo.aggregate(Case, :count, :id)
-    
+
     if case_count > 0 do
       offset = :rand.uniform(case_count) - 1
-      
+
       Case
       |> limit(1)
       |> offset(^offset)

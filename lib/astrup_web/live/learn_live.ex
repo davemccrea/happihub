@@ -5,8 +5,11 @@ defmodule AstrupWeb.LearnLive do
   """
   use AstrupWeb, :live_view
 
-  def mount(_, _, socket) do
-    analyzer = Astrup.Analyzer.RadiometerAbl90FlexPlus
+  def mount(_, session, socket) do
+    current_lab = session["current_lab"] || "Astrup.Lab.Fimlab"
+    lab_module = Module.concat([current_lab])
+    current_analyzer = session["current_analyzer"] || "Astrup.Analyzer.RadiometerAbl90FlexPlus"
+    analyzer = Module.concat([current_analyzer])
 
     sample_number = Enum.random(10000..99999)
 
@@ -29,7 +32,7 @@ defmodule AstrupWeb.LearnLive do
       |> assign(sample_date: sample_date)
       |> assign(printed_date: printed_date)
       |> assign(:printout, normal_values_printout())
-      |> assign(:lab_module, Astrup.Lab.Fimlab)
+      |> assign(:lab_module, lab_module)
       |> assign(:age_range, "31-50")
       |> assign(:sex, "female")
       |> assign(:analyzer, analyzer)
@@ -50,12 +53,21 @@ defmodule AstrupWeb.LearnLive do
             {gettext("Interactive guide to ABG parameter reference values")}
           </p>
           
-          <!-- Navigation to Quiz -->
+    <!-- Navigation to Quiz -->
           <div class="mb-8">
             <.link navigate={~p"/quiz"} class="btn btn-primary">
               {gettext("Take Quiz")}
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 ml-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </.link>
           </div>
