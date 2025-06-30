@@ -59,17 +59,17 @@ defmodule AstrupWeb.Layouts do
           <ul class="menu menu-horizontal">
             <li>
               <.link navigate={~p"/learn"} class="btn btn-ghost">
-                {gettext("Learn")}
+                {gettext("Reference Values")}
               </.link>
             </li>
             <li>
-              <.link navigate={~p"/quiz"} class="btn btn-ghost">
-                {gettext("Quiz")}
+              <.link navigate={~p"/interpretation"} class="btn btn-ghost">
+                {gettext("Interpretation")}
               </.link>
             </li>
             <li>
-              <.link navigate={~p"/interpret"} class="btn btn-ghost">
-                {gettext("Interpret")}
+              <.link navigate={~p"/submit"} class="btn btn-ghost">
+                {gettext("Tools")}
               </.link>
             </li>
           </ul>

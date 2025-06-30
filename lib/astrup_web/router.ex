@@ -34,9 +34,11 @@ defmodule AstrupWeb.Router do
 
     live_session :regular_session, on_mount: AstrupWeb.Hooks.LocaleHook do
       live "/", LearnLive
-      live "/quiz", QuizLive
       live "/learn", LearnLive
-      live "/interpret", InterpretLive
+      live "/quiz", QuizLive
+      live "/interpretation", InterpretationLearnLive
+      live "/interpretation-quiz", InterpretLive
+      live "/interpret", InterpretLive  # legacy route
       live "/submit", SubmitLive
     end
 

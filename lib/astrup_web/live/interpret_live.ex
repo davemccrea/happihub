@@ -19,10 +19,23 @@ defmodule AstrupWeb.InterpretLive do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div class="mb-12">
-          <h1 class="text-2xl sm:text-3xl font-bold text-center">
-            {gettext("Interpret")}
+        <div class="mb-8">
+          <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4">
+            {gettext("Blood Gas Interpretation Quiz")}
           </h1>
+          <p class="text-center text-base-content/70 mb-6">
+            {gettext("Practice interpreting ABG results with clinical cases")}
+          </p>
+          
+          <!-- Navigation back to Learn -->
+          <div class="text-center mb-8">
+            <.link navigate={~p"/interpretation"} class="btn btn-secondary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+              </svg>
+              {gettext("Back to Interpretation Learning")}
+            </.link>
+          </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">

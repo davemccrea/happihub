@@ -42,10 +42,23 @@ defmodule AstrupWeb.LearnLive do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div class="mb-12">
-          <h1 class="text-2xl sm:text-3xl font-bold text-center">
-            {gettext("Learn")}
+        <div class="mb-8">
+          <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4">
+            {gettext("Reference Values")}
           </h1>
+          <p class="text-center text-base-content/70 mb-6">
+            {gettext("Interactive guide to ABG parameter reference values")}
+          </p>
+          
+          <!-- Navigation to Quiz -->
+          <div class="text-center mb-8">
+            <.link navigate={~p"/quiz"} class="btn btn-primary">
+              {gettext("Take Reference Values Quiz")}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </.link>
+          </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
