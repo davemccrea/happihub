@@ -120,6 +120,8 @@ defmodule AstrupWeb.InterpretLive do
                     disabled={@state == :review}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
+                    correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :ph), else: nil}
+                    show_correction={@state == :review}
                   />
                   <.parameter_card
                     parameter={:pco2}
@@ -128,6 +130,8 @@ defmodule AstrupWeb.InterpretLive do
                     disabled={@state == :review}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
+                    correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :pco2), else: nil}
+                    show_correction={@state == :review}
                   />
                   <.parameter_card
                     parameter={:bicarbonate}
@@ -136,6 +140,8 @@ defmodule AstrupWeb.InterpretLive do
                     disabled={@state == :review}
                     show_reference_values={@show_reference_values}
                     case_data={@case_data}
+                    correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :bicarbonate), else: nil}
+                    show_correction={@state == :review}
                   />
                   <.parameter_display
                     parameter={:po2}
@@ -153,87 +159,62 @@ defmodule AstrupWeb.InterpretLive do
               </div>
 
               <div>
-                <p class="mb-4">
-                  {gettext("Select the most appropriate interpretation:")}
-                </p>
+                <%= if @state != :review do %>
+                  <p class="mb-4">
+                    {gettext("Select the most appropriate interpretation:")}
+                  </p>
 
-                <.form for={%{}} phx-change="select_interpretation">
-                  <select
-                    name="interpretation"
-                    class="select select-bordered w-full max-w-md"
-                    disabled={@state == :review}
-                  >
-                    <option value="" selected={@selected_interpretation == nil}>
-                      {gettext("Choose interpretation...")}
-                    </option>
-                    <option
-                      :for={interpretation <- @interpretation_options}
-                      value={interpretation}
-                      selected={@selected_interpretation == interpretation}
+                  <.form for={%{}} phx-change="select_interpretation">
+                    <select
+                      name="interpretation"
+                      class="select select-bordered w-full max-w-md"
                     >
-                      {interpretation}
-                    </option>
-                  </select>
-                </.form>
-              </div>
-            </div>
-            
-    <!-- Results (shown after checking answers) -->
-            <%= if @state == :review do %>
-              <div class="border border-base-content/20 shadow-lg p-6">
-                <h2 class="text-lg font-semibold mb-4 text-primary">
-                  <.icon name="hero-clipboard-document-check" class="w-5 h-5 inline mr-2" />
-                  {gettext("Results")}
-                </h2>
-                <div class="space-y-6">
-                  <div>
-                    <h3 class="text-lg font-semibold mb-3">
-                      {gettext("Parameter Classifications:")}
-                    </h3>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <.parameter_result
-                        :for={{param, user_selection} <- @selections}
-                        parameter={param}
-                        user_selection={user_selection}
-                        correct_selection={Map.get(@correct_parameter_classifications, param)}
-                        value={Map.get(@case_data, param)}
-                      />
-                    </div>
-                  </div>
-                  <div class="divider"></div>
-                  <div>
-                    <h3 class="text-lg font-semibold mb-3">{gettext("Interpretation:")}</h3>
+                      <option value="" selected={@selected_interpretation == nil}>
+                        {gettext("Choose interpretation...")}
+                      </option>
+                      <option
+                        :for={interpretation <- @interpretation_options}
+                        value={interpretation}
+                        selected={@selected_interpretation == interpretation}
+                      >
+                        {interpretation}
+                      </option>
+                    </select>
+                  </.form>
+                <% end %>
+
+                <%= if @state == :review do %>
+                  <div class="mt-4">
                     <div class="space-y-3">
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="text-sm font-medium">{gettext("Your answer:")}</span>
                         <div class={[
-                          "badge badge-lg",
+                          "badge",
                           if(@interpretation_correct, do: "badge-success", else: "badge-error")
                         ]}>
+                          <.icon
+                            name={
+                              if(@interpretation_correct, do: "hero-check", else: "hero-x-mark")
+                            }
+                            class="w-4 h-4 mr-1"
+                          />
                           {@selected_interpretation || gettext("No selection")}
                         </div>
                       </div>
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-sm font-medium">{gettext("Correct answer:")}</span>
-                        <div class="badge badge-lg badge-success">{@correct_interpretation}</div>
-                      </div>
+                      <%= if not @interpretation_correct do %>
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span class="text-sm font-medium">{gettext("Correct answer:")}</span>
+                          <div class="badge badge-success">
+                            <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                            {@correct_interpretation}
+                          </div>
+                        </div>
+                      <% end %>
                     </div>
                   </div>
-                  <div class="divider"></div>
-                  <div class="text-center">
-                    <h3 class="text-lg font-semibold mb-3">{gettext("Your Score:")}</h3>
-                    <div class="stat-value text-4xl">
-                      <span class={if @score >= 3, do: "text-success", else: "text-warning"}>
-                        {@score}/4
-                      </span>
-                    </div>
-                    <div class="stat-desc text-base mt-2">
-                      {score_message(@score)}
-                    </div>
-                  </div>
-                </div>
+                <% end %>
               </div>
-            <% end %>
+            </div>
           </div>
         </div>
       </div>
@@ -248,6 +229,8 @@ defmodule AstrupWeb.InterpretLive do
   attr :disabled, :boolean, default: false
   attr :show_reference_values, :boolean, default: false
   attr :case_data, :map, required: true
+  attr :correct_selection, :atom, default: nil
+  attr :show_correction, :boolean, default: false
 
   def parameter_card(assigns) do
     ~H"""
@@ -265,51 +248,79 @@ defmodule AstrupWeb.InterpretLive do
           {format_value(@value, @parameter)}
         </div>
 
-        <div class="card-actions justify-start mt-4">
-          <div class="btn-group">
-            <button
-              type="button"
-              class={[
-                "btn btn-sm",
-                if(@selection == :acidosis, do: "btn-error btn-active", else: "btn-outline")
-              ]}
-              phx-click="select_parameter"
-              phx-value-parameter={@parameter}
-              phx-value-selection="acidosis"
-              disabled={@disabled}
-            >
-              {gettext("Acidosis")}
-            </button>
+        <%= if not @disabled do %>
+          <div class="card-actions justify-start mt-4">
+            <div class="btn-group">
+              <button
+                type="button"
+                class={[
+                  "btn btn-sm",
+                  if(@selection == :acidosis, do: "btn-error btn-active", else: "btn-outline")
+                ]}
+                phx-click="select_parameter"
+                phx-value-parameter={@parameter}
+                phx-value-selection="acidosis"
+              >
+                {gettext("Acidosis")}
+              </button>
 
-            <button
-              type="button"
-              class={[
-                "btn btn-sm",
-                if(@selection == :normal, do: "btn-success btn-active", else: "btn-outline")
-              ]}
-              phx-click="select_parameter"
-              phx-value-parameter={@parameter}
-              phx-value-selection="normal"
-              disabled={@disabled}
-            >
-              {gettext("Normal")}
-            </button>
+              <button
+                type="button"
+                class={[
+                  "btn btn-sm",
+                  if(@selection == :normal, do: "btn-success btn-active", else: "btn-outline")
+                ]}
+                phx-click="select_parameter"
+                phx-value-parameter={@parameter}
+                phx-value-selection="normal"
+              >
+                {gettext("Normal")}
+              </button>
 
-            <button
-              type="button"
-              class={[
-                "btn btn-sm",
-                if(@selection == :alkalosis, do: "btn-info btn-active", else: "btn-outline")
-              ]}
-              phx-click="select_parameter"
-              phx-value-parameter={@parameter}
-              phx-value-selection="alkalosis"
-              disabled={@disabled}
-            >
-              {gettext("Alkalosis")}
-            </button>
+              <button
+                type="button"
+                class={[
+                  "btn btn-sm",
+                  if(@selection == :alkalosis, do: "btn-info btn-active", else: "btn-outline")
+                ]}
+                phx-click="select_parameter"
+                phx-value-parameter={@parameter}
+                phx-value-selection="alkalosis"
+              >
+                {gettext("Alkalosis")}
+              </button>
+            </div>
           </div>
-        </div>
+        <% end %>
+
+        <%= if @show_correction do %>
+          <div class="mt-4">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <span class="text-sm font-medium">{gettext("Your answer:")}</span>
+              <div class={[
+                "badge",
+                if(@selection == @correct_selection, do: "badge-success", else: "badge-error")
+              ]}>
+                <.icon
+                  name={
+                    if(@selection == @correct_selection, do: "hero-check", else: "hero-x-mark")
+                  }
+                  class="w-4 h-4 mr-1"
+                />
+                {classification_label(@selection)}
+              </div>
+            </div>
+            <%= if @selection != @correct_selection do %>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-medium">{gettext("Correct answer:")}</span>
+                <div class="badge badge-success">
+                  <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                  {classification_label(@correct_selection)}
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
       </div>
     </div>
     """
@@ -347,49 +358,6 @@ defmodule AstrupWeb.InterpretLive do
     """
   end
 
-  # Parameter result component (for showing results after checking answers)
-  attr :parameter, :atom, required: true
-  attr :value, :any, required: true
-  attr :user_selection, :atom, required: true
-  attr :correct_selection, :atom, required: true
-
-  def parameter_result(assigns) do
-    ~H"""
-    <div class="card bg-base-200 shadow-sm">
-      <div class="card-body">
-        <h3 class="card-title text-sm">{parameter_name(@parameter)}</h3>
-        <div class="stat-value text-lg font-mono text-primary">
-          {format_value(@value, @parameter)}
-        </div>
-
-        <div class="space-y-3 mt-4">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-medium">{gettext("Your answer:")}</span>
-            <div class={[
-              "badge",
-              if(@user_selection == @correct_selection, do: "badge-success", else: "badge-error")
-            ]}>
-              <.icon
-                name={
-                  if(@user_selection == @correct_selection, do: "hero-check", else: "hero-x-mark")
-                }
-                class="w-3 h-3 mr-1"
-              />
-              {classification_label(@user_selection)}
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-medium">{gettext("Correct:")}</span>
-            <div class="badge badge-success">
-              <.icon name="hero-check" class="w-3 h-3 mr-1" />
-              {classification_label(@correct_selection)}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    """
-  end
 
   # Event handlers
   def handle_event("select_parameter", %{"parameter" => param, "selection" => selection}, socket) do
@@ -551,7 +519,7 @@ defmodule AstrupWeb.InterpretLive do
           pco2: case_data.pco2,
           bicarbonate: case_data.bicarbonate
         },
-        %{age_range: "31-50", sex: case_data.sex}
+        %{age_range: Interpreter.get_age_range(case_data.age), sex: case_data.sex}
       )
 
     case Interpreter.primary_disorder(checks) do
@@ -681,7 +649,7 @@ defmodule AstrupWeb.InterpretLive do
       4 -> gettext("Perfect!")
       3 -> gettext("Great job!")
       2 -> gettext("Good effort!")
-      0..1 -> gettext("Keep studying!")
+      score when score in 0..1 -> gettext("Keep studying!")
     end
   end
 

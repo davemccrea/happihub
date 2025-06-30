@@ -32,26 +32,10 @@ defmodule Astrup.Interpreter do
       {:high, :high, :high} ->
         {:metabolic_alkalosis, :partially_compensated}
 
-      # Full compensation
-      {:normal, :low, :high} ->
-        :not_determined
-
-      {:normal, :high, :low} ->
-        :not_determined
-
       _ ->
         :not_determined
     end
   end
-
-  def assess_compensation({_, :partially_compensated}) do
-  end
-
-  # Could be fully compensated or mixed
-  def assess_compensation(:not_determined) do
-  end
-
-  def assess_compensation(x), do: x
 
   def copenhagen_interpretation(pco2, disorder, acuity) do
     case {disorder, acuity} do
@@ -90,17 +74,18 @@ defmodule Astrup.Interpreter do
 
   def get_correct_parameter_classifications(case_data) do
     context = %{age_range: get_age_range(case_data.age), sex: case_data.sex}
-    
-    checks = Astrup.check_values_against_reference_range(
-      Astrup.Lab.Fimlab,
-      %{
-        ph: case_data.ph,
-        pco2: case_data.pco2,
-        bicarbonate: case_data.bicarbonate
-      },
-      context
-    )
-    
+
+    checks =
+      Astrup.check_values_against_reference_range(
+        Astrup.Lab.Fimlab,
+        %{
+          ph: case_data.ph,
+          pco2: case_data.pco2,
+          bicarbonate: case_data.bicarbonate
+        },
+        context
+      )
+
     %{
       ph: convert_ph_classification(checks.ph),
       pco2: convert_respiratory_classification(checks.pco2),
