@@ -6,6 +6,7 @@ defmodule AstrupWeb.InterpretLive do
   use AstrupWeb, :live_view
 
   alias Astrup.Interpreter
+  alias Astrup.Case
 
   @type state :: :ready | :answering | :review
 
@@ -27,7 +28,7 @@ defmodule AstrupWeb.InterpretLive do
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
           <!-- Sidebar Section -->
           <div class="w-full lg:w-72 lg:sticky lg:top-4 lg:self-start space-y-4 order-1 lg:order-1">
-            <section class="border border-base-content/20 shadow-lg p-4">
+            <section class="border border-base-content/20 shadow p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h2>
               <p class="mb-4">
                 {gettext(
@@ -41,7 +42,7 @@ defmodule AstrupWeb.InterpretLive do
                   phx-click="check_answers"
                   disabled={
                     @state == :review or
-                      not all_selections_made?(@selections, @selected_interpretation)
+                      not all_selections_made?(@selections, @selected_primary_disorder, @selected_compensation)
                   }
                 >
                   {gettext("Check Answers")}
@@ -73,12 +74,12 @@ defmodule AstrupWeb.InterpretLive do
             </section>
 
             <%= if @state == :review do %>
-              <section class="border border-base-content/20 shadow-lg p-4">
+              <section class="border border-base-content/20 shadow p-4">
                 <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Score")}</h2>
                 <div class="text-center">
                   <div class="stat-value text-3xl mb-2">
-                    <span class={if @score >= 3, do: "text-success", else: "text-warning"}>
-                      {@score}/4
+                    <span class={if @score >= 4, do: "text-success", else: "text-warning"}>
+                      {@score}/5
                     </span>
                   </div>
                   <div class="text-sm">
@@ -91,8 +92,23 @@ defmodule AstrupWeb.InterpretLive do
           
     <!-- Main Content Section -->
           <div class="w-full lg:flex-1 order-2 lg:order-2 space-y-6">
+            <!-- Results Comparison Table (shown after checking answers) -->
+            <%= if @state == :review do %>
+              <.results_comparison_table
+                score={@score}
+                selections={@selections}
+                correct_parameter_classifications={@correct_parameter_classifications}
+                primary_disorder_correct={@primary_disorder_correct}
+                compensation_correct={@compensation_correct}
+                selected_primary_disorder={@selected_primary_disorder}
+                selected_compensation={@selected_compensation}
+                correct_primary_disorder={@correct_primary_disorder}
+                correct_compensation={@correct_compensation}
+              />
+            <% end %>
+            
             <!-- Case Interpretation -->
-            <div class="border border-base-content/20 shadow-lg p-6 space-y-8">
+            <div class="border border-base-content/20 shadow p-6 space-y-8">
               <!-- Clinical Case -->
               <div>
                 <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Clinical Case")}</h2>
@@ -108,111 +124,128 @@ defmodule AstrupWeb.InterpretLive do
                 <h2 class="text-lg font-semibold mb-4 text-primary">
                   {gettext("Interpretation")}
                 </h2>
-                <p class="mb-4">
-                  {gettext("Classify each parameter as acidosis, normal, or alkalosis:")}
-                </p>
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="badge badge-primary badge-lg font-bold">1</div>
+                  <p class="text-base font-medium">
+                    {gettext("Classify each parameter as acidosis, normal, or alkalosis:")}
+                  </p>
+                </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <.parameter_card
-                    parameter={:ph}
-                    value={@case_data.ph}
-                    selection={@selections.ph}
-                    disabled={@state == :review}
-                    show_reference_values={@show_reference_values}
-                    case_data={@case_data}
-                    correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :ph), else: nil}
-                    show_correction={@state == :review}
-                  />
-                  <.parameter_card
-                    parameter={:pco2}
-                    value={@case_data.pco2}
-                    selection={@selections.pco2}
-                    disabled={@state == :review}
-                    show_reference_values={@show_reference_values}
-                    case_data={@case_data}
-                    correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :pco2), else: nil}
-                    show_correction={@state == :review}
-                  />
-                  <.parameter_card
-                    parameter={:bicarbonate}
-                    value={@case_data.bicarbonate}
-                    selection={@selections.bicarbonate}
-                    disabled={@state == :review}
-                    show_reference_values={@show_reference_values}
-                    case_data={@case_data}
-                    correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :bicarbonate), else: nil}
-                    show_correction={@state == :review}
-                  />
-                  <.parameter_display
-                    parameter={:po2}
-                    value={@case_data.po2}
-                    show_reference_values={@show_reference_values}
-                    case_data={@case_data}
-                  />
-                  <.parameter_display
-                    parameter={:base_excess}
-                    value={@case_data.base_excess}
-                    show_reference_values={@show_reference_values}
-                    case_data={@case_data}
-                  />
+                <div class="space-y-4">
+                  <!-- Main parameters for classification -->
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <.parameter_card
+                      parameter={:ph}
+                      value={@case_data.ph}
+                      selection={@selections.ph}
+                      disabled={@state == :review}
+                      show_reference_values={@show_reference_values}
+                      case_data={@case_data}
+                      correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :ph), else: nil}
+                    />
+                    <.parameter_card
+                      parameter={:pco2}
+                      value={@case_data.pco2}
+                      selection={@selections.pco2}
+                      disabled={@state == :review}
+                      show_reference_values={@show_reference_values}
+                      case_data={@case_data}
+                      correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :pco2), else: nil}
+                    />
+                    <.parameter_card
+                      parameter={:bicarbonate}
+                      value={@case_data.bicarbonate}
+                      selection={@selections.bicarbonate}
+                      disabled={@state == :review}
+                      show_reference_values={@show_reference_values}
+                      case_data={@case_data}
+                      correct_selection={if @state == :review, do: Map.get(@correct_parameter_classifications, :bicarbonate), else: nil}
+                    />
+                  </div>
+                  
+                  <!-- Reference parameters -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <.parameter_display
+                      parameter={:po2}
+                      value={@case_data.po2}
+                      show_reference_values={@show_reference_values}
+                      case_data={@case_data}
+                    />
+                    <.parameter_display
+                      parameter={:base_excess}
+                      value={@case_data.base_excess}
+                      show_reference_values={@show_reference_values}
+                      case_data={@case_data}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <%= if @state != :review do %>
-                  <p class="mb-4">
-                    {gettext("Select the most appropriate interpretation:")}
-                  </p>
-
-                  <.form for={%{}} phx-change="select_interpretation">
-                    <select
-                      name="interpretation"
-                      class="select select-bordered w-full max-w-md"
-                    >
-                      <option value="" selected={@selected_interpretation == nil}>
-                        {gettext("Choose interpretation...")}
-                      </option>
-                      <option
-                        :for={interpretation <- @interpretation_options}
-                        value={interpretation}
-                        selected={@selected_interpretation == interpretation}
-                      >
-                        {interpretation}
-                      </option>
-                    </select>
-                  </.form>
-                <% end %>
-
-                <%= if @state == :review do %>
-                  <div class="mt-4">
-                    <div class="space-y-3">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-sm font-medium">{gettext("Your answer:")}</span>
-                        <div class={[
-                          "badge",
-                          if(@interpretation_correct, do: "badge-success", else: "badge-error")
-                        ]}>
-                          <.icon
-                            name={
-                              if(@interpretation_correct, do: "hero-check", else: "hero-x-mark")
-                            }
-                            class="w-4 h-4 mr-1"
-                          />
-                          {@selected_interpretation || gettext("No selection")}
-                        </div>
-                      </div>
-                      <%= if not @interpretation_correct do %>
-                        <div class="flex flex-wrap items-center gap-2">
-                          <span class="text-sm font-medium">{gettext("Correct answer:")}</span>
-                          <div class="badge badge-success">
-                            <.icon name="hero-check" class="w-4 h-4 mr-1" />
-                            {@correct_interpretation}
-                          </div>
-                        </div>
-                      <% end %>
+              <%= if @state != :review do %>
+                <div class="space-y-6">
+                  <!-- Step 2: Primary Problem -->
+                  <div>
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="badge badge-primary badge-lg font-bold">2</div>
+                      <p class="text-base font-medium">
+                        {gettext("Identify the primary acid-base disorder:")}
+                      </p>
                     </div>
+
+                    <.form for={%{}} phx-change="select_primary_disorder">
+                      <select
+                        name="primary_disorder"
+                        class="select select-bordered w-full max-w-md"
+                      >
+                        <option value="" selected={@selected_primary_disorder == nil}>
+                          {gettext("Choose primary disorder...")}
+                        </option>
+                        <option
+                          :for={disorder <- @primary_disorder_options}
+                          value={disorder}
+                          selected={@selected_primary_disorder == disorder}
+                        >
+                          {disorder}
+                        </option>
+                      </select>
+                    </.form>
                   </div>
-                <% end %>
+
+                  <!-- Step 3: Compensation -->
+                  <div>
+                    <div class="flex items-center gap-3 mb-4">
+                      <div class="badge badge-primary badge-lg font-bold">3</div>
+                      <p class="text-base font-medium">
+                        {gettext("Determine the level of compensation:")}
+                      </p>
+                    </div>
+
+                    <.form for={%{}} phx-change="select_compensation">
+                      <select
+                        name="compensation"
+                        class="select select-bordered w-full max-w-md"
+                        disabled={@selected_primary_disorder == nil or @selected_primary_disorder == "Normal acid-base balance"}
+                      >
+                        <option value="" selected={@selected_compensation == nil}>
+                          {gettext("Choose compensation level...")}
+                        </option>
+                        <option
+                          :for={compensation <- @compensation_options}
+                          value={compensation}
+                          selected={@selected_compensation == compensation}
+                        >
+                          {compensation}
+                        </option>
+                      </select>
+                    </.form>
+                  </div>
+                </div>
+              <% end %>
+              
+              <div class="mt-8 pt-4 border-t border-base-content/10">
+                <p class="text-xs text-base-content/60 italic">
+                  {gettext("Note: Mixed acid-base disorders and fully compensated conditions exist in clinical practice but are not addressed here for educational simplicity.")}
+                </p>
               </div>
             </div>
           </div>
@@ -230,7 +263,6 @@ defmodule AstrupWeb.InterpretLive do
   attr :show_reference_values, :boolean, default: false
   attr :case_data, :map, required: true
   attr :correct_selection, :atom, default: nil
-  attr :show_correction, :boolean, default: false
 
   def parameter_card(assigns) do
     ~H"""
@@ -293,34 +325,131 @@ defmodule AstrupWeb.InterpretLive do
           </div>
         <% end %>
 
-        <%= if @show_correction do %>
-          <div class="mt-4">
-            <div class="flex flex-wrap items-center gap-2 mb-2">
-              <span class="text-sm font-medium">{gettext("Your answer:")}</span>
-              <div class={[
-                "badge",
-                if(@selection == @correct_selection, do: "badge-success", else: "badge-error")
-              ]}>
-                <.icon
-                  name={
-                    if(@selection == @correct_selection, do: "hero-check", else: "hero-x-mark")
-                  }
-                  class="w-4 h-4 mr-1"
-                />
-                {classification_label(@selection)}
-              </div>
-            </div>
-            <%= if @selection != @correct_selection do %>
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-sm font-medium">{gettext("Correct answer:")}</span>
-                <div class="badge badge-success">
-                  <.icon name="hero-check" class="w-4 h-4 mr-1" />
-                  {classification_label(@correct_selection)}
-                </div>
-              </div>
-            <% end %>
+      </div>
+    </div>
+    """
+  end
+
+  # Results comparison table component
+  attr :selections, :map, required: true
+  attr :correct_parameter_classifications, :map, required: true
+  attr :primary_disorder_correct, :boolean, required: true
+  attr :compensation_correct, :boolean, required: true
+  attr :selected_primary_disorder, :string, default: nil
+  attr :selected_compensation, :string, default: nil
+  attr :correct_primary_disorder, :string, required: true
+  attr :correct_compensation, :string, default: nil
+  attr :score, :integer, required: true
+
+  def results_comparison_table(assigns) do
+    ~H"""
+    <div class="border border-base-content/20 shadow p-6 mb-6 bg-base-100">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-primary flex items-center gap-2">
+          <.icon name="hero-clipboard-document-check" class="w-5 h-5" />
+          {gettext("Results")}
+        </h2>
+        <div class="text-right">
+          <div class="stat-value text-xl">
+            <span class={if @score >= 4, do: "text-success", else: "text-warning"}>
+              {@score}/5
+            </span>
           </div>
-        <% end %>
+          <div class="text-sm opacity-70">
+            {score_message(@score)}
+          </div>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+          <thead>
+            <tr>
+              <th>{gettext("Parameter")}</th>
+              <th>{gettext("Your Answer")}</th>
+              <th>{gettext("Correct")}</th>
+              <th class="text-center">{gettext("Result")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={{param, user_selection} <- @selections}>
+              <td class="font-medium">{parameter_name(param)}</td>
+              <td>
+                <span class={[
+                  "badge badge-sm",
+                  case user_selection do
+                    :acidosis -> "badge-error"
+                    :normal -> "badge-success"
+                    :alkalosis -> "badge-info"
+                  end
+                ]}>
+                  {classification_label(user_selection)}
+                </span>
+              </td>
+              <td>
+                <span class={[
+                  "badge badge-sm",
+                  case Map.get(@correct_parameter_classifications, param) do
+                    :acidosis -> "badge-error"
+                    :normal -> "badge-success"
+                    :alkalosis -> "badge-info"
+                  end
+                ]}>
+                  {classification_label(Map.get(@correct_parameter_classifications, param))}
+                </span>
+              </td>
+              <td class="text-center">
+                <%= if Map.get(@correct_parameter_classifications, param) == user_selection do %>
+                  <.icon name="hero-check" class="w-5 h-5 text-success" />
+                <% else %>
+                  <.icon name="hero-x-mark" class="w-5 h-5 text-error" />
+                <% end %>
+              </td>
+            </tr>
+            <tr>
+              <td class="font-medium">{gettext("Primary Disorder")}</td>
+              <td>
+                <span class="text-sm">
+                  {@selected_primary_disorder || gettext("No selection")}
+                </span>
+              </td>
+              <td>
+                <span class="text-sm">
+                  {@correct_primary_disorder}
+                </span>
+              </td>
+              <td class="text-center">
+                <%= if @primary_disorder_correct do %>
+                  <.icon name="hero-check" class="w-5 h-5 text-success" />
+                <% else %>
+                  <.icon name="hero-x-mark" class="w-5 h-5 text-error" />
+                <% end %>
+              </td>
+            </tr>
+            <%= if @correct_compensation do %>
+              <tr>
+                <td class="font-medium">{gettext("Compensation")}</td>
+                <td>
+                  <span class="text-sm">
+                    {@selected_compensation || gettext("No selection")}
+                  </span>
+                </td>
+                <td>
+                  <span class="text-sm">
+                    {@correct_compensation}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <%= if @compensation_correct do %>
+                    <.icon name="hero-check" class="w-5 h-5 text-success" />
+                  <% else %>
+                    <.icon name="hero-x-mark" class="w-5 h-5 text-error" />
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
     </div>
     """
@@ -369,9 +498,20 @@ defmodule AstrupWeb.InterpretLive do
     {:noreply, assign(socket, :selections, new_selections)}
   end
 
-  def handle_event("select_interpretation", %{"interpretation" => interpretation}, socket) do
-    interpretation_value = if interpretation == "", do: nil, else: interpretation
-    {:noreply, assign(socket, :selected_interpretation, interpretation_value)}
+  def handle_event("select_primary_disorder", %{"primary_disorder" => disorder}, socket) do
+    disorder_value = if disorder == "", do: nil, else: disorder
+    
+    # Reset compensation if primary disorder changes
+    socket = socket
+    |> assign(:selected_primary_disorder, disorder_value)
+    |> assign(:selected_compensation, nil)
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("select_compensation", %{"compensation" => compensation}, socket) do
+    compensation_value = if compensation == "", do: nil, else: compensation
+    {:noreply, assign(socket, :selected_compensation, compensation_value)}
   end
 
   def handle_event("check_answers", _params, socket) do
@@ -398,191 +538,69 @@ defmodule AstrupWeb.InterpretLive do
 
   # Helper functions
   defp setup_new_case(socket) do
-    case_data = generate_case()
-    correct_interpretation = get_correct_interpretation(case_data)
-
-    socket
-    |> assign(:state, :ready)
-    |> assign(:case_data, case_data)
-    |> assign(:case_summary, generate_case_summary(case_data))
-    |> assign(:selections, %{ph: nil, pco2: nil, bicarbonate: nil})
-    |> assign(:selected_interpretation, nil)
-    |> assign(:interpretation_options, get_interpretation_options())
-    |> assign(:correct_interpretation, correct_interpretation)
-    |> assign(:score, 0)
-    |> assign_new(:show_reference_values, fn -> false end)
-  end
-
-  defp generate_case do
-    # Generate realistic clinical cases with matching ABG values
-    case_templates = [
-      # COPD exacerbation - respiratory acidosis with partial compensation
-      %{
-        scenario: :copd_exacerbation,
-        ph: Decimal.new("7.32"),
-        pco2: Decimal.new("7.2"),
-        po2: Decimal.new("8.5"),
-        bicarbonate: Decimal.new("28"),
-        base_excess: Decimal.new("3"),
-        age: Enum.random(55..75),
-        sex: Enum.random(["male", "female"])
-      },
-      # Diabetic ketoacidosis - metabolic acidosis with respiratory compensation
-      %{
-        scenario: :dka,
-        ph: Decimal.new("7.22"),
-        pco2: Decimal.new("3.8"),
-        po2: Decimal.new("12.5"),
-        bicarbonate: Decimal.new("15"),
-        base_excess: Decimal.new("-12"),
-        age: Enum.random(18..45),
-        sex: Enum.random(["male", "female"])
-      },
-      # Pneumonia with sepsis - mixed disorder
-      %{
-        scenario: :pneumonia_sepsis,
-        ph: Decimal.new("7.28"),
-        pco2: Decimal.new("4.2"),
-        po2: Decimal.new("9.8"),
-        bicarbonate: Decimal.new("18"),
-        base_excess: Decimal.new("-8"),
-        age: Enum.random(60..80),
-        sex: Enum.random(["male", "female"])
-      },
-      # Anxiety/panic attack - respiratory alkalosis
-      %{
-        scenario: :anxiety,
-        ph: Decimal.new("7.52"),
-        pco2: Decimal.new("3.2"),
-        po2: Decimal.new("13.8"),
-        bicarbonate: Decimal.new("22"),
-        base_excess: Decimal.new("-1"),
-        age: Enum.random(18..35),
-        sex: Enum.random(["male", "female"])
-      },
-      # Vomiting - metabolic alkalosis
-      %{
-        scenario: :vomiting,
-        ph: Decimal.new("7.48"),
-        pco2: Decimal.new("5.8"),
-        po2: Decimal.new("11.2"),
-        bicarbonate: Decimal.new("32"),
-        base_excess: Decimal.new("8"),
-        age: Enum.random(25..65),
-        sex: Enum.random(["male", "female"])
-      },
-      # Normal values
-      %{
-        scenario: :normal,
-        ph: Decimal.new("7.38"),
-        pco2: Decimal.new("5.1"),
-        po2: Decimal.new("11.5"),
-        bicarbonate: Decimal.new("24"),
-        base_excess: Decimal.new("0"),
-        age: Enum.random(25..65),
-        sex: Enum.random(["male", "female"])
-      }
-    ]
-
-    Enum.random(case_templates)
-  end
-
-  defp generate_case_summary(case_data) do
-    case case_data.scenario do
-      :copd_exacerbation ->
-        "A #{case_data.age}-year-old #{case_data.sex} presents to the emergency department with worsening shortness of breath over the past 3 days. They have a history of COPD and are a current smoker. Physical examination reveals use of accessory muscles, prolonged expiration, and decreased breath sounds bilaterally. The patient appears drowsy and confused."
-
-      :dka ->
-        "A #{case_data.age}-year-old #{case_data.sex} with type 1 diabetes is brought in by ambulance after being found unconscious at home. Family reports the patient has been unwell with flu-like symptoms for several days and may have missed insulin doses. The patient is dehydrated with fruity breath odor and Kussmaul respirations."
-
-      :pneumonia_sepsis ->
-        "A #{case_data.age}-year-old #{case_data.sex} is admitted from a nursing home with fever, productive cough, and altered mental status for 2 days. Vital signs show temperature 39.2°C, blood pressure 85/50 mmHg, heart rate 125 bpm. Chest X-ray shows right lower lobe consolidation."
-
-      :anxiety ->
-        "A #{case_data.age}-year-old #{case_data.sex} presents to the emergency department with sudden onset of chest tightness, palpitations, and feeling short of breath. The patient appears anxious and reports tingling in fingers and around the mouth. No significant medical history. Symptoms started during a stressful work meeting."
-
-      :vomiting ->
-        "A #{case_data.age}-year-old #{case_data.sex} presents with 3 days of severe nausea and vomiting, unable to keep fluids down. The patient appears dehydrated with dry mucous membranes and decreased skin turgor. Reports feeling weak and dizzy when standing."
-
-      :normal ->
-        "A #{case_data.age}-year-old #{case_data.sex} undergoing elective surgery. Pre-operative assessment shows the patient is healthy with no significant medical history. Vital signs are stable and the patient is breathing room air comfortably."
+    case_data = Case.get_random_case()
+    
+    if case_data do
+      socket
+      |> assign(:state, :ready)
+      |> assign(:case_data, case_data)
+      |> assign(:case_summary, case_data.case_summary)
+      |> assign(:selections, %{ph: nil, pco2: nil, bicarbonate: nil})
+      |> assign(:selected_primary_disorder, nil)
+      |> assign(:selected_compensation, nil)
+      |> assign(:primary_disorder_options, get_primary_disorder_options())
+      |> assign(:compensation_options, get_compensation_options())
+      |> assign(:correct_primary_disorder, case_data.primary_disorder)
+      |> assign(:correct_compensation, case_data.compensation)
+      |> assign(:score, 0)
+      |> assign(:show_reference_values, true)
+    else
+      # Fallback if no cases in database
+      socket
+      |> put_flash(:error, "No cases available. Please contact administrator.")
+      |> assign(:state, :ready)
     end
   end
 
-  defp get_correct_interpretation(case_data) do
-    # Use existing Interpreter module to determine correct answer
-    checks =
-      Astrup.check_values_against_reference_range(
-        Astrup.Lab.Fimlab,
-        %{
-          ph: case_data.ph,
-          pco2: case_data.pco2,
-          bicarbonate: case_data.bicarbonate
-        },
-        %{age_range: Interpreter.get_age_range(case_data.age), sex: case_data.sex}
-      )
 
-    case Interpreter.primary_disorder(checks) do
-      {:respiratory_acidosis, :uncompensated} ->
-        "Respiratory acidosis (uncompensated)"
 
-      {:respiratory_acidosis, :partially_compensated} ->
-        "Respiratory acidosis with partial metabolic compensation"
-
-      {:respiratory_alkalosis, :uncompensated} ->
-        "Respiratory alkalosis (uncompensated)"
-
-      {:respiratory_alkalosis, :partially_compensated} ->
-        "Respiratory alkalosis with partial metabolic compensation"
-
-      {:metabolic_acidosis, :uncompensated} ->
-        "Metabolic acidosis (uncompensated)"
-
-      {:metabolic_acidosis, :partially_compensated} ->
-        "Metabolic acidosis with partial respiratory compensation"
-
-      {:metabolic_alkalosis, :uncompensated} ->
-        "Metabolic alkalosis (uncompensated)"
-
-      {:metabolic_alkalosis, :partially_compensated} ->
-        "Metabolic alkalosis with partial respiratory compensation"
-
-      :normal ->
-        "Normal acid-base balance"
-
-      _ ->
-        "Mixed acid-base disorder"
-    end
-  end
-
-  defp get_interpretation_options do
+  defp get_primary_disorder_options do
     [
       "Normal acid-base balance",
-      "Respiratory acidosis (uncompensated)",
-      "Respiratory acidosis with partial metabolic compensation",
-      "Respiratory alkalosis (uncompensated)",
-      "Respiratory alkalosis with partial metabolic compensation",
-      "Metabolic acidosis (uncompensated)",
-      "Metabolic acidosis with partial respiratory compensation",
-      "Metabolic alkalosis (uncompensated)",
-      "Metabolic alkalosis with partial respiratory compensation",
-      "Mixed acid-base disorder"
+      "Respiratory acidosis",
+      "Respiratory alkalosis", 
+      "Metabolic acidosis",
+      "Metabolic alkalosis"
     ]
   end
 
-  defp all_selections_made?(selections, selected_interpretation) do
+  defp get_compensation_options do
+    [
+      "Uncompensated",
+      "Partially compensated"
+    ]
+  end
+
+
+  defp all_selections_made?(selections, selected_primary_disorder, selected_compensation) do
     required_params = [:ph, :pco2, :bicarbonate]
     all_params_selected = Enum.all?(required_params, &(Map.get(selections, &1) != nil))
-    interpretation_selected = selected_interpretation != nil
+    primary_disorder_selected = selected_primary_disorder != nil
+    
+    # Compensation is only required if the primary disorder is not normal
+    compensation_required = selected_primary_disorder not in ["Normal acid-base balance", nil]
+    compensation_selected = selected_compensation != nil or not compensation_required
 
-    all_params_selected and interpretation_selected
+    all_params_selected and primary_disorder_selected and compensation_selected
   end
 
   defp calculate_score(socket) do
     case_data = socket.assigns.case_data
     selections = socket.assigns.selections
-    selected_interpretation = socket.assigns.selected_interpretation
-    correct_interpretation = socket.assigns.correct_interpretation
+    selected_primary_disorder = socket.assigns.selected_primary_disorder
+    selected_compensation = socket.assigns.selected_compensation
+    correct_primary_disorder = socket.assigns.correct_primary_disorder
+    correct_compensation = socket.assigns.correct_compensation
 
     # Calculate correct parameter classifications
     correct_classifications = Interpreter.get_correct_parameter_classifications(case_data)
@@ -593,16 +611,24 @@ defmodule AstrupWeb.InterpretLive do
         Map.get(correct_classifications, param) == user_selection
       end)
 
-    # Check interpretation (1 point)
-    interpretation_correct = selected_interpretation == correct_interpretation
-    interpretation_score = if interpretation_correct, do: 1, else: 0
+    # Check primary disorder (1 point)
+    primary_disorder_correct = selected_primary_disorder == correct_primary_disorder
+    primary_disorder_score = if primary_disorder_correct, do: 1, else: 0
 
-    total_score = parameter_score + interpretation_score
+    # Check compensation (1 point) - only if compensation is expected
+    compensation_score = cond do
+      correct_compensation == nil -> 1  # No compensation expected, automatic point
+      selected_compensation == correct_compensation -> 1
+      true -> 0
+    end
+
+    total_score = parameter_score + primary_disorder_score + compensation_score
 
     socket
     |> assign(:score, total_score)
     |> assign(:correct_parameter_classifications, correct_classifications)
-    |> assign(:interpretation_correct, interpretation_correct)
+    |> assign(:primary_disorder_correct, primary_disorder_correct)
+    |> assign(:compensation_correct, selected_compensation == correct_compensation)
   end
 
   defp parameter_name(parameter) do
@@ -646,9 +672,10 @@ defmodule AstrupWeb.InterpretLive do
 
   defp score_message(score) do
     case score do
-      4 -> gettext("Perfect!")
-      3 -> gettext("Great job!")
-      2 -> gettext("Good effort!")
+      5 -> gettext("Perfect!")
+      4 -> gettext("Excellent!")
+      3 -> gettext("Good job!")
+      2 -> gettext("Getting there!")
       score when score in 0..1 -> gettext("Keep studying!")
     end
   end

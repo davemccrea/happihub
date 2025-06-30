@@ -346,7 +346,7 @@ msgstr ""
 #: lib/astrup_web/live/blood_gas_quiz_live.ex:61
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Quiz"
-msgstr "Quiz-läge"
+msgstr "Quiz"
 
 #: lib/astrup_web/live/case_interpretation_live.ex:304
 #, elixir-autogen, elixir-format
