@@ -18,7 +18,7 @@ defmodule AstrupWeb.InterpretLive do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div class="mb-6">
+        <div class="mb-12">
           <h1 class="text-2xl sm:text-3xl font-bold text-center">
             {gettext("Interpret")}
           </h1>
@@ -29,7 +29,7 @@ defmodule AstrupWeb.InterpretLive do
           <div class="w-full lg:w-72 lg:sticky lg:top-4 lg:self-start space-y-4 order-1 lg:order-1">
             <section class="border border-base-content/20 shadow-lg p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h2>
-              <p class="mb-4 text-sm">
+              <p class="mb-4">
                 {gettext(
                   "Read the clinical case, classify each parameter, and select the most appropriate interpretation."
                 )}
@@ -44,7 +44,6 @@ defmodule AstrupWeb.InterpretLive do
                       not all_selections_made?(@selections, @selected_interpretation)
                   }
                 >
-                  <.icon name="hero-check-circle" class="w-4 h-4" />
                   {gettext("Check Answers")}
                 </button>
 
@@ -62,7 +61,7 @@ defmodule AstrupWeb.InterpretLive do
 
               <.form for={%{}} phx-change="toggle_reference_values">
                 <label class="label cursor-pointer">
-                  <span class="label-text text-sm">{gettext("Show reference values")}</span>
+                  <span class="label-text text-xs">{gettext("Show reference values")}</span>
                   <input
                     type="checkbox"
                     name="show_reference_values"
@@ -97,19 +96,19 @@ defmodule AstrupWeb.InterpretLive do
               <!-- Clinical Case -->
               <div>
                 <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Clinical Case")}</h2>
-                <div class="prose prose-sm max-w-none">
+                <div class="max-w-none">
                   {@case_summary}
                 </div>
               </div>
 
               <div class="divider"></div>
               
-    <!-- Parameter Classification -->
+    <!-- Interpretation -->
               <div>
                 <h2 class="text-lg font-semibold mb-4 text-primary">
-                  {gettext("Parameter Classification")}
+                  {gettext("Interpretation")}
                 </h2>
-                <p class="text-sm opacity-70 mb-4">
+                <p class="mb-4">
                   {gettext("Classify each parameter as acidosis, normal, or alkalosis:")}
                 </p>
 
@@ -153,12 +152,8 @@ defmodule AstrupWeb.InterpretLive do
                 </div>
               </div>
 
-              <div class="divider"></div>
-              
-    <!-- Interpretation -->
               <div>
-                <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Interpretation")}</h2>
-                <p class="text-sm opacity-70 mb-4">
+                <p class="mb-4">
                   {gettext("Select the most appropriate interpretation:")}
                 </p>
 
@@ -261,7 +256,7 @@ defmodule AstrupWeb.InterpretLive do
         <h3 class="card-title text-sm">
           {parameter_name(@parameter)}
           <%= if @show_reference_values do %>
-            <span class="text-xs font-normal opacity-60">
+            <span class="text-xs font-normal text-base-content/50">
               ({get_fimlab_reference_range(@parameter, @case_data)})
             </span>
           <% end %>
@@ -343,7 +338,7 @@ defmodule AstrupWeb.InterpretLive do
         </div>
 
         <div class="card-actions justify-start mt-4">
-          <div class="badge badge-ghost badge-sm">
+          <div class="text-xs">
             {gettext("Reference only")}
           </div>
         </div>

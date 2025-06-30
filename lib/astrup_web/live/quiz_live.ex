@@ -56,7 +56,7 @@ defmodule AstrupWeb.QuizLive do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale}>
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-        <div class="mb-6">
+        <div class="mb-12">
           <h1 class="text-2xl sm:text-3xl font-bold text-center">
             {gettext("Quiz")}
           </h1>
