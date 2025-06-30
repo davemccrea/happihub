@@ -1,18 +1,6 @@
 defmodule Astrup.Lab.Fimlab do
   @behaviour Astrup.Lab
 
-  def get_age_ranges() do
-    [
-      "0-18",
-      "18-30",
-      "31-50",
-      "51-60",
-      "61-70",
-      "71-80",
-      ">80"
-    ]
-  end
-
   @impl Astrup.Lab
   def get_reference_range(
         parameter,

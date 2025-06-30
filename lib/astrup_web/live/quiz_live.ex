@@ -8,7 +8,7 @@ defmodule AstrupWeb.QuizLive do
   - `:review`: After the user clicks "Check Answers" and the answers are evaluated.
   """
   use AstrupWeb, :live_view
-  alias Astrup.Printout
+  alias Astrup.PatientCase
 
   @type state :: :ready | :answering | :review
 
@@ -38,7 +38,7 @@ defmodule AstrupWeb.QuizLive do
     |> assign(:state, :ready)
     |> assign(:selections, selections)
     |> assign(:number_of_parameters, map_size(selections))
-    |> assign(:printout, Printout.get_random_printout())
+    |> assign(:printout, PatientCase.get_random_checked_case())
     |> assign(:lab_module, Astrup.Lab.Fimlab)
     |> assign(:age_range, "31-50")
     |> assign(:sex, "female")

@@ -1,22 +1,35 @@
 defmodule AstrupWeb.PrintoutsLive do
   use Backpex.LiveResource,
     adapter_config: [
-      schema: Astrup.Printout,
+      schema: Astrup.PatientCase,
       repo: Astrup.Repo,
-      update_changeset: &Astrup.Printout.changeset/3,
-      create_changeset: &Astrup.Printout.changeset/3
+      update_changeset: &Astrup.PatientCase.changeset/3,
+      create_changeset: &Astrup.PatientCase.changeset/3
     ],
     layout: {AstrupWeb.Layouts, :admin}
 
   @impl Backpex.LiveResource
-  def singular_name, do: "Printout"
+  def singular_name, do: "Patient Case"
 
   @impl Backpex.LiveResource
-  def plural_name, do: "Printouts"
+  def plural_name, do: "Patient Cases"
 
   @impl Backpex.LiveResource
   def fields do
     [
+      case_type: %{
+        module: Backpex.Fields.Select,
+        label: "Case Type",
+        options: [
+          %{label: "Reference", value: "reference"},
+          %{label: "Interpretation", value: "interpretation"},
+          %{label: "Mixed", value: "mixed"}
+        ]
+      },
+      scenario: %{
+        module: Backpex.Fields.Text,
+        label: "Scenario"
+      },
       ph: %{
         module: Backpex.Fields.Number,
         label: "pH"
@@ -36,6 +49,18 @@ defmodule AstrupWeb.PrintoutsLive do
       base_excess: %{
         module: Backpex.Fields.Number,
         label: "Base excess"
+      },
+      age: %{
+        module: Backpex.Fields.Number,
+        label: "Age"
+      },
+      sex: %{
+        module: Backpex.Fields.Select,
+        label: "Sex",
+        options: [
+          %{label: "Male", value: "male"},
+          %{label: "Female", value: "female"}
+        ]
       },
       anion_gap: %{
         module: Backpex.Fields.Number,
@@ -88,6 +113,22 @@ defmodule AstrupWeb.PrintoutsLive do
       lactate: %{
         module: Backpex.Fields.Number,
         label: "Lactate"
+      },
+      case_summary: %{
+        module: Backpex.Fields.Textarea,
+        label: "Case Summary"
+      },
+      primary_disorder: %{
+        module: Backpex.Fields.Text,
+        label: "Primary Disorder"
+      },
+      compensation: %{
+        module: Backpex.Fields.Text,
+        label: "Compensation"
+      },
+      checked_at: %{
+        module: Backpex.Fields.DateTime,
+        label: "Checked At"
       }
     ]
   end

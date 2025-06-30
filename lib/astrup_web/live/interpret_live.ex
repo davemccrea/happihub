@@ -5,8 +5,7 @@ defmodule AstrupWeb.InterpretLive do
   """
   use AstrupWeb, :live_view
 
-  alias Astrup.Interpreter
-  alias Astrup.Case
+  alias Astrup.PatientCase
 
   @type state :: :ready | :answering | :review
 
@@ -551,7 +550,7 @@ defmodule AstrupWeb.InterpretLive do
 
   # Helper functions
   defp setup_new_case(socket) do
-    case_data = Case.get_random_case()
+    case_data = PatientCase.get_random_case_by_type("interpretation")
     
     if case_data do
       socket
@@ -616,7 +615,7 @@ defmodule AstrupWeb.InterpretLive do
     correct_compensation = socket.assigns.correct_compensation
 
     # Calculate correct parameter classifications
-    correct_classifications = Interpreter.get_correct_parameter_classifications(case_data)
+    correct_classifications = get_correct_classifications(case_data)
 
     # Count correct parameter classifications (3 parameters)
     parameter_score =
@@ -696,11 +695,62 @@ defmodule AstrupWeb.InterpretLive do
   defp get_fimlab_reference_range(parameter, case_data) do
     # Create context based on case data
     context = %{
-      age_range: Interpreter.get_age_range(case_data.age),
+      age_range: get_age_group(case_data.age),
       sex: case_data.sex
     }
 
     # Get the reference range from Fimlab
     Astrup.pretty_print_reference_range(Astrup.Lab.Fimlab, parameter, context)
   end
+
+  # Private functions moved from Astrup.Interpreter for better organization
+  
+  defp get_correct_classifications(case_data) do
+    context = %{age_range: categorize_age(case_data.age), sex: case_data.sex}
+
+    checks =
+      Astrup.check_values_against_reference_range(
+        Astrup.Lab.Fimlab,
+        %{
+          ph: case_data.ph,
+          pco2: case_data.pco2,
+          bicarbonate: case_data.bicarbonate
+        },
+        context
+      )
+
+    %{
+      ph: classify_ph_value(checks.ph),
+      pco2: classify_respiratory_value(checks.pco2),
+      bicarbonate: classify_metabolic_value(checks.bicarbonate)
+    }
+  end
+
+  defp get_age_group(age) do
+    categorize_age(age)
+  end
+
+  defp categorize_age(age) do
+    cond do
+      age <= 18 -> "0-18"
+      age <= 30 -> "18-30"
+      age <= 50 -> "31-50"
+      age <= 60 -> "51-60"
+      age <= 70 -> "61-70"
+      age <= 80 -> "71-80"
+      true -> ">80"
+    end
+  end
+
+  defp classify_ph_value(:low), do: :acidosis
+  defp classify_ph_value(:normal), do: :normal
+  defp classify_ph_value(:high), do: :alkalosis
+
+  defp classify_respiratory_value(:low), do: :alkalosis
+  defp classify_respiratory_value(:normal), do: :normal
+  defp classify_respiratory_value(:high), do: :acidosis
+
+  defp classify_metabolic_value(:low), do: :acidosis
+  defp classify_metabolic_value(:normal), do: :normal
+  defp classify_metabolic_value(:high), do: :alkalosis
 end
