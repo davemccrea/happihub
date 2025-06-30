@@ -17,7 +17,7 @@ defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
 
   def render(assigns) do
     ~H"""
-    <article class="relative max-w-4xl flex-1 select-none py-12 px-12 shadow-lg border border-base-content/20">
+    <article class="relative max-w-4xl flex-1 select-none py-12 px-12 shadow border border-base-content/20">
       <header class="text-center">
         <h2 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h2>
         <div class="space-y-1">

@@ -69,7 +69,7 @@ defmodule AstrupWeb.Layouts do
             </li>
             <li>
               <.link navigate={~p"/submit"} class="btn btn-ghost">
-                {gettext("Tools")}
+                {gettext("Submit ABG")}
               </.link>
             </li>
           </ul>
@@ -94,7 +94,6 @@ defmodule AstrupWeb.Layouts do
     <footer class="footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10">
       <nav class="grid grid-flow-col gap-4">
         <a href="https://github.com/davemccrea">GitHub</a>
-        <.link navigate={~p"/submit"}>{gettext("Submit an ABG")}</.link>
       </nav>
     </footer>
 

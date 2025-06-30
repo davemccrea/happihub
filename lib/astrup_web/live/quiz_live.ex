@@ -57,27 +57,27 @@ defmodule AstrupWeb.QuizLive do
     <Layouts.app flash={@flash} locale={@locale}>
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div class="mb-8">
-          <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4">
+          <h1 class="text-2xl sm:text-3xl font-bold mb-4">
             {gettext("Reference Values Quiz")}
           </h1>
-          <p class="text-center text-base-content/70 mb-6">
+          <p class="text-base-content/70 mb-6">
             {gettext("Test your knowledge of ABG parameter reference ranges")}
           </p>
           
           <!-- Navigation back to Learn -->
-          <div class="text-center mb-8">
-            <.link navigate={~p"/learn"} class="btn btn-secondary">
+          <div class="mb-8">
+            <.link navigate={~p"/learn"} class="btn btn-primary">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
               </svg>
-              {gettext("Back to Reference Values Learning")}
+              {gettext("Back to Learning")}
             </.link>
           </div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
           <div class="lg:sticky lg:top-4 lg:self-start space-y-4 w-full lg:w-72 order-1 lg:order-1">
-            <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
+            <section class="space-y-4 border border-base-content/20 shadow p-4">
               <h1 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h1>
               <p class="mb-4">
                 {gettext(
@@ -103,7 +103,7 @@ defmodule AstrupWeb.QuizLive do
               </div>
             </section>
 
-            <section class="space-y-4 border border-base-content/20 shadow-lg p-4">
+            <section class="space-y-4 border border-base-content/20 shadow p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">
                 {gettext("Progress")}
               </h2>
@@ -145,7 +145,7 @@ defmodule AstrupWeb.QuizLive do
           </div>
 
           <div class="w-full lg:w-72 order-3 lg:order-3">
-            <section class="border rounded-none border-base-content/20 shadow-lg p-4">
+            <section class="border rounded-none border-base-content/20 shadow p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">
                 {gettext("Settings")}
               </h2>
