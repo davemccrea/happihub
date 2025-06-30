@@ -121,18 +121,16 @@ defmodule AstrupWeb.QuizLive do
               </h2>
               <ul>
                 <li>{gettext("Answers: ")} {number_of_selections_made(@selections)}/18</li>
-                <%= if @state == :review do %>
-                  <li>{gettext("Score:")} {correct_count(@selections)}/{total_count(@selections)}</li>
-                  <li
-                    :if={full_score?(@selections)}
-                    id="congratulations"
-                    class="text-lg font-semibold text-success"
-                  >
-                    {gettext("Nice one!")} 🎉
-                  </li>
-                <% end %>
               </ul>
             </section>
+
+            <%= if @state == :review do %>
+              <.score_section
+                score={correct_count(@selections)}
+                total={total_count(@selections)}
+                show_perfect_message={full_score?(@selections)}
+              />
+            <% end %>
           </div>
 
           <div class="w-full lg:flex-1 order-2 lg:order-2">

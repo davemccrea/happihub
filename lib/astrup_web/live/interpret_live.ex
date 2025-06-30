@@ -109,19 +109,7 @@ defmodule AstrupWeb.InterpretLive do
             </section>
 
             <%= if @state == :review do %>
-              <section class="border border-base-content/20 shadow p-4">
-                <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Score")}</h2>
-                <div class="text-center">
-                  <div class="stat-value text-3xl mb-2">
-                    <span class={if @score >= 4, do: "text-success", else: "text-warning"}>
-                      {@score}/5
-                    </span>
-                  </div>
-                  <div class="text-sm">
-                    {score_message(@score)}
-                  </div>
-                </div>
-              </section>
+              <.score_section score={@score} total={5} show_perfect_message={@score == 5} />
             <% end %>
           </div>
           
@@ -404,7 +392,7 @@ defmodule AstrupWeb.InterpretLive do
             </span>
           </div>
           <div class="text-sm opacity-70">
-            {score_message(@score)}
+            {score_message_text(@score)}
           </div>
         </div>
       </div>
@@ -717,16 +705,6 @@ defmodule AstrupWeb.InterpretLive do
   defp classification_label(:normal), do: gettext("Normal")
   defp classification_label(:alkalosis), do: gettext("Alkalosis")
 
-  defp score_message(score) do
-    case score do
-      5 -> gettext("Perfect!")
-      4 -> gettext("Excellent!")
-      3 -> gettext("Good job!")
-      2 -> gettext("Getting there!")
-      score when score in 0..1 -> gettext("Keep studying!")
-    end
-  end
-
   defp get_fimlab_reference_range(parameter, case_data) do
     # Create context based on case data
     context = %{
@@ -788,4 +766,16 @@ defmodule AstrupWeb.InterpretLive do
   defp classify_metabolic_value(:low), do: :acidosis
   defp classify_metabolic_value(:normal), do: :normal
   defp classify_metabolic_value(:high), do: :alkalosis
+
+  defp score_message_text(score) do
+    percentage = score / 5 * 100
+
+    cond do
+      percentage >= 90 -> gettext("Perfect!")
+      percentage >= 80 -> gettext("Excellent!")
+      percentage >= 70 -> gettext("Good job!")
+      percentage >= 60 -> gettext("Not bad!")
+      true -> gettext("Keep practicing!")
+    end
+  end
 end

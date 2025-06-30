@@ -471,4 +471,58 @@ defmodule AstrupWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  @doc """
+  Renders a score section for quiz results.
+
+  ## Examples
+
+      <.score_section score={4} total={5} />
+      <.score_section score={15} total={18} perfect_message="Excellent work!" />
+  """
+  attr :score, :integer, required: true, doc: "Current score"
+  attr :total, :integer, required: true, doc: "Maximum possible score"
+  attr :perfect_message, :string, default: nil, doc: "Optional message to show for perfect scores"
+
+  attr :show_perfect_message, :boolean,
+    default: false,
+    doc: "Whether to show the perfect score message"
+
+  def score_section(assigns) do
+    percentage = assigns.score / assigns.total * 100
+
+    assigns =
+      assigns
+      |> assign(:percentage, percentage)
+      |> assign(:score_message, get_score_message(percentage))
+
+    ~H"""
+    <section class="border border-base-content/20 shadow p-4">
+      <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Score")}</h2>
+      <div class="text-center">
+        <div class="stat-value text-3xl mb-2">
+          <span class={if @percentage >= 80, do: "text-success", else: "text-warning"}>
+            {@score}/{@total}
+          </span>
+        </div>
+        <div class="text-sm">
+          {@score_message}
+        </div>
+        <div :if={@show_perfect_message} class="text-lg font-semibold text-success mt-2">
+          {@perfect_message || gettext("Nice one!")} 🎉
+        </div>
+      </div>
+    </section>
+    """
+  end
+
+  defp get_score_message(percentage) do
+    cond do
+      percentage >= 90 -> gettext("Perfect!")
+      percentage >= 80 -> gettext("Excellent!")
+      percentage >= 70 -> gettext("Good job!")
+      percentage >= 60 -> gettext("Not bad!")
+      true -> gettext("Keep practicing!")
+    end
+  end
 end
