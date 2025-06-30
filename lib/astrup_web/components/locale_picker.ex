@@ -4,7 +4,7 @@ defmodule AstrupWeb.Components.LocalePicker do
   def render(assigns) do
     locale_info = %{
       "en" => "English",
-      "sv" => "Svenska", 
+      "sv" => "Svenska",
       "fi" => "Suomi"
     }
 
@@ -14,27 +14,30 @@ defmodule AstrupWeb.Components.LocalePicker do
 
     ~H"""
     <div class="dropdown dropdown-end">
-      <div 
-        tabindex="0" 
-        role="button" 
-        class="btn btn-ghost btn-sm" 
+      <div
+        tabindex="0"
+        role="button"
+        class="btn btn-ghost btn-sm"
         aria-label={gettext("Change language")}
-        aria-haspopup="true">
+        aria-haspopup="true"
+      >
         <.icon name="hero-globe-alt" class="size-4" />
         <span class="text-sm">{@locale |> String.upcase()}</span>
       </div>
-      <ul 
-        tabindex="0" 
+      <ul
+        tabindex="0"
         class="dropdown-content menu bg-base-100 rounded-box z-[1] w-48 p-2 shadow"
         role="menu"
-        aria-label={gettext("Available languages")}>
+        aria-label={gettext("Available languages")}
+      >
         <li :for={{locale, name} <- @locale_info}>
-          <button 
-            phx-click="change_locale" 
+          <button
+            phx-click="change_locale"
             phx-target={@myself}
             phx-value-locale={locale}
             class={"#{if locale == @locale, do: "active"}"}
-            role="menuitem">
+            role="menuitem"
+          >
             <span class="font-medium">{name}</span>
           </button>
         </li>

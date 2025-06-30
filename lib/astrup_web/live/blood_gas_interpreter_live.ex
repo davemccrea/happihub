@@ -11,7 +11,7 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
     current_analyzer = session["current_analyzer"] || "Astrup.Analyzer.RadiometerAbl90FlexPlus"
     analyzer = Module.concat([current_analyzer])
 
-    form = 
+    form =
       BloodGasForm.changeset()
       |> to_form()
 
@@ -59,7 +59,10 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
                     class="input input-bordered"
                   />
                   <p class="text-xs text-base-content/70 mb-4">
-                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(@lab_module, :ph)}
+                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                      @lab_module,
+                      :ph
+                    )}
                   </p>
 
                   <.input
@@ -73,7 +76,10 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
                     class="input input-bordered"
                   />
                   <p class="text-xs text-base-content/70 mb-4">
-                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(@lab_module, :pco2)}
+                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                      @lab_module,
+                      :pco2
+                    )}
                   </p>
 
                   <.input
@@ -87,14 +93,13 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
                     class="input input-bordered"
                   />
                   <p class="text-xs text-base-content/70 mb-6">
-                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(@lab_module, :bicarbonate)}
+                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                      @lab_module,
+                      :bicarbonate
+                    )}
                   </p>
 
-                  <button
-                    type="submit"
-                    class="btn btn-primary w-full"
-                    disabled={!@form.source.valid?}
-                  >
+                  <button type="submit" class="btn btn-primary w-full" disabled={!@form.source.valid?}>
                     {gettext("Interpret")}
                   </button>
                 </.form>
@@ -158,7 +163,9 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
                               <h4 class="font-semibold mb-2">{gettext("Primary Disorder")}</h4>
                               <p class="text-lg">{disorder_text(disorder)}</p>
                               <%= if compensation != :not_determined do %>
-                                <p class="text-sm mt-2 opacity-80">{compensation_text(compensation)}</p>
+                                <p class="text-sm mt-2 opacity-80">
+                                  {compensation_text(compensation)}
+                                </p>
                               <% end %>
                             </div>
                           </div>
@@ -175,7 +182,9 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
                               <h4 class="font-semibold mb-2">{gettext("Result")}</h4>
                               <p class="text-lg">{gettext("Cannot determine primary disorder")}</p>
                               <p class="text-sm mt-2 opacity-80">
-                                {gettext("The combination of values suggests a mixed disorder or measurement error")}
+                                {gettext(
+                                  "The combination of values suggests a mixed disorder or measurement error"
+                                )}
                               </p>
                             </div>
                           </div>
@@ -204,7 +213,6 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
     """
   end
 
-
   def handle_event("validate", %{"blood_gas_form" => params}, socket) do
     changeset = BloodGasForm.changeset(params)
     form = to_form(changeset, action: :validate)
@@ -223,7 +231,12 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
       parameter_status = %{
         ph: Astrup.check_value_against_reference_range(socket.assigns.lab_module, :ph, ph),
         pco2: Astrup.check_value_against_reference_range(socket.assigns.lab_module, :pco2, pco2),
-        bicarbonate: Astrup.check_value_against_reference_range(socket.assigns.lab_module, :bicarbonate, bicarbonate)
+        bicarbonate:
+          Astrup.check_value_against_reference_range(
+            socket.assigns.lab_module,
+            :bicarbonate,
+            bicarbonate
+          )
       }
 
       # Get interpretation
@@ -245,7 +258,7 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
   end
 
   def handle_event("clear_form", _params, socket) do
-    form = 
+    form =
       BloodGasForm.changeset()
       |> to_form()
 
@@ -253,7 +266,7 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
   end
 
   def handle_event("reset", _params, socket) do
-    form = 
+    form =
       BloodGasForm.changeset()
       |> to_form()
 

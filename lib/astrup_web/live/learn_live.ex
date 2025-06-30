@@ -95,7 +95,7 @@ defmodule AstrupWeb.LearnLive do
             </div>
           </div>
           
-          <!-- Printout Section -->
+    <!-- Printout Section -->
           <div class="w-full lg:flex-1">
             <AstrupWeb.Components.RadiometerABL90FlexPlus.render
               printout={@printout}

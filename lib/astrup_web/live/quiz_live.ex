@@ -100,7 +100,7 @@ defmodule AstrupWeb.QuizLive do
               <div class="mb-4 text-base-content/70">
                 {gettext("Answers: ")} {number_of_selections_made(@selections)}/18
               </div>
-              
+
               <div class="flex flex-col gap-3">
                 <button
                   id="check-answers"
@@ -201,7 +201,6 @@ defmodule AstrupWeb.QuizLive do
               quiz?={true}
             />
           </div>
-
         </div>
       </div>
     </Layouts.app>

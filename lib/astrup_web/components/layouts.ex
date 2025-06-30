@@ -112,17 +112,17 @@ defmodule AstrupWeb.Layouts do
           <ul class="menu menu-horizontal">
             <li>
               <.link navigate={~p"/learn"} class="btn btn-ghost">
-                <%= gettext("Reference Values") %>
+                {gettext("Reference Values")}
               </.link>
             </li>
             <li>
               <.link navigate={~p"/interpretation"} class="btn btn-ghost">
-                <%= gettext("Interpretation") %>
+                {gettext("Interpretation")}
               </.link>
             </li>
             <li>
               <.link navigate={~p"/blood-gas-interpreter"} class="btn btn-ghost">
-                <%= gettext("Blood Gas Interpreter") %>
+                {gettext("Blood Gas Interpreter")}
               </.link>
             </li>
           </ul>
@@ -146,24 +146,26 @@ defmodule AstrupWeb.Layouts do
     <div class="screen-size-warning fixed inset-0 bg-base-100 z-50 flex-col items-center justify-center p-8 text-center">
       <div class="max-w-md">
         <.icon name="hero-computer-desktop" class="size-16 mx-auto mb-4 text-primary" />
-        <h1 class="text-2xl font-bold mb-4"><%= gettext("Desktop Required") %></h1>
+        <h1 class="text-2xl font-bold mb-4">{gettext("Desktop Required")}</h1>
         <p class="text-base-content/70 mb-4">
-<%= gettext("This application requires a larger screen for the best experience. Please use a desktop or laptop computer.") %>
+          {gettext(
+            "This application requires a larger screen for the best experience. Please use a desktop or laptop computer."
+          )}
         </p>
         <p class="text-sm text-base-content/50">
-<%= gettext("Minimum screen width: 1024px") %>
+          {gettext("Minimum screen width: 1024px")}
         </p>
       </div>
     </div>
 
     <main class="app-content px-4 py-12 sm:px-6 lg:px-8 flex-grow">
-<%= render_slot(@inner_block) %>
+      {render_slot(@inner_block)}
     </main>
 
     <footer class="footer footer-horizontal footer-center bg-base-200 text-base-content rounded p-10">
       <nav class="grid grid-flow-col gap-4">
         <.link navigate={~p"/submit"} class="link link-hover">
-<%= gettext("Submit ABG") %>
+          {gettext("Submit ABG")}
         </.link>
         <a href="https://github.com/davemccrea" class="link link-hover">GitHub</a>
       </nav>
@@ -249,7 +251,7 @@ defmodule AstrupWeb.Layouts do
 
       <Backpex.HTML.Layout.flash_messages flash={@flash} />
 
-<%= @inner_content %>
+      {@inner_content}
     </Backpex.HTML.Layout.app_shell>
     """
   end
