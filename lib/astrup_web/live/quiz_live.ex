@@ -88,7 +88,7 @@ defmodule AstrupWeb.QuizLive do
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
-          <div class="lg:sticky lg:top-4 lg:self-start space-y-4 w-full lg:w-72 order-1 lg:order-1">
+          <div class="lg:sticky lg:top-4 lg:self-start space-y-4 w-full lg:w-80 order-1 lg:order-1">
             <section class="space-y-4 border border-base-content/20 shadow p-4">
               <h1 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h1>
               <p class="mb-4">

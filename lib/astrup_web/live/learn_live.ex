@@ -74,6 +74,27 @@ defmodule AstrupWeb.LearnLive do
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+          <!-- Description Section -->
+          <div class="w-full lg:flex-1 lg:sticky lg:top-4 lg:self-start">
+            <div class="border border-base-content/20 shadow p-8 min-h-96">
+              <%= if @selected_parameter do %>
+                <h2 class="text-lg font-semibold mb-4 text-primary">
+                  {parameter_name(@selected_parameter)}
+                </h2>
+                <div class="prose prose-li:my-0">
+                  {Phoenix.HTML.raw(render_markdown(parameter_description(@selected_parameter)))}
+                </div>
+              <% else %>
+                <div class="text-center text-base-content/60 mt-12">
+                  <div class="text-4xl mb-4">📋</div>
+                  <p>
+                    {gettext("Click on any parameter in the printout to learn more about it.")}
+                  </p>
+                </div>
+              <% end %>
+            </div>
+          </div>
+          
           <!-- Printout Section -->
           <div class="w-full lg:flex-1">
             <AstrupWeb.Components.RadiometerABL90FlexPlus.render
@@ -95,27 +116,6 @@ defmodule AstrupWeb.LearnLive do
               quiz?={false}
               explorer?={true}
             />
-          </div>
-          
-    <!-- Description Section -->
-          <div class="w-full lg:flex-1 lg:sticky lg:top-4 lg:self-start">
-            <div class="border border-base-content/20 shadow p-8 min-h-96">
-              <%= if @selected_parameter do %>
-                <h2 class="text-lg font-semibold mb-4 text-primary">
-                  {parameter_name(@selected_parameter)}
-                </h2>
-                <div class="prose prose-li:my-0">
-                  {Phoenix.HTML.raw(render_markdown(parameter_description(@selected_parameter)))}
-                </div>
-              <% else %>
-                <div class="text-center text-base-content/60 mt-12">
-                  <div class="text-4xl mb-4">📋</div>
-                  <p>
-                    {gettext("Click on any parameter in the printout to learn more about it.")}
-                  </p>
-                </div>
-              <% end %>
-            </div>
           </div>
         </div>
       </div>

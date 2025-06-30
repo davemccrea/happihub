@@ -58,7 +58,7 @@ defmodule AstrupWeb.InterpretLive do
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
           <!-- Sidebar Section -->
-          <div class="w-full lg:w-72 lg:sticky lg:top-4 lg:self-start space-y-4 order-1 lg:order-1">
+          <div class="w-full lg:w-80 lg:sticky lg:top-4 lg:self-start space-y-4 order-1 lg:order-1">
             <section class="border border-base-content/20 shadow p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h2>
               <p class="mb-4">

@@ -105,3 +105,18 @@
 
 @source "../../deps/backpex/**/*.*ex";
 @source '../../deps/backpex/assets/js/**/*.*js';
+
+/* Hide app content on small screens and show message */
+.screen-size-warning {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .app-content {
+    display: none !important;
+  }
+  
+  .screen-size-warning {
+    display: flex !important;
+  }
+}
