@@ -36,6 +36,26 @@ defmodule AstrupWeb.Layouts do
     <header>
       <div class="navbar bg-base-200 px-4">
         <div class="navbar-start">
+          <.link navigate={~p"/"} class="btn btn-ghost">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-2">
+              <!-- Happy face circle -->
+              <circle cx="16" cy="16" r="14" fill="currentColor" opacity="0.1" stroke="currentColor" stroke-width="2"/>
+              <!-- Eyes -->
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              <circle cx="20" cy="12" r="2" fill="currentColor"/>
+              <!-- Smile -->
+              <path d="M10 20 Q16 24 22 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <!-- Hub connection lines -->
+              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+              <line x1="16" y1="26" x2="16" y2="30" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+              <line x1="2" y1="16" x2="6" y2="16" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+              <line x1="26" y1="16" x2="30" y2="16" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+            </svg>
+            <span class="text-xl font-bold">HappiHub</span>
+          </.link>
+        </div>
+
+        <div class="navbar-center">
           <ul class="menu menu-horizontal">
             <li>
               <.link navigate={~p"/learn"} class="btn btn-ghost">
