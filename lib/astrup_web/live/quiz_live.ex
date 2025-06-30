@@ -97,6 +97,10 @@ defmodule AstrupWeb.QuizLive do
                 )}
               </p>
 
+              <div class="mb-4 text-base-content/70">
+                {gettext("Answers: ")} {number_of_selections_made(@selections)}/18
+              </div>
+              
               <div class="flex flex-col gap-3">
                 <button
                   id="check-answers"
@@ -115,73 +119,12 @@ defmodule AstrupWeb.QuizLive do
               </div>
             </section>
 
-            <section class="space-y-4 border border-base-content/20 shadow p-4">
-              <h2 class="text-lg font-semibold mb-3 text-primary">
-                {gettext("Progress")}
-              </h2>
-              <ul>
-                <li>{gettext("Answers: ")} {number_of_selections_made(@selections)}/18</li>
-              </ul>
-            </section>
-
-            <%= if @state == :review do %>
-              <.score_section
-                score={correct_count(@selections)}
-                total={total_count(@selections)}
-                show_perfect_message={full_score?(@selections)}
-              />
-            <% end %>
-          </div>
-
-          <div class="w-full lg:flex-1 order-2 lg:order-2">
-            <AstrupWeb.Components.RadiometerABL90FlexPlus.render
-              printout={@printout}
-              selections={@selections}
-              state={@state}
-              hints_enabled={@hints_enabled}
-              get_reference_range={
-                fn parameter ->
-                  Astrup.pretty_print_reference_range(@lab_module, parameter, %{
-                    age_range: @age_range,
-                    sex: @sex
-                  })
-                end
-              }
-              get_unit={fn parameter -> @analyzer.get_unit_by_parameter(parameter) end}
-              sample_date={@sample_date}
-              printed_date={@printed_date}
-              quiz?={true}
-            />
-          </div>
-
-          <div class="w-full lg:w-72 order-3 lg:order-3">
             <section class="border rounded-none border-base-content/20 shadow p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">
                 {gettext("Settings")}
               </h2>
 
               <.form for={%{}} class="-space-y-1" phx-change="update_settings">
-                <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{gettext("Laboratory")}</legend>
-                  <select name="lab_module" class="select">
-                    <option value="Astrup.Lab.Fimlab" selected={@lab_module == Astrup.Lab.Fimlab}>
-                      {gettext("Fimlab VCS")}
-                    </option>
-                  </select>
-                </fieldset>
-
-                <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{gettext("Analyzer")}</legend>
-                  <select name="analyzer" class="select">
-                    <option
-                      value="Astrup.Analyzer.RadiometerAbl90FlexPlus"
-                      selected={@analyzer == Astrup.Analyzer.RadiometerAbl90FlexPlus}
-                    >
-                      {gettext("Radiometer ABL90 Flex Plus")}
-                    </option>
-                  </select>
-                </fieldset>
-
                 <fieldset class="fieldset">
                   <legend class="fieldset-legend">{gettext("Age Range")}</legend>
                   <select name="age_range" class="select">
@@ -228,7 +171,37 @@ defmodule AstrupWeb.QuizLive do
                 </fieldset>
               </.form>
             </section>
+
+            <%= if @state == :review do %>
+              <.score_section
+                score={correct_count(@selections)}
+                total={total_count(@selections)}
+                show_perfect_message={full_score?(@selections)}
+              />
+            <% end %>
           </div>
+
+          <div class="w-full lg:flex-1 order-2 lg:order-2">
+            <AstrupWeb.Components.RadiometerABL90FlexPlus.render
+              printout={@printout}
+              selections={@selections}
+              state={@state}
+              hints_enabled={@hints_enabled}
+              get_reference_range={
+                fn parameter ->
+                  Astrup.pretty_print_reference_range(@lab_module, parameter, %{
+                    age_range: @age_range,
+                    sex: @sex
+                  })
+                end
+              }
+              get_unit={fn parameter -> @analyzer.get_unit_by_parameter(parameter) end}
+              sample_date={@sample_date}
+              printed_date={@printed_date}
+              quiz?={true}
+            />
+          </div>
+
         </div>
       </div>
     </Layouts.app>
@@ -238,7 +211,6 @@ defmodule AstrupWeb.QuizLive do
   @impl true
   def handle_event("update_settings", params, socket) do
     %{
-      "lab_module" => lab_module,
       "age_range" => age_range,
       "sex" => sex,
       "hints_enabled" => hints_enabled
@@ -251,11 +223,8 @@ defmodule AstrupWeb.QuizLive do
         _ -> false
       end
 
-    lab_module = Module.concat([String.to_atom(lab_module)])
-
     {:noreply,
      socket
-     |> assign(:lab_module, lab_module)
      |> assign(:age_range, age_range)
      |> assign(:sex, sex)
      |> assign(:hints_enabled, hints_enabled)}
