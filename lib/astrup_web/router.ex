@@ -39,6 +39,7 @@ defmodule AstrupWeb.Router do
       live "/quiz", QuizLive
       live "/interpretation", InterpretationLearnLive
       live "/interpretation-quiz", InterpretLive
+      live "/blood-gas-interpreter", BloodGasInterpreterLive
       # legacy route
       live "/interpret", InterpretLive
       live "/submit", SubmitLive
