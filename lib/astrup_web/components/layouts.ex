@@ -105,27 +105,12 @@ defmodule AstrupWeb.Layouts do
               />
             </svg>
             <span class="text-xl font-bold">HappiHub</span>
+            <span class="badge badge-warning badge-sm ml-2 text-xs font-medium">BETA</span>
           </.link>
         </div>
 
         <div class="navbar-center">
-          <ul class="menu menu-horizontal">
-            <li>
-              <.link navigate={~p"/learn"} class="btn btn-ghost">
-                {gettext("Reference Values")}
-              </.link>
-            </li>
-            <li>
-              <.link navigate={~p"/interpretation"} class="btn btn-ghost">
-                {gettext("Interpretation")}
-              </.link>
-            </li>
-            <li>
-              <.link navigate={~p"/blood-gas-interpreter"} class="btn btn-ghost">
-                {gettext("Blood Gas Interpreter")}
-              </.link>
-            </li>
-          </ul>
+          <!-- Navigation removed - using homepage cards instead -->
         </div>
 
         <div class="navbar-end space-x-2">
@@ -235,7 +220,7 @@ defmodule AstrupWeb.Layouts do
           </:label>
           <li>
             <.link navigate={~p"/"} class="text-error flex justify-between hover:bg-base-200">
-              <p>Logout</p>
+              <p>{gettext("Logout")}</p>
               <.icon name="hero-arrow-right-on-rectangle" class="size-5" />
             </.link>
           </li>
@@ -245,7 +230,7 @@ defmodule AstrupWeb.Layouts do
       <:sidebar>
         <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/printouts"}>
           <%!-- TODO: choose appropriate icon --%>
-          <.icon name="hero-book-open" class="size-5" /> Printouts
+          <.icon name="hero-book-open" class="size-5" /> {gettext("Printouts")}
         </Backpex.HTML.Layout.sidebar_item>
       </:sidebar>
 

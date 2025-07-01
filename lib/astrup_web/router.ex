@@ -34,14 +34,25 @@ defmodule AstrupWeb.Router do
     pipe_through :browser
 
     live_session :regular_session, on_mount: AstrupWeb.Hooks.LocaleHook do
-      live "/", LearnLive
+      live "/", HomeLive
+      
+      # Reference Values routes
+      live "/reference-values/learn", LearnLive
+      live "/reference-values/quiz", QuizLive
+      
+      # Interpretation routes
+      live "/interpretation/learn", InterpretationLearnLive
+      live "/interpretation/quiz", InterpretLive
+      live "/interpretation/calculator", BloodGasInterpreterLive
+      
+      # Legacy routes for backwards compatibility
       live "/learn", LearnLive
       live "/quiz", QuizLive
       live "/interpretation", InterpretationLearnLive
       live "/interpretation-quiz", InterpretLive
       live "/blood-gas-interpreter", BloodGasInterpreterLive
-      # legacy route
       live "/interpret", InterpretLive
+      
       live "/submit", SubmitLive
       live "/settings", SettingsLive
     end
