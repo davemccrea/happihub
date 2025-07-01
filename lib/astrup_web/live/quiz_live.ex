@@ -89,6 +89,14 @@ defmodule AstrupWeb.QuizLive do
 
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
           <div class="lg:sticky lg:top-4 lg:self-start space-y-4 w-full lg:w-80 order-1 lg:order-1">
+            <%= if @state == :review do %>
+              <.score_section
+                score={correct_count(@selections)}
+                total={total_count(@selections)}
+                show_perfect_message={full_score?(@selections)}
+              />
+            <% end %>
+            
             <section class="space-y-4 border border-base-content/20 shadow p-4">
               <h1 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h1>
               <p class="mb-4">
@@ -106,10 +114,7 @@ defmodule AstrupWeb.QuizLive do
                   id="check-answers"
                   phx-click="check_answers"
                   class="btn btn-primary w-full"
-                  disabled={
-                    @state == :review or
-                      number_of_selections_made(@selections) != @number_of_parameters
-                  }
+                  disabled={@state == :review}
                 >
                   {gettext("Check Answers")}
                 </button>
@@ -171,14 +176,6 @@ defmodule AstrupWeb.QuizLive do
                 </fieldset>
               </.form>
             </section>
-
-            <%= if @state == :review do %>
-              <.score_section
-                score={correct_count(@selections)}
-                total={total_count(@selections)}
-                show_perfect_message={full_score?(@selections)}
-              />
-            <% end %>
           </div>
 
           <div class="w-full lg:flex-1 order-2 lg:order-2">
