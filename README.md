@@ -11,7 +11,7 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 ### Connect to running system
 
-`ssh -t david@astrup.mccrea.link "dokku enter astrup web -- /app/bin/astrup remote"`
+`ssh -t david@happihub.mccrea.link "dokku enter astrup web -- /app/bin/astrup remote"`
 
 ## Learn more
 
