@@ -11,7 +11,7 @@ msgstr ""
 "Language: fi\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/astrup_web/components/core_components.ex:344
+#: lib/astrup_web/components/core_components.ex:347
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "Toiminnot"
@@ -41,7 +41,7 @@ msgstr "Karboksihemoglobiini"
 msgid "Chloride"
 msgstr "Kloridi"
 
-#: lib/astrup_web/live/quiz_live.ex:153
+#: lib/astrup_web/live/reference_values/quiz_live.ex:159
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Female"
@@ -52,7 +52,7 @@ msgstr "Nainen"
 msgid "Glucose"
 msgstr "Glukoosi"
 
-#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:296
+#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:296
 #, elixir-autogen, elixir-format
 msgid "H"
 msgstr "K"
@@ -72,7 +72,7 @@ msgstr "Ionisoid. kalsium"
 msgid "Ionized calcium corrected to pH 7.4"
 msgstr "Ion. Ca korj. pH 7,4"
 
-#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:270
+#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:270
 #, elixir-autogen, elixir-format
 msgid "L"
 msgstr "M"
@@ -82,7 +82,7 @@ msgstr "M"
 msgid "Lactate"
 msgstr "Laktaatti"
 
-#: lib/astrup_web/live/quiz_live.ex:152
+#: lib/astrup_web/live/reference_values/quiz_live.ex:158
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Male"
@@ -93,12 +93,12 @@ msgstr "Mies"
 msgid "Methemoglobin"
 msgstr "Methemoglobiini"
 
-#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:283
+#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:283
 #, elixir-autogen, elixir-format
 msgid "N"
 msgstr "N"
 
-#: lib/astrup_web/components/core_components.ex:512
+#: lib/astrup_web/components/core_components.ex:515
 #, elixir-autogen, elixir-format
 msgid "Nice one!"
 msgstr "Hienoa!"
@@ -143,23 +143,23 @@ msgstr "sulje"
 msgid "pH"
 msgstr "pH"
 
-#: lib/astrup_web/live/interpret_live.ex:87
-#: lib/astrup_web/live/quiz_live.ex:119
+#: lib/astrup_web/live/interpretation/quiz_live.ex:87
+#: lib/astrup_web/live/reference_values/quiz_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "Check Answers"
 msgstr "Tarkista vastaukset"
 
-#: lib/astrup_web/live/quiz_live.ex:122
+#: lib/astrup_web/live/reference_values/quiz_live.ex:122
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr "Seuraava"
 
-#: lib/astrup_web/live/quiz_live.ex:109
+#: lib/astrup_web/live/reference_values/quiz_live.ex:109
 #, elixir-autogen, elixir-format
 msgid "Answers: "
 msgstr "Vastaukset: "
 
-#: lib/astrup_web/live/quiz_live.ex:134
+#: lib/astrup_web/live/reference_values/quiz_live.ex:136
 #, elixir-autogen, elixir-format
 msgid "Age Range"
 msgstr "Ikähaarukka"
@@ -169,18 +169,18 @@ msgstr "Ikähaarukka"
 msgid "Analyzer"
 msgstr "Analysaattori"
 
-#: lib/astrup_web/live/learn_live.ex:91
+#: lib/astrup_web/live/reference_values/learn_live.ex:91
 #, elixir-autogen, elixir-format
 msgid "Click on any parameter in the printout to learn more about it."
 msgstr "Klikkaa mitä tahansa parametria tulosteessa oppiaksesi siitä lisää."
 
-#: lib/astrup_web/live/quiz_live.ex:103
+#: lib/astrup_web/live/reference_values/quiz_live.ex:103
 #, elixir-autogen, elixir-format
 msgid "For each parameter, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you've made all 18 selections, click \"Check Answers\"."
 msgstr "Valitse jokaiselle parametrille, onko arvo matala (M), normaali (N) vai korkea (K) verrattuna viitearvoihin. Kun olet tehnyt kaikki 18 valintaa, paina \"Tarkista vastaukset\"."
 
-#: lib/astrup_web/live/interpret_live.ex:67
-#: lib/astrup_web/live/quiz_live.ex:101
+#: lib/astrup_web/live/interpretation/quiz_live.ex:67
+#: lib/astrup_web/live/reference_values/quiz_live.ex:101
 #, elixir-autogen, elixir-format
 msgid "Instructions"
 msgstr "Ohjeet"
@@ -190,114 +190,109 @@ msgstr "Ohjeet"
 msgid "Laboratory"
 msgstr "Laboratorio"
 
-#: lib/astrup_web/live/quiz_live.ex:156
+#: lib/astrup_web/live/reference_values/quiz_live.ex:163
 #, elixir-autogen, elixir-format
 msgid "Note: determines Hb"
 msgstr "Huom: määrittää Hb"
 
-#: lib/astrup_web/live/quiz_live.ex:145
+#: lib/astrup_web/live/reference_values/quiz_live.ex:149
 #, elixir-autogen, elixir-format
 msgid "Note: determines pO2"
 msgstr "Huom: määrittää pO2"
 
 #: lib/astrup_web/live/home_live.ex:83
-#: lib/astrup_web/live/quiz_live.ex:129
+#: lib/astrup_web/live/reference_values/quiz_live.ex:129
 #: lib/astrup_web/live/settings_live.ex:12
 #: lib/astrup_web/live/settings_live.ex:27
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "Asetukset"
 
-#: lib/astrup_web/live/quiz_live.ex:150
+#: lib/astrup_web/live/reference_values/quiz_live.ex:155
 #: lib/astrup_web/live/submit_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "Sex"
 msgstr "Sukupuoli"
 
-#: lib/astrup_web/live/quiz_live.ex:173
+#: lib/astrup_web/live/reference_values/quiz_live.ex:169
 #, elixir-autogen, elixir-format
 msgid "Show hover hints"
 msgstr "Näytä hover-vihjeet"
 
-#: lib/astrup_web/live/interpret_live.ex:333
-#: lib/astrup_web/live/interpret_live.ex:704
+#: lib/astrup_web/live/interpretation/quiz_live.ex:318
+#: lib/astrup_web/live/interpretation/quiz_live.ex:689
 #, elixir-autogen, elixir-format
 msgid "Acidosis"
 msgstr "Asidoosi"
 
-#: lib/astrup_web/live/interpret_live.ex:359
-#: lib/astrup_web/live/interpret_live.ex:706
+#: lib/astrup_web/live/interpretation/quiz_live.ex:344
+#: lib/astrup_web/live/interpretation/quiz_live.ex:691
 #, elixir-autogen, elixir-format
 msgid "Alkalosis"
 msgstr "Alkaloosi"
 
-#: lib/astrup_web/live/interpret_live.ex:153
+#: lib/astrup_web/live/interpretation/quiz_live.ex:151
 #, elixir-autogen, elixir-format
 msgid "Classify each parameter as acidosis, normal, or alkalosis:"
 msgstr "Luokittele jokainen parametri asidoosiksi, normaaliksi tai alkaloosiksi:"
 
-#: lib/astrup_web/live/interpret_live.ex:137
+#: lib/astrup_web/live/interpretation/quiz_live.ex:135
 #, elixir-autogen, elixir-format
 msgid "Clinical Case"
 msgstr "Kliininen tapaus"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:103
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:105
 #, elixir-autogen, elixir-format
 msgid "Interpret"
 msgstr "Tulkitse"
 
-#: lib/astrup_web/live/interpret_live.ex:95
+#: lib/astrup_web/live/interpretation/quiz_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "Next Case"
 msgstr "Seuraava tapaus"
 
-#: lib/astrup_web/live/interpret_live.ex:449
-#: lib/astrup_web/live/interpret_live.ex:470
+#: lib/astrup_web/live/interpretation/quiz_live.ex:434
+#: lib/astrup_web/live/interpretation/quiz_live.ex:455
 #, elixir-autogen, elixir-format
 msgid "No selection"
 msgstr "Ei valintaa"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:288
-#: lib/astrup_web/live/interpret_live.ex:346
-#: lib/astrup_web/live/interpret_live.ex:705
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:289
+#: lib/astrup_web/live/interpretation/quiz_live.ex:331
+#: lib/astrup_web/live/interpretation/quiz_live.ex:690
 #, elixir-autogen, elixir-format
 msgid "Normal"
 msgstr "Normaali"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:127
-#, elixir-autogen, elixir-format
-msgid "Parameter Classification"
-msgstr "Parametrien luokittelu"
-
-#: lib/astrup_web/live/interpret_live.ex:518
+#: lib/astrup_web/live/interpretation/quiz_live.ex:503
 #, elixir-autogen, elixir-format
 msgid "Reference only"
 msgstr "Vain viitearvot"
 
-#: lib/astrup_web/live/interpret_live.ex:386
+#: lib/astrup_web/live/interpretation/quiz_live.ex:371
 #, elixir-autogen, elixir-format
 msgid "Results"
 msgstr "Tulokset"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:157
 #: lib/astrup_web/live/home_live.ex:45
-#: lib/astrup_web/live/interpret_live.ex:148
-#: lib/astrup_web/live/interpretation_learn_live.ex:17
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:125
+#: lib/astrup_web/live/interpretation/learn_live.ex:17
+#: lib/astrup_web/live/interpretation/quiz_live.ex:146
 #, elixir-autogen, elixir-format
 msgid "Interpretation"
 msgstr "Tulkinta"
 
-#: lib/astrup_web/live/interpret_live.ex:69
+#: lib/astrup_web/live/interpretation/quiz_live.ex:69
 #, elixir-autogen, elixir-format
 msgid "Read the clinical case, classify each parameter, and select the most appropriate interpretation."
 msgstr "Lue kliininen tapaus, luokittele jokainen parametri ja valitse sopivin tulkinta."
 
-#: lib/astrup_web/components/core_components.ex:501
+#: lib/astrup_web/components/core_components.ex:504
 #, elixir-autogen, elixir-format
 msgid "Score"
 msgstr "Pisteet"
 
-#: lib/astrup_web/live/interpret_live.ex:104
+#: lib/astrup_web/live/interpretation/quiz_live.ex:106
 #, elixir-autogen, elixir-format
 msgid "Show reference values"
 msgstr "Näytä viitearvot"
@@ -312,23 +307,23 @@ msgstr "Ulkoasu"
 msgid "Available languages"
 msgstr "Saatavilla olevat kielet"
 
-#: lib/astrup_web/live/interpret_live.ex:54
-#: lib/astrup_web/live/quiz_live.ex:85
+#: lib/astrup_web/live/interpretation/quiz_live.ex:54
+#: lib/astrup_web/live/reference_values/quiz_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "Back to Learning"
 msgstr "Takaisin oppimiseen"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:36
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:36
 #, elixir-autogen, elixir-format
 msgid "Blood Gas Interpreter"
 msgstr "Verikaasutulkki"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:48
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:47
 #, elixir-autogen, elixir-format
 msgid "Blood Gas Values"
 msgstr "Verikaasu-arvot"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:183
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:192
 #, elixir-autogen, elixir-format
 msgid "Cannot determine primary disorder"
 msgstr "Primääristä häiriötä ei voida määrittää"
@@ -338,69 +333,64 @@ msgstr "Primääristä häiriötä ei voida määrittää"
 msgid "Change language"
 msgstr "Vaihda kieli"
 
-#: lib/astrup_web/live/interpret_live.ex:265
+#: lib/astrup_web/live/interpretation/quiz_live.ex:253
 #, elixir-autogen, elixir-format
 msgid "Choose compensation level..."
 msgstr "Valitse kompensaatiotaso..."
 
-#: lib/astrup_web/live/interpret_live.ex:233
+#: lib/astrup_web/live/interpretation/quiz_live.ex:233
 #, elixir-autogen, elixir-format
 msgid "Choose primary disorder..."
 msgstr "Valitse primäärihäiriö..."
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:109
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:111
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Tyhjennä"
 
-#: lib/astrup_web/live/interpret_live.ex:467
+#: lib/astrup_web/live/interpretation/quiz_live.ex:452
 #, elixir-autogen, elixir-format
 msgid "Compensation"
 msgstr "Kompensaatio"
 
-#: lib/astrup_web/live/interpret_live.ex:406
+#: lib/astrup_web/live/interpretation/quiz_live.ex:391
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Correct"
 msgstr "Oikein"
 
-#: lib/astrup_web/components/layouts.ex:133
+#: lib/astrup_web/components/layouts.ex:134
 #, elixir-autogen, elixir-format
 msgid "Desktop Required"
 msgstr "Työpöytä vaaditaan"
 
-#: lib/astrup_web/live/interpret_live.ex:251
+#: lib/astrup_web/live/interpretation/quiz_live.ex:244
 #, elixir-autogen, elixir-format
 msgid "Determine the level of compensation:"
 msgstr "Määritä kompensaation taso:"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:202
-#, elixir-autogen, elixir-format
-msgid "Enter Values"
-msgstr "Syötä arvot"
-
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:39
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:39
 #, elixir-autogen, elixir-format
 msgid "Enter pH, CO₂, and HCO₃⁻ values to get an acid-base interpretation"
 msgstr "Syötä pH-, CO₂- ja HCO₃⁻-arvot saadaksesi happo-emästasapainotulkinnan"
 
-#: lib/astrup_web/components/core_components.ex:522
-#: lib/astrup_web/live/interpret_live.ex:775
+#: lib/astrup_web/components/core_components.ex:525
+#: lib/astrup_web/live/interpretation/quiz_live.ex:760
 #, elixir-autogen, elixir-format
 msgid "Excellent!"
 msgstr "Erinomaista!"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:204
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "Fill in the blood gas values to get an interpretation"
 msgstr "Täytä verikaasu-arvot saadaksesi tulkinnan"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:299
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:300
 #, elixir-autogen, elixir-format
 msgid "Fully compensated"
 msgstr "Täysin kompensoitu"
 
-#: lib/astrup_web/components/core_components.ex:523
-#: lib/astrup_web/live/interpret_live.ex:776
+#: lib/astrup_web/components/core_components.ex:526
+#: lib/astrup_web/live/interpretation/quiz_live.ex:761
 #, elixir-autogen, elixir-format
 msgid "Good job!"
 msgstr "Hyvää työtä!"
@@ -410,131 +400,129 @@ msgstr "Hyvää työtä!"
 msgid "HCO₃⁻ must be between 5.0 and 50.0 mmol/L"
 msgstr "HCO₃⁻:n on oltava 5,0-50,0 mmol/l"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:289
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:290
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "Korkea"
 
-#: lib/astrup_web/live/interpret_live.ex:226
+#: lib/astrup_web/live/interpretation/quiz_live.ex:224
 #, elixir-autogen, elixir-format
 msgid "Identify the primary acid-base disorder:"
 msgstr "Tunnista primäärinen happo-emästasapainohäiriö:"
 
-#: lib/astrup_web/live/learn_live.ex:53
+#: lib/astrup_web/live/reference_values/learn_live.ex:53
 #, elixir-autogen, elixir-format
 msgid "Interactive guide to ABG parameter reference values"
 msgstr "Interaktiivinen opas verikaasu-parametrien viitearvoihin"
 
-#: lib/astrup_web/live/interpret_live.ex:33
+#: lib/astrup_web/live/interpretation/quiz_live.ex:33
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Interpretation Quiz"
 msgstr "Tulkintakilpailu"
 
-#: lib/astrup_web/components/core_components.ex:525
-#: lib/astrup_web/live/interpret_live.ex:778
+#: lib/astrup_web/components/core_components.ex:528
+#: lib/astrup_web/live/interpretation/quiz_live.ex:763
 #, elixir-autogen, elixir-format
 msgid "Keep practicing!"
 msgstr "Jatka harjoittelua!"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:290
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:291
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "Matala"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:294
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:295
 #, elixir-autogen, elixir-format
 msgid "Metabolic Acidosis"
 msgstr "Metabolinen asidoosi"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:295
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:296
 #, elixir-autogen, elixir-format
 msgid "Metabolic Alkalosis"
 msgstr "Metabolinen alkaloosi"
 
-#: lib/astrup_web/components/layouts.ex:140
+#: lib/astrup_web/components/layouts.ex:141
 #, elixir-autogen, elixir-format
 msgid "Minimum screen width: 1024px"
 msgstr "Näytön minimileveeys: 1024px"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:113
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:115
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New Interpretation"
 msgstr "Uusi tulkinta"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:176
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:186
 #, elixir-autogen, elixir-format
 msgid "Normal acid-base status"
 msgstr "Normaali happo-emästasapaino"
 
-#: lib/astrup_web/components/core_components.ex:524
-#: lib/astrup_web/live/interpret_live.ex:777
+#: lib/astrup_web/components/core_components.ex:527
+#: lib/astrup_web/live/interpretation/quiz_live.ex:762
 #, elixir-autogen, elixir-format
 msgid "Not bad!"
 msgstr "Ei hassumpaa!"
 
-#: lib/astrup_web/live/interpret_live.ex:282
+#: lib/astrup_web/live/interpretation/quiz_live.ex:267
 #, elixir-autogen, elixir-format
 msgid "Note: Mixed acid-base disorders and fully compensated conditions exist in clinical practice but are not addressed here for educational simplicity."
 msgstr "Huom: Sekoittuneet happo-emästasapainohäiriöt ja täysin kompensoidut tilat esiintyvät kliinisessä käytännössä, mutta niitä ei käsitellä täällä opetuksellisen yksinkertaisuuden vuoksi."
 
-#: lib/astrup_web/live/interpret_live.ex:404
+#: lib/astrup_web/live/interpretation/quiz_live.ex:389
 #, elixir-autogen, elixir-format
 msgid "Parameter"
 msgstr "Parametri"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:298
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:299
 #, elixir-autogen, elixir-format
 msgid "Partially compensated"
 msgstr "Osittain kompensoitu"
 
-#: lib/astrup_web/components/core_components.ex:521
-#: lib/astrup_web/live/interpret_live.ex:774
+#: lib/astrup_web/components/core_components.ex:524
+#: lib/astrup_web/live/interpretation/quiz_live.ex:759
 #, elixir-autogen, elixir-format
 msgid "Perfect!"
 msgstr "Täydellinen!"
 
-#: lib/astrup_web/live/interpret_live.ex:36
+#: lib/astrup_web/live/interpretation/quiz_live.ex:36
 #, elixir-autogen, elixir-format
 msgid "Practice interpreting ABG results with clinical cases"
 msgstr "Harjoittele verikaasu-tulosten tulkintaa kliinisten tapausten avulla"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:163
-#: lib/astrup_web/live/interpret_live.ex:446
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:174
+#: lib/astrup_web/live/interpretation/quiz_live.ex:431
 #, elixir-autogen, elixir-format
 msgid "Primary Disorder"
 msgstr "Primäärihäiriö"
 
 #: lib/astrup_web/live/home_live.ex:17
-#: lib/astrup_web/live/learn_live.ex:50
+#: lib/astrup_web/live/reference_values/learn_live.ex:50
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reference Values"
 msgstr "Viitearvot"
 
-#: lib/astrup_web/live/quiz_live.ex:64
+#: lib/astrup_web/live/reference_values/quiz_live.ex:64
 #, elixir-autogen, elixir-format
 msgid "Reference Values Quiz"
 msgstr "Viitearvojen kilpailu"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:62
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:79
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:96
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:61
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:79
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:97
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reference range"
 msgstr "Viitealue"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:292
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:293
 #, elixir-autogen, elixir-format
 msgid "Respiratory Acidosis"
 msgstr "Hengityksen asidoosi"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:293
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:294
 #, elixir-autogen, elixir-format
 msgid "Respiratory Alkalosis"
 msgstr "Hengityksen alkaloosi"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:175
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:182
-#: lib/astrup_web/live/interpret_live.ex:407
+#: lib/astrup_web/live/interpretation/quiz_live.ex:392
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Result"
 msgstr "Tulokset"
@@ -549,25 +537,25 @@ msgstr "Tallenna asetukset"
 msgid "Settings updated successfully"
 msgstr "Asetukset päivitetty onnistuneesti"
 
-#: lib/astrup_web/components/layouts.ex:152
+#: lib/astrup_web/components/layouts.ex:153
 #: lib/astrup_web/live/submit_live.ex:19
 #: lib/astrup_web/live/submit_live.ex:94
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Submit ABG"
 msgstr "Lähetä verikaasu"
 
-#: lib/astrup_web/live/interpretation_learn_live.ex:28
-#: lib/astrup_web/live/learn_live.ex:59
+#: lib/astrup_web/live/interpretation/learn_live.ex:28
+#: lib/astrup_web/live/reference_values/learn_live.ex:59
 #, elixir-autogen, elixir-format
 msgid "Take Quiz"
 msgstr "Osallistu kilpailuun"
 
-#: lib/astrup_web/live/quiz_live.ex:67
+#: lib/astrup_web/live/reference_values/quiz_live.ex:67
 #, elixir-autogen, elixir-format
 msgid "Test your knowledge of ABG parameter reference ranges"
 msgstr "Testaa tietosi verikaasu-parametrien viitealueista"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:185
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:194
 #, elixir-autogen, elixir-format
 msgid "The combination of values suggests a mixed disorder or measurement error"
 msgstr "Arvojen yhdistelmä viittaa sekoittuneeseen häiriöön tai mittausvirheeseen"
@@ -577,22 +565,22 @@ msgstr "Arvojen yhdistelmä viittaa sekoittuneeseen häiriöön tai mittausvirhe
 msgid "Theme"
 msgstr "Teema"
 
-#: lib/astrup_web/components/layouts.ex:135
+#: lib/astrup_web/components/layouts.ex:136
 #, elixir-autogen, elixir-format
 msgid "This application requires a larger screen for the best experience. Please use a desktop or laptop computer."
 msgstr "Tämä sovellus vaatii suuremman näytön parhaan käyttökokemuksen saamiseksi. Käytä työpöytä- tai kannettavaa tietokonetta."
 
-#: lib/astrup_web/live/interpretation_learn_live.ex:20
+#: lib/astrup_web/live/interpretation/learn_live.ex:20
 #, elixir-autogen, elixir-format
 msgid "This learning section is under development. Take the quiz to practice interpretation skills!"
 msgstr "Tämä oppimisosio on kehitteillä. Osallistu kilpailuun harjoitellaksesi tulkintataitoja!"
 
-#: lib/astrup_web/live/blood_gas_interpreter_live.ex:297
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:298
 #, elixir-autogen, elixir-format
 msgid "Uncompensated"
 msgstr "Kompensoimaton"
 
-#: lib/astrup_web/live/interpret_live.ex:405
+#: lib/astrup_web/live/interpretation/quiz_live.ex:390
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Your Answer"
 msgstr "Sinun vastauksesi"
@@ -611,11 +599,6 @@ msgstr "pCO₂:n on oltava 1,0-20,0 kPa"
 #, elixir-autogen, elixir-format
 msgid "pH must be between 6.0 and 8.0"
 msgstr "pH:n on oltava 6,0-8,0"
-
-#: lib/astrup_web/live/home_live.ex:75
-#, elixir-autogen, elixir-format
-msgid "Calculator"
-msgstr "Laskin"
 
 #: lib/astrup_web/live/home_live.ex:27
 #: lib/astrup_web/live/home_live.ex:55
@@ -654,7 +637,7 @@ msgstr "Valitse..."
 msgid "Electrolyte values"
 msgstr "Elektrolyyttiarvot"
 
-#: lib/astrup_web/components/layouts.ex:222
+#: lib/astrup_web/components/layouts.ex:223
 #, elixir-autogen, elixir-format
 msgid "Logout"
 msgstr "Kirjaudu ulos"
@@ -669,7 +652,7 @@ msgstr "Metaboliittiarvot"
 msgid "Oximetry values"
 msgstr "Oksimetriaarvot"
 
-#: lib/astrup_web/components/layouts.ex:232
+#: lib/astrup_web/components/layouts.ex:233
 #, elixir-autogen, elixir-format
 msgid "Printouts"
 msgstr "Tulosteet"
@@ -679,7 +662,12 @@ msgstr "Tulosteet"
 msgid "Temperature-corrected values"
 msgstr "Lämpötilakorjatut arvot"
 
-#: lib/astrup_web/live/submit_live.ex:165
+#: lib/astrup_web/live/submit_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Thanks! Submission successful!"
 msgstr "Kiitos! Lähetys onnistui!"
+
+#: lib/astrup_web/live/home_live.ex:75
+#, elixir-autogen, elixir-format
+msgid "Interpreter"
+msgstr "Tulkki"

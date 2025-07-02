@@ -66,13 +66,13 @@ defmodule AstrupWeb.HomeLive do
               </.link>
 
               <.link
-                navigate={~p"/interpretation/calculator"}
+                navigate={~p"/interpretation/interpreter"}
                 class="group relative rounded-box p-8 text-center bg-base-200 hover:bg-base-300 transition-all duration-200 hover:scale-105"
               >
                 <div class="mb-4">
                   <.icon name="hero-calculator" class="h-12 w-12 mx-auto text-primary" />
                 </div>
-                <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("Calculator")}</h3>
+                <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("Interpreter")}</h3>
               </.link>
             </div>
           </div>

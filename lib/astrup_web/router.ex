@@ -41,7 +41,7 @@ defmodule AstrupWeb.Router do
 
       live "/interpretation/learn", Interpretation.LearnLive
       live "/interpretation/quiz", Interpretation.QuizLive
-      live "/interpretation/calculator", Interpretation.InterpreterLive
+      live "/interpretation/interpreter", Interpretation.InterpreterLive
 
       live "/submit", SubmitLive
       live "/settings", SettingsLive
