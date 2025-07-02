@@ -188,7 +188,7 @@ defmodule AstrupWeb.CoreComponents do
     <fieldset class="fieldset mb-2">
       <label>
         <input type="hidden" name={@name} value="false" disabled={@rest[:disabled]} />
-        <span class="label">
+        <span class="label text-sm">
           <input
             type="checkbox"
             id={@id}
@@ -209,7 +209,7 @@ defmodule AstrupWeb.CoreComponents do
     ~H"""
     <fieldset class="fieldset mb-2">
       <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class="label text-sm mb-1">{@label}</span>
         <select
           id={@id}
           name={@name}
@@ -233,7 +233,7 @@ defmodule AstrupWeb.CoreComponents do
     ~H"""
     <fieldset class="fieldset mb-2">
       <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class="label text-sm mb-1">{@label}</span>
         <textarea
           id={@id}
           name={@name}
@@ -254,7 +254,9 @@ defmodule AstrupWeb.CoreComponents do
     ~H"""
     <fieldset class="fieldset mb-2">
       <label>
-        <span :if={@label} class="label mb-1">{@label}</span>
+        <span :if={@label} class="label text-sm mb-1">
+          <span>{@label}</span>
+        </span>
         <input
           type={@type}
           name={@name}
@@ -273,7 +275,7 @@ defmodule AstrupWeb.CoreComponents do
   end
 
   # Helper used by inputs to generate form errors
-  defp error(assigns) do
+  def error(assigns) do
     ~H"""
     <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
       <.icon name="hero-exclamation-circle" class="size-5" />

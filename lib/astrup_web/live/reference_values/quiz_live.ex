@@ -129,39 +129,43 @@ defmodule AstrupWeb.ReferenceValues.QuizLive do
                 {gettext("Settings")}
               </h2>
 
-              <.form for={%{}} class="-space-y-1" phx-change="update_settings">
-                <.input
-                  type="select"
-                  name="age_range"
-                  label={gettext("Age Range")}
-                  value={@age_range}
-                  options={[
-                    {"0-18", "0-18"},
-                    {"18-30", "18-30"},
-                    {"31-50", "31-50"},
-                    {"51-60", "51-60"},
-                    {"61-70", "61-70"},
-                    {"71-80", "71-80"},
-                    {">80", ">80"}
-                  ]}
-                />
-                <p class="text-sm text-base-content/50">
-                  {gettext("Note: determines pO2")}
-                </p>
+              <.form for={%{}} class="space-y-3" phx-change="update_settings">
+                <div>
+                  <.input
+                    type="select"
+                    name="age_range"
+                    label={gettext("Age Range")}
+                    value={@age_range}
+                    options={[
+                      {"0-18", "0-18"},
+                      {"18-30", "18-30"},
+                      {"31-50", "31-50"},
+                      {"51-60", "51-60"},
+                      {"61-70", "61-70"},
+                      {"71-80", "71-80"},
+                      {">80", ">80"}
+                    ]}
+                  />
+                  <p class="text-sm text-base-content/50 -mt-1">
+                    {gettext("Note: determines pO2")}
+                  </p>
+                </div>
 
-                <.input
-                  type="select"
-                  name="sex"
-                  label={gettext("Sex")}
-                  value={@sex}
-                  options={[
-                    {gettext("Male"), "male"},
-                    {gettext("Female"), "female"}
-                  ]}
-                />
-                <p class="text-sm text-base-content/50">
-                  {gettext("Note: determines Hb")}
-                </p>
+                <div>
+                  <.input
+                    type="select"
+                    name="sex"
+                    label={gettext("Sex")}
+                    value={@sex}
+                    options={[
+                      {gettext("Male"), "male"},
+                      {gettext("Female"), "female"}
+                    ]}
+                  />
+                  <p class="text-sm text-base-content/50 -mt-1">
+                    {gettext("Note: determines Hb")}
+                  </p>
+                </div>
 
                 <.input
                   type="checkbox"
