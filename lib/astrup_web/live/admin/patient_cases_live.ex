@@ -1,4 +1,4 @@
-defmodule AstrupWeb.PrintoutsLive do
+defmodule AstrupWeb.Admin.PatientCasesLive do
   use Backpex.LiveResource,
     adapter_config: [
       schema: Astrup.PatientCase,
