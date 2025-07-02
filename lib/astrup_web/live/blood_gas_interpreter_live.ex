@@ -30,74 +30,76 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
   def render(assigns) do
     ~H"""
     <AstrupWeb.Layouts.app flash={@flash} locale={@locale}>
-      <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="mb-8">
-          <h1 class="text-2xl sm:text-3xl font-bold mb-4">
+          <h1 class="text-2xl font-semibold mb-4">
             {gettext("Blood Gas Interpreter")}
           </h1>
-          <p class="text-base-content/70 mb-6">
+          <p class="text-base-content/70">
             {gettext("Enter pH, CO₂, and HCO₃⁻ values to get an acid-base interpretation")}
           </p>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+        <div class="flex flex-col lg:flex-row gap-6">
           <!-- Input Form -->
-          <div class="w-full lg:w-80 lg:sticky lg:top-4 lg:self-start">
-            <div class="card bg-base-200">
-              <div class="card-body">
-                <h2 class="card-title text-lg mb-4">{gettext("Blood Gas Values")}</h2>
+          <div class="w-full lg:w-80">
+            <div class="border border-base-content/20 shadow p-4">
+              <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Blood Gas Values")}</h2>
 
-                <.form for={@form} phx-submit="interpret" phx-change="validate">
-                  <.input
-                    field={@form[:ph]}
-                    type="number"
-                    label="pH"
-                    step="0.01"
-                    min="6.0"
-                    max="8.0"
-                    placeholder="7.40"
-                    class="input input-bordered"
-                  />
-                  <p class="text-xs text-base-content/70 mb-4">
-                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
-                      @lab_module,
-                      :ph
-                    )}
-                  </p>
+                <.form for={@form} phx-submit="interpret" phx-change="validate" class="space-y-6">
+                  <div>
+                    <.input
+                      field={@form[:ph]}
+                      type="number"
+                      label="pH"
+                      step="0.01"
+                      min="6.0"
+                      max="8.0"
+                      placeholder="7.40"
+                    />
+                    <p class="text-xs text-base-content/70 mt-1">
+                      {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                        @lab_module,
+                        :ph
+                      )}
+                    </p>
+                  </div>
 
-                  <.input
-                    field={@form[:pco2]}
-                    type="number"
-                    label="pCO₂"
-                    step="0.1"
-                    min="1.0"
-                    max="20.0"
-                    placeholder="5.3"
-                    class="input input-bordered"
-                  />
-                  <p class="text-xs text-base-content/70 mb-4">
-                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
-                      @lab_module,
-                      :pco2
-                    )}
-                  </p>
+                  <div>
+                    <.input
+                      field={@form[:pco2]}
+                      type="number"
+                      label="pCO₂"
+                      step="0.1"
+                      min="1.0"
+                      max="20.0"
+                      placeholder="5.3"
+                    />
+                    <p class="text-xs text-base-content/70 mt-1">
+                      {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                        @lab_module,
+                        :pco2
+                      )}
+                    </p>
+                  </div>
 
-                  <.input
-                    field={@form[:bicarbonate]}
-                    type="number"
-                    label="HCO₃⁻"
-                    step="0.1"
-                    min="5.0"
-                    max="50.0"
-                    placeholder="24.0"
-                    class="input input-bordered"
-                  />
-                  <p class="text-xs text-base-content/70 mb-6">
-                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
-                      @lab_module,
-                      :bicarbonate
-                    )}
-                  </p>
+                  <div>
+                    <.input
+                      field={@form[:bicarbonate]}
+                      type="number"
+                      label="HCO₃⁻"
+                      step="0.1"
+                      min="5.0"
+                      max="50.0"
+                      placeholder="24.0"
+                    />
+                    <p class="text-xs text-base-content/70 mt-1">
+                      {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                        @lab_module,
+                        :bicarbonate
+                      )}
+                    </p>
+                  </div>
 
                   <button type="submit" class="btn btn-primary w-full" disabled={!@form.source.valid?}>
                     {gettext("Interpret")}
@@ -113,36 +115,49 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
                     {gettext("New Interpretation")}
                   </button>
                 <% end %>
-              </div>
             </div>
           </div>
           
-    <!-- Results -->
+          <!-- Results -->
           <div class="w-full lg:flex-1">
             <%= if @state == :interpreted && @interpretation do %>
-              <div class="space-y-6">
-                <!-- Parameter Status -->
-                <div class="card bg-base-100">
-                  <div class="card-body">
-                    <h3 class="card-title text-lg mb-4">{gettext("Parameter Classification")}</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div class="bg-base-200 rounded-lg p-4">
-                        <div class="text-sm font-medium mb-1">pH</div>
-                        <div class="text-lg font-bold mb-2">{@form.params["ph"]}</div>
+              <div class="border border-base-content/20 shadow p-4">
+                <h3 class="text-lg font-semibold mb-6 text-primary">{gettext("Interpretation")}</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body">
+                      <h3 class="card-title text-sm">pH</h3>
+                      <div class="stat-value text-lg font-mono text-primary">
+                        {@form.params["ph"]}
+                      </div>
+                      <div class="card-actions justify-start mt-4">
                         <div class={["badge", status_badge_class(@parameter_status[:ph])]}>
                           {status_text(@parameter_status[:ph])}
                         </div>
                       </div>
-                      <div class="bg-base-200 rounded-lg p-4">
-                        <div class="text-sm font-medium mb-1">pCO₂</div>
-                        <div class="text-lg font-bold mb-2">{@form.params["pco2"]}</div>
+                    </div>
+                  </div>
+                  <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body">
+                      <h3 class="card-title text-sm">pCO₂</h3>
+                      <div class="stat-value text-lg font-mono text-primary">
+                        {@form.params["pco2"]} kPa
+                      </div>
+                      <div class="card-actions justify-start mt-4">
                         <div class={["badge", status_badge_class(@parameter_status[:pco2])]}>
                           {status_text(@parameter_status[:pco2])}
                         </div>
                       </div>
-                      <div class="bg-base-200 rounded-lg p-4">
-                        <div class="text-sm font-medium mb-1">HCO₃⁻</div>
-                        <div class="text-lg font-bold mb-2">{@form.params["bicarbonate"]}</div>
+                    </div>
+                  </div>
+                  <div class="card bg-base-200 shadow-sm">
+                    <div class="card-body">
+                      <h3 class="card-title text-sm">HCO₃⁻</h3>
+                      <div class="stat-value text-lg font-mono text-primary">
+                        {@form.params["bicarbonate"]} mmol/L
+                      </div>
+                      <div class="card-actions justify-start mt-4">
                         <div class={["badge", status_badge_class(@parameter_status[:bicarbonate])]}>
                           {status_text(@parameter_status[:bicarbonate])}
                         </div>
@@ -150,60 +165,46 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
                     </div>
                   </div>
                 </div>
-                
-    <!-- Interpretation -->
-                <div class="card bg-base-100">
-                  <div class="card-body">
-                    <h3 class="card-title text-lg mb-4">{gettext("Interpretation")}</h3>
-                    <div class="space-y-4">
-                      <%= case @interpretation do %>
-                        <% {disorder, compensation} when disorder != :normal -> %>
-                          <div class="alert alert-info">
-                            <div class="flex-1">
-                              <h4 class="font-semibold mb-2">{gettext("Primary Disorder")}</h4>
-                              <p class="text-lg">{disorder_text(disorder)}</p>
-                              <%= if compensation != :not_determined do %>
-                                <p class="text-sm mt-2 opacity-80">
-                                  {compensation_text(compensation)}
-                                </p>
-                              <% end %>
-                            </div>
-                          </div>
-                        <% :normal -> %>
-                          <div class="alert alert-success">
-                            <div class="flex-1">
-                              <h4 class="font-semibold mb-2">{gettext("Result")}</h4>
-                              <p class="text-lg">{gettext("Normal acid-base status")}</p>
-                            </div>
-                          </div>
-                        <% :not_determined -> %>
-                          <div class="alert alert-warning">
-                            <div class="flex-1">
-                              <h4 class="font-semibold mb-2">{gettext("Result")}</h4>
-                              <p class="text-lg">{gettext("Cannot determine primary disorder")}</p>
-                              <p class="text-sm mt-2 opacity-80">
-                                {gettext(
-                                  "The combination of values suggests a mixed disorder or measurement error"
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                      <% end %>
-                    </div>
-                  </div>
+
+                <div class="space-y-4">
+                  <%= case @interpretation do %>
+                    <% {disorder, compensation} when disorder != :normal -> %>
+                      <div class="alert alert-info">
+                        <div class="flex-1">
+                          <h4 class="font-semibold mb-2">{gettext("Primary Disorder")}</h4>
+                          <p class="text-lg">{disorder_text(disorder)}</p>
+                          <%= if compensation != :not_determined do %>
+                            <p class="text-sm mt-2 opacity-80">
+                              {compensation_text(compensation)}
+                            </p>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% :normal -> %>
+                      <div class="alert alert-success">
+                        <div class="flex-1">
+                          <p class="text-lg">{gettext("Normal acid-base status")}</p>
+                        </div>
+                      </div>
+                    <% :not_determined -> %>
+                      <div class="alert alert-warning">
+                        <div class="flex-1">
+                          <p class="text-lg">{gettext("Cannot determine primary disorder")}</p>
+                          <p class="text-sm mt-2 opacity-80">
+                            {gettext(
+                              "The combination of values suggests a mixed disorder or measurement error"
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                  <% end %>
                 </div>
               </div>
             <% else %>
-              <div class="card bg-base-100">
-                <div class="card-body text-center py-16">
-                  <div class="text-base-content/50 mb-4">
-                    <.icon name="hero-chart-bar" class="h-24 w-24 mx-auto" />
-                  </div>
-                  <h3 class="text-xl font-semibold mb-2">{gettext("Enter Values")}</h3>
-                  <p class="text-base-content/70">
-                    {gettext("Fill in the blood gas values to get an interpretation")}
-                  </p>
-                </div>
+              <div class="border border-base-content/20 shadow p-8 text-center text-base-content/60">
+                <p>
+                  {gettext("Fill in the blood gas values to get an interpretation")}
+                </p>
               </div>
             <% end %>
           </div>

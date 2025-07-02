@@ -62,7 +62,7 @@ defmodule AstrupWeb.InterpretLive do
             <%= if @state == :review do %>
               <.score_section score={@score} total={5} show_perfect_message={@score == 5} />
             <% end %>
-            
+
             <section class="border border-base-content/20 shadow p-4">
               <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h2>
               <p class="mb-4">
@@ -100,15 +100,13 @@ defmodule AstrupWeb.InterpretLive do
               <div class="divider"></div>
 
               <.form for={%{}} phx-change="toggle_reference_values">
-                <label class="label cursor-pointer">
-                  <span class="label-text text-xs">{gettext("Show reference values")}</span>
-                  <input
-                    type="checkbox"
-                    name="show_reference_values"
-                    class="checkbox checkbox-sm"
-                    checked={@show_reference_values}
-                  />
-                </label>
+                <.input
+                  type="checkbox"
+                  name="show_reference_values"
+                  label={gettext("Show reference values")}
+                  checked={@show_reference_values}
+                  class="checkbox checkbox-sm"
+                />
               </.form>
             </section>
           </div>
@@ -228,18 +226,13 @@ defmodule AstrupWeb.InterpretLive do
                     </div>
 
                     <.form for={%{}} phx-change="select_primary_disorder">
-                      <select name="primary_disorder" class="select select-bordered w-full max-w-md">
-                        <option value="" selected={@selected_primary_disorder == nil}>
-                          {gettext("Choose primary disorder...")}
-                        </option>
-                        <option
-                          :for={disorder <- @primary_disorder_options}
-                          value={disorder}
-                          selected={@selected_primary_disorder == disorder}
-                        >
-                          {disorder}
-                        </option>
-                      </select>
+                      <.input
+                        type="select"
+                        name="primary_disorder"
+                        value={@selected_primary_disorder}
+                        prompt={gettext("Choose primary disorder...")}
+                        options={@primary_disorder_options |> Enum.map(&{&1, &1})}
+                      />
                     </.form>
                   </div>
                   
@@ -253,25 +246,17 @@ defmodule AstrupWeb.InterpretLive do
                     </div>
 
                     <.form for={%{}} phx-change="select_compensation">
-                      <select
+                      <.input
+                        type="select"
                         name="compensation"
-                        class="select select-bordered w-full max-w-md"
+                        value={@selected_compensation}
+                        prompt={gettext("Choose compensation level...")}
+                        options={@compensation_options |> Enum.map(&{&1, &1})}
                         disabled={
                           @selected_primary_disorder == nil or
                             @selected_primary_disorder == "Normal acid-base balance"
                         }
-                      >
-                        <option value="" selected={@selected_compensation == nil}>
-                          {gettext("Choose compensation level...")}
-                        </option>
-                        <option
-                          :for={compensation <- @compensation_options}
-                          value={compensation}
-                          selected={@selected_compensation == compensation}
-                        >
-                          {compensation}
-                        </option>
-                      </select>
+                      />
                     </.form>
                   </div>
                 </div>
@@ -319,7 +304,7 @@ defmodule AstrupWeb.InterpretLive do
 
         <%= if not @disabled do %>
           <div class="card-actions justify-start mt-4">
-            <div class="btn-group">
+            <div class="flex flex-wrap gap-2">
               <button
                 type="button"
                 class={[

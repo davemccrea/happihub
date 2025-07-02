@@ -109,42 +109,14 @@ defmodule AstrupWeb.SubmitLive do
     """
   end
 
-  attr :id, :any, default: nil
-  attr :name, :any
-  attr :label, :string, default: nil
-  attr :value, :any
-  attr :errors, :list, default: []
-
   attr :field, Phoenix.HTML.FormField,
     doc: "a form field struct retrieved from the form, for example: @form[:email]"
-
+  attr :label, :string, default: nil
   attr :rest, :global
 
-  defp parameter_input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
-    errors = if Phoenix.Component.used_input?(field), do: field.errors, else: []
-
-    assigns =
-      assigns
-      |> assign(field: nil, id: field.id)
-      |> assign(:errors, Enum.map(errors, &translate_error(&1)))
-      |> assign_new(:name, fn -> field.name end)
-      |> assign_new(:value, fn -> field.value end)
-
+  defp parameter_input(assigns) do
     ~H"""
-    <fieldset class="fieldset mb-2">
-      <label class={["input w-full", @errors != [] && "input-error"]}>
-        <span class="label">
-          <div>{@label}</div>
-        </span>
-        <input
-          type="number"
-          name={@name}
-          id={@id}
-          value={Phoenix.HTML.Form.normalize_value("number", @value)}
-          {@rest}
-        />
-      </label>
-    </fieldset>
+    <.input field={@field} label={@label} type="number" {@rest} />
     """
   end
 

@@ -130,50 +130,45 @@ defmodule AstrupWeb.QuizLive do
               </h2>
 
               <.form for={%{}} class="-space-y-1" phx-change="update_settings">
-                <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{gettext("Age Range")}</legend>
-                  <select name="age_range" class="select">
-                    <option value="0-18" selected={@age_range == "0-18"}>0-18</option>
-                    <option value="18-30" selected={@age_range == "18-30"}>18-30</option>
-                    <option value="31-50" selected={@age_range == "31-50"}>31-50</option>
-                    <option value="51-60" selected={@age_range == "51-60"}>51-60</option>
-                    <option value="61-70" selected={@age_range == "61-70"}>61-70</option>
-                    <option value="71-80" selected={@age_range == "71-80"}>71-80</option>
-                    <option value=">80" selected={@age_range == ">80"}>&gt;80</option>
-                  </select>
-                  <p class="text-sm text-base-content/50">
-                    {gettext("Note: determines pO2")}
-                  </p>
-                </fieldset>
+                <.input
+                  type="select"
+                  name="age_range"
+                  label={gettext("Age Range")}
+                  value={@age_range}
+                  options={[
+                    {"0-18", "0-18"},
+                    {"18-30", "18-30"},
+                    {"31-50", "31-50"},
+                    {"51-60", "51-60"},
+                    {"61-70", "61-70"},
+                    {"71-80", "71-80"},
+                    {">80", ">80"}
+                  ]}
+                />
+                <p class="text-sm text-base-content/50">
+                  {gettext("Note: determines pO2")}
+                </p>
 
-                <fieldset class="fieldset">
-                  <legend class="fieldset-legend">{gettext("Sex")}</legend>
-                  <select name="sex" class="select">
-                    <option value="male" selected={@sex == "male"}>{gettext("Male")}</option>
-                    <option value="female" selected={@sex == "female"}>{gettext("Female")}</option>
-                  </select>
-                  <p class="text-sm text-base-content/50">
-                    {gettext("Note: determines Hb")}
-                  </p>
-                </fieldset>
+                <.input
+                  type="select"
+                  name="sex"
+                  label={gettext("Sex")}
+                  value={@sex}
+                  options={[
+                    {gettext("Male"), "male"},
+                    {gettext("Female"), "female"}
+                  ]}
+                />
+                <p class="text-sm text-base-content/50">
+                  {gettext("Note: determines Hb")}
+                </p>
 
-                <fieldset class="fieldset mt-4">
-                  <% checked = Phoenix.HTML.Form.normalize_value("checkbox", @hints_enabled) %>
-
-                  <label>
-                    <input type="hidden" name="hints_enabled" value="false" />
-                    <span class="label">
-                      <input
-                        type="checkbox"
-                        name="hints_enabled"
-                        value="true"
-                        checked={checked}
-                        class="checkbox checkbox-sm"
-                      />
-                      {gettext("Show hover hints")}
-                    </span>
-                  </label>
-                </fieldset>
+                <.input
+                  type="checkbox"
+                  name="hints_enabled"
+                  label={gettext("Show hover hints")}
+                  checked={@hints_enabled}
+                />
               </.form>
             </section>
           </div>

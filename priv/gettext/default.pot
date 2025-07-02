@@ -41,7 +41,7 @@ msgstr ""
 msgid "Chloride"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:182
+#: lib/astrup_web/live/quiz_live.ex:153
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Female"
@@ -52,7 +52,7 @@ msgstr ""
 msgid "Glucose"
 msgstr ""
 
-#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:285
+#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:296
 #, elixir-autogen, elixir-format
 msgid "H"
 msgstr ""
@@ -72,7 +72,7 @@ msgstr ""
 msgid "Ionized calcium corrected to pH 7.4"
 msgstr ""
 
-#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:259
+#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:270
 #, elixir-autogen, elixir-format
 msgid "L"
 msgstr ""
@@ -82,7 +82,7 @@ msgstr ""
 msgid "Lactate"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:181
+#: lib/astrup_web/live/quiz_live.ex:152
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Male"
@@ -93,12 +93,12 @@ msgstr ""
 msgid "Methemoglobin"
 msgstr ""
 
-#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:272
+#: lib/astrup_web/live/components/radiometer_abl90_flex_plus.ex:283
 #, elixir-autogen, elixir-format
 msgid "N"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:106
+#: lib/astrup_web/components/core_components.ex:512
 #, elixir-autogen, elixir-format
 msgid "Nice one!"
 msgstr ""
@@ -143,263 +143,543 @@ msgstr ""
 msgid "pH"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:85
-#: lib/astrup_web/live/case_interpretation_live.ex:43
+#: lib/astrup_web/live/interpret_live.ex:87
+#: lib/astrup_web/live/quiz_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "Check Answers"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:88
+#: lib/astrup_web/live/quiz_live.ex:122
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:100
-#, elixir-autogen, elixir-format
-msgid "Score:"
-msgstr ""
-
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:98
+#: lib/astrup_web/live/quiz_live.ex:109
 #, elixir-autogen, elixir-format
 msgid "Answers: "
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:163
+#: lib/astrup_web/live/quiz_live.ex:134
 #, elixir-autogen, elixir-format
 msgid "Age Range"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:151
+#: lib/astrup_web/live/settings_live.ex:41
 #, elixir-autogen, elixir-format
 msgid "Analyzer"
 msgstr ""
 
-#: lib/astrup_web/live/parameter_guide_live.ex:89
+#: lib/astrup_web/live/learn_live.ex:91
 #, elixir-autogen, elixir-format
 msgid "Click on any parameter in the printout to learn more about it."
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:145
-#, elixir-autogen, elixir-format
-msgid "Fimlab VCS"
-msgstr ""
-
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:70
+#: lib/astrup_web/live/quiz_live.ex:103
 #, elixir-autogen, elixir-format
 msgid "For each parameter, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you've made all 18 selections, click \"Check Answers\"."
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:68
-#: lib/astrup_web/live/case_interpretation_live.ex:31
+#: lib/astrup_web/live/interpret_live.ex:67
+#: lib/astrup_web/live/quiz_live.ex:101
 #, elixir-autogen, elixir-format
 msgid "Instructions"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:142
+#: lib/astrup_web/live/settings_live.ex:33
 #, elixir-autogen, elixir-format
 msgid "Laboratory"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:185
+#: lib/astrup_web/live/quiz_live.ex:156
 #, elixir-autogen, elixir-format
 msgid "Note: determines Hb"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:174
+#: lib/astrup_web/live/quiz_live.ex:145
 #, elixir-autogen, elixir-format
 msgid "Note: determines pO2"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:95
-#, elixir-autogen, elixir-format
-msgid "Progress"
-msgstr ""
-
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:157
-#, elixir-autogen, elixir-format
-msgid "Radiometer ABL90 Flex Plus"
-msgstr ""
-
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:137
+#: lib/astrup_web/live/home_live.ex:83
+#: lib/astrup_web/live/quiz_live.ex:129
+#: lib/astrup_web/live/settings_live.ex:12
+#: lib/astrup_web/live/settings_live.ex:27
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:179
+#: lib/astrup_web/live/quiz_live.ex:150
+#: lib/astrup_web/live/submit_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "Sex"
 msgstr ""
 
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:202
+#: lib/astrup_web/live/quiz_live.ex:173
 #, elixir-autogen, elixir-format
 msgid "Show hover hints"
 msgstr ""
 
-#: lib/astrup_web/components/layouts.ex:77
-#, elixir-autogen, elixir-format
-msgid "Submit an ABG"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:260
-#: lib/astrup_web/live/case_interpretation_live.ex:651
+#: lib/astrup_web/live/interpret_live.ex:333
+#: lib/astrup_web/live/interpret_live.ex:704
 #, elixir-autogen, elixir-format
 msgid "Acidosis"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:282
-#: lib/astrup_web/live/case_interpretation_live.ex:653
+#: lib/astrup_web/live/interpret_live.ex:359
+#: lib/astrup_web/live/interpret_live.ex:706
 #, elixir-autogen, elixir-format
 msgid "Alkalosis"
 msgstr ""
 
-#: lib/astrup_web/components/core_components.ex:505
-#, elixir-autogen, elixir-format
-msgid "Case Interpretation"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:158
-#, elixir-autogen, elixir-format
-msgid "Choose interpretation..."
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:106
+#: lib/astrup_web/live/interpret_live.ex:153
 #, elixir-autogen, elixir-format
 msgid "Classify each parameter as acidosis, normal, or alkalosis:"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:94
+#: lib/astrup_web/live/interpret_live.ex:137
 #, elixir-autogen, elixir-format
 msgid "Clinical Case"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:203
-#, elixir-autogen, elixir-format
-msgid "Correct answer:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:337
-#, elixir-autogen, elixir-format
-msgid "Correct:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:659
-#, elixir-autogen, elixir-format
-msgid "Good effort! Review the feedback and keep practicing."
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:658
-#, elixir-autogen, elixir-format
-msgid "Great job! You have a solid grasp of ABG analysis."
-msgstr ""
-
-#: lib/astrup_web/components/layouts.ex:52
-#: lib/astrup_web/live/case_interpretation_live.ex:23
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:103
 #, elixir-autogen, elixir-format
 msgid "Interpret"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:660
-#, elixir-autogen, elixir-format
-msgid "Keep studying! ABG interpretation takes practice."
-msgstr ""
-
-#: lib/astrup_web/components/core_components.ex:493
-#: lib/astrup_web/components/layouts.ex:42
-#: lib/astrup_web/live/parameter_guide_live.ex:47
-#, elixir-autogen, elixir-format
-msgid "Learn"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:51
+#: lib/astrup_web/live/interpret_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "Next Case"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:199
+#: lib/astrup_web/live/interpret_live.ex:449
+#: lib/astrup_web/live/interpret_live.ex:470
 #, elixir-autogen, elixir-format
 msgid "No selection"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:271
-#: lib/astrup_web/live/case_interpretation_live.ex:652
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:288
+#: lib/astrup_web/live/interpret_live.ex:346
+#: lib/astrup_web/live/interpret_live.ex:705
 #, elixir-autogen, elixir-format
 msgid "Normal"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:104
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:127
 #, elixir-autogen, elixir-format
 msgid "Parameter Classification"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:181
-#, elixir-autogen, elixir-format
-msgid "Parameter Classifications:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:657
-#, elixir-autogen, elixir-format
-msgid "Perfect! Excellent understanding of ABG interpretation."
-msgstr ""
-
-#: lib/astrup_web/components/core_components.ex:499
-#: lib/astrup_web/components/layouts.ex:47
-#: lib/astrup_web/live/blood_gas_quiz_live.ex:61
-#, elixir-autogen, elixir-format
-msgid "Quiz"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:304
+#: lib/astrup_web/live/interpret_live.ex:518
 #, elixir-autogen, elixir-format
 msgid "Reference only"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:177
+#: lib/astrup_web/live/interpret_live.ex:386
 #, elixir-autogen, elixir-format
 msgid "Results"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:148
-#, elixir-autogen, elixir-format
-msgid "Select the most appropriate interpretation:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:210
-#, elixir-autogen, elixir-format
-msgid "Your Score:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:197
-#: lib/astrup_web/live/case_interpretation_live.ex:327
-#, elixir-autogen, elixir-format
-msgid "Your answer:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:146
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:157
+#: lib/astrup_web/live/home_live.ex:45
+#: lib/astrup_web/live/interpret_live.ex:148
+#: lib/astrup_web/live/interpretation_learn_live.ex:17
 #, elixir-autogen, elixir-format
 msgid "Interpretation"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:194
-#, elixir-autogen, elixir-format
-msgid "Interpretation:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:33
+#: lib/astrup_web/live/interpret_live.ex:69
 #, elixir-autogen, elixir-format
 msgid "Read the clinical case, classify each parameter, and select the most appropriate interpretation."
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:73
+#: lib/astrup_web/components/core_components.ex:501
 #, elixir-autogen, elixir-format
 msgid "Score"
 msgstr ""
 
-#: lib/astrup_web/live/case_interpretation_live.ex:246
-#, elixir-autogen, elixir-format
-msgid "Reference:"
-msgstr ""
-
-#: lib/astrup_web/live/case_interpretation_live.ex:60
+#: lib/astrup_web/live/interpret_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "Show reference values"
+msgstr ""
+
+#: lib/astrup_web/live/settings_live.ex:56
+#, elixir-autogen, elixir-format
+msgid "Appearance"
+msgstr ""
+
+#: lib/astrup_web/components/locale_picker.ex:31
+#, elixir-autogen, elixir-format
+msgid "Available languages"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:54
+#: lib/astrup_web/live/quiz_live.ex:85
+#, elixir-autogen, elixir-format
+msgid "Back to Learning"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:36
+#, elixir-autogen, elixir-format
+msgid "Blood Gas Interpreter"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:48
+#, elixir-autogen, elixir-format
+msgid "Blood Gas Values"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:183
+#, elixir-autogen, elixir-format
+msgid "Cannot determine primary disorder"
+msgstr ""
+
+#: lib/astrup_web/components/locale_picker.ex:21
+#, elixir-autogen, elixir-format
+msgid "Change language"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:265
+#, elixir-autogen, elixir-format
+msgid "Choose compensation level..."
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:233
+#, elixir-autogen, elixir-format
+msgid "Choose primary disorder..."
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:109
+#, elixir-autogen, elixir-format
+msgid "Clear"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:467
+#, elixir-autogen, elixir-format
+msgid "Compensation"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:406
+#, elixir-autogen, elixir-format
+msgid "Correct"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:133
+#, elixir-autogen, elixir-format
+msgid "Desktop Required"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:251
+#, elixir-autogen, elixir-format
+msgid "Determine the level of compensation:"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:202
+#, elixir-autogen, elixir-format
+msgid "Enter Values"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:39
+#, elixir-autogen, elixir-format
+msgid "Enter pH, CO₂, and HCO₃⁻ values to get an acid-base interpretation"
+msgstr ""
+
+#: lib/astrup_web/components/core_components.ex:522
+#: lib/astrup_web/live/interpret_live.ex:775
+#, elixir-autogen, elixir-format
+msgid "Excellent!"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:204
+#, elixir-autogen, elixir-format
+msgid "Fill in the blood gas values to get an interpretation"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:299
+#, elixir-autogen, elixir-format
+msgid "Fully compensated"
+msgstr ""
+
+#: lib/astrup_web/components/core_components.ex:523
+#: lib/astrup_web/live/interpret_live.ex:776
+#, elixir-autogen, elixir-format
+msgid "Good job!"
+msgstr ""
+
+#: lib/astrup_web/forms/blood_gas_form.ex:50
+#, elixir-autogen, elixir-format
+msgid "HCO₃⁻ must be between 5.0 and 50.0 mmol/L"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:289
+#, elixir-autogen, elixir-format
+msgid "High"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:226
+#, elixir-autogen, elixir-format
+msgid "Identify the primary acid-base disorder:"
+msgstr ""
+
+#: lib/astrup_web/live/learn_live.ex:53
+#, elixir-autogen, elixir-format
+msgid "Interactive guide to ABG parameter reference values"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:33
+#, elixir-autogen, elixir-format
+msgid "Interpretation Quiz"
+msgstr ""
+
+#: lib/astrup_web/components/core_components.ex:525
+#: lib/astrup_web/live/interpret_live.ex:778
+#, elixir-autogen, elixir-format
+msgid "Keep practicing!"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:290
+#, elixir-autogen, elixir-format
+msgid "Low"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:294
+#, elixir-autogen, elixir-format
+msgid "Metabolic Acidosis"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:295
+#, elixir-autogen, elixir-format
+msgid "Metabolic Alkalosis"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:140
+#, elixir-autogen, elixir-format
+msgid "Minimum screen width: 1024px"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:113
+#, elixir-autogen, elixir-format
+msgid "New Interpretation"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:176
+#, elixir-autogen, elixir-format
+msgid "Normal acid-base status"
+msgstr ""
+
+#: lib/astrup_web/components/core_components.ex:524
+#: lib/astrup_web/live/interpret_live.ex:777
+#, elixir-autogen, elixir-format
+msgid "Not bad!"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:282
+#, elixir-autogen, elixir-format
+msgid "Note: Mixed acid-base disorders and fully compensated conditions exist in clinical practice but are not addressed here for educational simplicity."
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:404
+#, elixir-autogen, elixir-format
+msgid "Parameter"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:298
+#, elixir-autogen, elixir-format
+msgid "Partially compensated"
+msgstr ""
+
+#: lib/astrup_web/components/core_components.ex:521
+#: lib/astrup_web/live/interpret_live.ex:774
+#, elixir-autogen, elixir-format
+msgid "Perfect!"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:36
+#, elixir-autogen, elixir-format
+msgid "Practice interpreting ABG results with clinical cases"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:163
+#: lib/astrup_web/live/interpret_live.ex:446
+#, elixir-autogen, elixir-format
+msgid "Primary Disorder"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:17
+#: lib/astrup_web/live/learn_live.ex:50
+#, elixir-autogen, elixir-format
+msgid "Reference Values"
+msgstr ""
+
+#: lib/astrup_web/live/quiz_live.ex:64
+#, elixir-autogen, elixir-format
+msgid "Reference Values Quiz"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:62
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:79
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:96
+#, elixir-autogen, elixir-format
+msgid "Reference range"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:292
+#, elixir-autogen, elixir-format
+msgid "Respiratory Acidosis"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:293
+#, elixir-autogen, elixir-format
+msgid "Respiratory Alkalosis"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:175
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:182
+#: lib/astrup_web/live/interpret_live.ex:407
+#, elixir-autogen, elixir-format
+msgid "Result"
+msgstr ""
+
+#: lib/astrup_web/live/settings_live.ex:48
+#, elixir-autogen, elixir-format
+msgid "Save Settings"
+msgstr ""
+
+#: lib/astrup_web/controllers/settings_controller.ex:10
+#, elixir-autogen, elixir-format
+msgid "Settings updated successfully"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:152
+#: lib/astrup_web/live/submit_live.ex:19
+#: lib/astrup_web/live/submit_live.ex:94
+#, elixir-autogen, elixir-format
+msgid "Submit ABG"
+msgstr ""
+
+#: lib/astrup_web/live/interpretation_learn_live.ex:28
+#: lib/astrup_web/live/learn_live.ex:59
+#, elixir-autogen, elixir-format
+msgid "Take Quiz"
+msgstr ""
+
+#: lib/astrup_web/live/quiz_live.ex:67
+#, elixir-autogen, elixir-format
+msgid "Test your knowledge of ABG parameter reference ranges"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:185
+#, elixir-autogen, elixir-format
+msgid "The combination of values suggests a mixed disorder or measurement error"
+msgstr ""
+
+#: lib/astrup_web/live/settings_live.ex:54
+#, elixir-autogen, elixir-format
+msgid "Theme"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:135
+#, elixir-autogen, elixir-format
+msgid "This application requires a larger screen for the best experience. Please use a desktop or laptop computer."
+msgstr ""
+
+#: lib/astrup_web/live/interpretation_learn_live.ex:20
+#, elixir-autogen, elixir-format
+msgid "This learning section is under development. Take the quiz to practice interpretation skills!"
+msgstr ""
+
+#: lib/astrup_web/live/blood_gas_interpreter_live.ex:297
+#, elixir-autogen, elixir-format
+msgid "Uncompensated"
+msgstr ""
+
+#: lib/astrup_web/live/interpret_live.ex:405
+#, elixir-autogen, elixir-format
+msgid "Your Answer"
+msgstr ""
+
+#: lib/astrup_web/forms/blood_gas_form.ex:21
+#, elixir-autogen, elixir-format
+msgid "is required"
+msgstr ""
+
+#: lib/astrup_web/forms/blood_gas_form.ex:41
+#, elixir-autogen, elixir-format
+msgid "pCO₂ must be between 1.0 and 20.0 kPa"
+msgstr ""
+
+#: lib/astrup_web/forms/blood_gas_form.ex:32
+#, elixir-autogen, elixir-format
+msgid "pH must be between 6.0 and 8.0"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:75
+#, elixir-autogen, elixir-format
+msgid "Calculator"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:27
+#: lib/astrup_web/live/home_live.ex:55
+#, elixir-autogen, elixir-format
+msgid "Learn"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:37
+#: lib/astrup_web/live/home_live.ex:65
+#, elixir-autogen, elixir-format
+msgid "Quiz"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:30
+#, elixir-autogen, elixir-format
+msgid "Acid-base status"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:81
+#, elixir-autogen, elixir-format
+msgid "Age"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:79
+#, elixir-autogen, elixir-format
+msgid "Basic info (optional)"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:86
+#, elixir-autogen, elixir-format
+msgid "Choose..."
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:64
+#, elixir-autogen, elixir-format
+msgid "Electrolyte values"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:222
+#, elixir-autogen, elixir-format
+msgid "Logout"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:43
+#, elixir-autogen, elixir-format
+msgid "Metabolite values"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:49
+#, elixir-autogen, elixir-format
+msgid "Oximetry values"
+msgstr ""
+
+#: lib/astrup_web/components/layouts.ex:232
+#, elixir-autogen, elixir-format
+msgid "Printouts"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:23
+#, elixir-autogen, elixir-format
+msgid "Temperature-corrected values"
+msgstr ""
+
+#: lib/astrup_web/live/submit_live.ex:165
+#, elixir-autogen, elixir-format
+msgid "Thanks! Submission successful!"
 msgstr ""
