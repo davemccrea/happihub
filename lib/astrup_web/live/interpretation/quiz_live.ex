@@ -231,7 +231,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
                         name="primary_disorder"
                         value={@selected_primary_disorder}
                         prompt={gettext("Choose primary disorder...")}
-                        options={@primary_disorder_options |> Enum.map(&{&1, &1})}
+                        options={@primary_disorder_options}
                       />
                     </.form>
                   </div>
@@ -251,10 +251,10 @@ defmodule AstrupWeb.Interpretation.QuizLive do
                         name="compensation"
                         value={@selected_compensation}
                         prompt={gettext("Choose compensation level...")}
-                        options={@compensation_options |> Enum.map(&{&1, &1})}
+                        options={@compensation_options}
                         disabled={
                           @selected_primary_disorder == nil or
-                            @selected_primary_disorder == "Normal acid-base balance"
+                            @selected_primary_disorder == :normal
                         }
                       />
                     </.form>
@@ -431,12 +431,12 @@ defmodule AstrupWeb.Interpretation.QuizLive do
               <td class="font-medium">{gettext("Primary Disorder")}</td>
               <td>
                 <span class="text-sm">
-                  {@selected_primary_disorder || gettext("No selection")}
+                  {primary_disorder_label(@selected_primary_disorder) || gettext("No selection")}
                 </span>
               </td>
               <td>
                 <span class="text-sm">
-                  {@correct_primary_disorder}
+                  {primary_disorder_label(@correct_primary_disorder)}
                 </span>
               </td>
               <td class="text-center">
@@ -452,12 +452,12 @@ defmodule AstrupWeb.Interpretation.QuizLive do
                 <td class="font-medium">{gettext("Compensation")}</td>
                 <td>
                   <span class="text-sm">
-                    {@selected_compensation || gettext("No selection")}
+                    {compensation_label(@selected_compensation) || gettext("No selection")}
                   </span>
                 </td>
                 <td>
                   <span class="text-sm">
-                    {@correct_compensation}
+                    {compensation_label(@correct_compensation)}
                   </span>
                 </td>
                 <td class="text-center">
@@ -519,7 +519,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
   end
 
   def handle_event("select_primary_disorder", %{"primary_disorder" => disorder}, socket) do
-    disorder_value = if disorder == "", do: nil, else: disorder
+    disorder_value = if disorder == "", do: nil, else: String.to_atom(disorder)
 
     # Reset compensation if primary disorder changes
     socket =
@@ -531,7 +531,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
   end
 
   def handle_event("select_compensation", %{"compensation" => compensation}, socket) do
-    compensation_value = if compensation == "", do: nil, else: compensation
+    compensation_value = if compensation == "", do: nil, else: String.to_atom(compensation)
     {:noreply, assign(socket, :selected_compensation, compensation_value)}
   end
 
@@ -565,7 +565,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
       socket
       |> assign(:state, :ready)
       |> assign(:case_data, case_data)
-      |> assign(:case_summary, case_data.description)
+      |> assign(:case_summary, case_data.quiz_description)
       |> assign(:selections, %{ph: nil, pco2: nil, bicarbonate: nil})
       |> assign(:selected_primary_disorder, nil)
       |> assign(:selected_compensation, nil)
@@ -585,18 +585,18 @@ defmodule AstrupWeb.Interpretation.QuizLive do
 
   defp get_primary_disorder_options do
     [
-      "Normal acid-base balance",
-      "Respiratory acidosis",
-      "Respiratory alkalosis",
-      "Metabolic acidosis",
-      "Metabolic alkalosis"
+      {gettext("Normal acid-base balance"), :normal},
+      {gettext("Respiratory acidosis"), :respiratory_acidosis},
+      {gettext("Respiratory alkalosis"), :respiratory_alkalosis},
+      {gettext("Metabolic acidosis"), :metabolic_acidosis},
+      {gettext("Metabolic alkalosis"), :metabolic_alkalosis}
     ]
   end
 
   defp get_compensation_options do
     [
-      "Uncompensated",
-      "Partially compensated"
+      {gettext("Uncompensated"), :uncompensated},
+      {gettext("Partially compensated"), :partially_compensated}
     ]
   end
 
@@ -606,7 +606,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
     primary_disorder_selected = selected_primary_disorder != nil
 
     # Compensation is only required if the primary disorder is not normal
-    compensation_required = selected_primary_disorder not in ["Normal acid-base balance", nil]
+    compensation_required = selected_primary_disorder not in [:normal, nil]
     compensation_selected = selected_compensation != nil or not compensation_required
 
     all_params_selected and primary_disorder_selected and compensation_selected
@@ -689,6 +689,17 @@ defmodule AstrupWeb.Interpretation.QuizLive do
   defp classification_label(:acidosis), do: gettext("Acidosis")
   defp classification_label(:normal), do: gettext("Normal")
   defp classification_label(:alkalosis), do: gettext("Alkalosis")
+
+  defp primary_disorder_label(:normal), do: gettext("Normal acid-base balance")
+  defp primary_disorder_label(:respiratory_acidosis), do: gettext("Respiratory acidosis")
+  defp primary_disorder_label(:respiratory_alkalosis), do: gettext("Respiratory alkalosis")
+  defp primary_disorder_label(:metabolic_acidosis), do: gettext("Metabolic acidosis")
+  defp primary_disorder_label(:metabolic_alkalosis), do: gettext("Metabolic alkalosis")
+  defp primary_disorder_label(nil), do: nil
+
+  defp compensation_label(:uncompensated), do: gettext("Uncompensated")
+  defp compensation_label(:partially_compensated), do: gettext("Partially compensated")
+  defp compensation_label(nil), do: nil
 
   defp get_fimlab_reference_range(parameter, case_data) do
     # Create context based on case data
