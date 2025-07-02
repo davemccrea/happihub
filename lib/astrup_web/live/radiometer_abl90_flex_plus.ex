@@ -309,37 +309,34 @@ defmodule AstrupWeb.RadiometerABL90FlexPlus do
   defp button_colour(true, _, :answering), do: "border border-base-content border-2"
   defp button_colour(_, _, _), do: "border border-transparent border-2"
 
-  defp format_parameter_value(value, parameter) do
-    if is_struct(value, Decimal) do
-      formatted =
-        Decimal.round(
-          value,
-          case parameter do
-            :ph -> 2
-            :pco2 -> 1
-            :po2 -> 1
-            :bicarbonate -> 0
-            :base_excess -> 1
-            :anion_gap -> 1
-            :hemoglobin -> 0
-            :oxygen_content -> 1
-            :oxygen_saturation -> 1
-            :carboxyhemoglobin -> 1
-            :methemoglobin -> 1
-            :potassium -> 1
-            :sodium -> 0
-            :ionized_calcium -> 2
-            :ionized_calcium_corrected_to_ph_7_4 -> 2
-            :chloride -> 0
-            :glucose -> 1
-            :lactate -> 1
-            _ -> 1
-          end
-        )
-      
-      Decimal.to_string(formatted)
-    else
-      to_string(value)
-    end
+  @parameter_precision %{
+    ph: 2,
+    pco2: 1,
+    po2: 1,
+    bicarbonate: 0,
+    base_excess: 1,
+    anion_gap: 1,
+    hemoglobin: 0,
+    oxygen_content: 1,
+    oxygen_saturation: 1,
+    carboxyhemoglobin: 1,
+    methemoglobin: 1,
+    potassium: 1,
+    sodium: 0,
+    ionized_calcium: 2,
+    ionized_calcium_corrected_to_ph_7_4: 2,
+    chloride: 0,
+    glucose: 1,
+    lactate: 1
+  }
+
+  defp format_parameter_value(%Decimal{} = value, parameter) do
+    precision = Map.get(@parameter_precision, parameter, 1)
+    
+    value
+    |> Decimal.round(precision)
+    |> Decimal.to_string()
   end
+
+  defp format_parameter_value(value, _parameter), do: to_string(value)
 end
