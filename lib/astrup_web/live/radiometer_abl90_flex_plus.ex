@@ -1,4 +1,4 @@
-defmodule AstrupWeb.Components.RadiometerABL90FlexPlus do
+defmodule AstrupWeb.RadiometerABL90FlexPlux do
   use Phoenix.Component
   use Gettext, backend: AstrupWeb.Gettext
 

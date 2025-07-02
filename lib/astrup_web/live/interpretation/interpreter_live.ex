@@ -1,4 +1,4 @@
-defmodule AstrupWeb.BloodGasInterpreterLive do
+defmodule AstrupWeb.Interpretation.InterpreterLive do
   use AstrupWeb, :live_view
 
   alias AstrupWeb.Forms.BloodGasForm
@@ -46,84 +46,84 @@ defmodule AstrupWeb.BloodGasInterpreterLive do
             <div class="border border-base-content/20 shadow p-4">
               <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Blood Gas Values")}</h2>
 
-                <.form for={@form} phx-submit="interpret" phx-change="validate" class="space-y-6">
-                  <div>
-                    <.input
-                      field={@form[:ph]}
-                      type="number"
-                      label="pH"
-                      step="0.01"
-                      min="6.0"
-                      max="8.0"
-                      placeholder="7.40"
-                    />
-                    <p class="text-xs text-base-content/70 mt-1">
-                      {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
-                        @lab_module,
-                        :ph
-                      )}
-                    </p>
-                  </div>
+              <.form for={@form} phx-submit="interpret" phx-change="validate" class="space-y-6">
+                <div>
+                  <.input
+                    field={@form[:ph]}
+                    type="number"
+                    label="pH"
+                    step="0.01"
+                    min="6.0"
+                    max="8.0"
+                    placeholder="7.40"
+                  />
+                  <p class="text-xs text-base-content/70 mt-1">
+                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                      @lab_module,
+                      :ph
+                    )}
+                  </p>
+                </div>
 
-                  <div>
-                    <.input
-                      field={@form[:pco2]}
-                      type="number"
-                      label="pCO₂"
-                      step="0.1"
-                      min="1.0"
-                      max="20.0"
-                      placeholder="5.3"
-                    />
-                    <p class="text-xs text-base-content/70 mt-1">
-                      {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
-                        @lab_module,
-                        :pco2
-                      )}
-                    </p>
-                  </div>
+                <div>
+                  <.input
+                    field={@form[:pco2]}
+                    type="number"
+                    label="pCO₂"
+                    step="0.1"
+                    min="1.0"
+                    max="20.0"
+                    placeholder="5.3"
+                  />
+                  <p class="text-xs text-base-content/70 mt-1">
+                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                      @lab_module,
+                      :pco2
+                    )}
+                  </p>
+                </div>
 
-                  <div>
-                    <.input
-                      field={@form[:bicarbonate]}
-                      type="number"
-                      label="HCO₃⁻"
-                      step="0.1"
-                      min="5.0"
-                      max="50.0"
-                      placeholder="24.0"
-                    />
-                    <p class="text-xs text-base-content/70 mt-1">
-                      {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
-                        @lab_module,
-                        :bicarbonate
-                      )}
-                    </p>
-                  </div>
+                <div>
+                  <.input
+                    field={@form[:bicarbonate]}
+                    type="number"
+                    label="HCO₃⁻"
+                    step="0.1"
+                    min="5.0"
+                    max="50.0"
+                    placeholder="24.0"
+                  />
+                  <p class="text-xs text-base-content/70 mt-1">
+                    {gettext("Reference range")}: {Astrup.pretty_print_reference_range(
+                      @lab_module,
+                      :bicarbonate
+                    )}
+                  </p>
+                </div>
 
-                  <button type="submit" class="btn btn-primary w-full" disabled={!@form.source.valid?}>
-                    {gettext("Interpret")}
-                  </button>
-                </.form>
+                <button type="submit" class="btn btn-primary w-full" disabled={!@form.source.valid?}>
+                  {gettext("Interpret")}
+                </button>
+              </.form>
 
-                <%= if @state == :input do %>
-                  <button type="button" phx-click="clear_form" class="btn btn-ghost w-full mt-2">
-                    {gettext("Clear")}
-                  </button>
-                <% else %>
-                  <button type="button" phx-click="reset" class="btn btn-ghost w-full mt-2">
-                    {gettext("New Interpretation")}
-                  </button>
-                <% end %>
+              <%= if @state == :input do %>
+                <button type="button" phx-click="clear_form" class="btn btn-ghost w-full mt-2">
+                  {gettext("Clear")}
+                </button>
+              <% else %>
+                <button type="button" phx-click="reset" class="btn btn-ghost w-full mt-2">
+                  {gettext("New Interpretation")}
+                </button>
+              <% end %>
             </div>
           </div>
           
-          <!-- Results -->
+    <!-- Results -->
           <div class="w-full lg:flex-1">
             <%= if @state == :interpreted && @interpretation do %>
               <div class="border border-base-content/20 shadow p-4">
                 <h3 class="text-lg font-semibold mb-6 text-primary">{gettext("Interpretation")}</h3>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div class="card bg-base-200 shadow-sm">
                     <div class="card-body">

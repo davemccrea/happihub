@@ -1,4 +1,4 @@
-defmodule AstrupWeb.QuizLive do
+defmodule AstrupWeb.ReferenceValues.QuizLive do
   @moduledoc """
   Blood gas quiz for testing knowledge of reference values.
 
@@ -69,7 +69,7 @@ defmodule AstrupWeb.QuizLive do
           
     <!-- Navigation back to Learn -->
           <div class="mb-8">
-            <.link navigate={~p"/learn"} class="btn btn-primary">
+            <.link navigate={~p"/reference-values/learn"} class="btn btn-primary">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="h-5 w-5 mr-2"
@@ -96,7 +96,7 @@ defmodule AstrupWeb.QuizLive do
                 show_perfect_message={full_score?(@selections)}
               />
             <% end %>
-            
+
             <section class="space-y-4 border border-base-content/20 shadow p-4">
               <h1 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h1>
               <p class="mb-4">
@@ -174,7 +174,7 @@ defmodule AstrupWeb.QuizLive do
           </div>
 
           <div class="w-full lg:flex-1 order-2 lg:order-2">
-            <AstrupWeb.Components.RadiometerABL90FlexPlus.render
+            <AstrupWeb.RadiometerABL90FlexPlux.render
               printout={@printout}
               selections={@selections}
               state={@state}

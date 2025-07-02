@@ -111,6 +111,7 @@ defmodule AstrupWeb.SubmitLive do
 
   attr :field, Phoenix.HTML.FormField,
     doc: "a form field struct retrieved from the form, for example: @form[:email]"
+
   attr :label, :string, default: nil
   attr :rest, :global
 

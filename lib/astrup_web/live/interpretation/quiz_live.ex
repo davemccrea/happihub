@@ -1,4 +1,4 @@
-defmodule AstrupWeb.InterpretLive do
+defmodule AstrupWeb.Interpretation.QuizLive do
   @moduledoc """
   Case-based ABG interpretation quiz where users are presented with clinical scenarios
   and asked to classify parameters and provide interpretations.
@@ -38,7 +38,7 @@ defmodule AstrupWeb.InterpretLive do
           
     <!-- Navigation back to Learn -->
           <div class="mb-8">
-            <.link navigate={~p"/interpretation"} class="btn btn-primary">
+            <.link navigate={~p"/interpretation/learn"} class="btn btn-primary">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="h-5 w-5 mr-2"

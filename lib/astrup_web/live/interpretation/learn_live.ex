@@ -1,4 +1,4 @@
-defmodule AstrupWeb.InterpretationLearnLive do
+defmodule AstrupWeb.Interpretation.LearnLive do
   @moduledoc """
   Learning page for Blood Gas Interpretation concepts and methodology.
   """
@@ -24,7 +24,7 @@ defmodule AstrupWeb.InterpretationLearnLive do
           
     <!-- Navigation to Quiz -->
           <div class="mb-8">
-            <.link navigate={~p"/interpretation-quiz"} class="btn btn-primary">
+            <.link navigate={~p"/interpretation/quiz"} class="btn btn-primary">
               {gettext("Take Quiz")}
               <svg
                 xmlns="http://www.w3.org/2000/svg"

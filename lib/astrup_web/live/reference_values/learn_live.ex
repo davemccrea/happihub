@@ -1,4 +1,4 @@
-defmodule AstrupWeb.LearnLive do
+defmodule AstrupWeb.ReferenceValues.LearnLive do
   @moduledoc """
   Interactive parameter guide that allows users to click on parameters
   to see detailed descriptions and information.
@@ -55,7 +55,7 @@ defmodule AstrupWeb.LearnLive do
           
     <!-- Navigation to Quiz -->
           <div class="mb-8">
-            <.link navigate={~p"/quiz"} class="btn btn-primary">
+            <.link navigate={~p"/reference-values/quiz"} class="btn btn-primary">
               {gettext("Take Quiz")}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -97,7 +97,7 @@ defmodule AstrupWeb.LearnLive do
           
     <!-- Printout Section -->
           <div class="w-full lg:flex-1">
-            <AstrupWeb.Components.RadiometerABL90FlexPlus.render
+            <AstrupWeb.RadiometerABL90FlexPlux.render
               printout={@printout}
               selections={%{}}
               state={:ready}
