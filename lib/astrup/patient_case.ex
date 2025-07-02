@@ -6,12 +6,23 @@ defmodule Astrup.PatientCase do
 
   alias Astrup.{Repo, PatientCase}
 
+  @valid_primary_disorders [
+    :normal,
+    :respiratory_acidosis,
+    :respiratory_alkalosis,
+    :metabolic_acidosis,
+    :metabolic_alkalosis,
+    :not_determined
+  ]
+
+  @valid_compensations [:uncompensated, :partially_compensated, :fully_compensated]
+
   schema "patient_cases" do
     # From Case schema (abg_cases)
     field :scenario, :string
     field :case_summary, :string
-    field :primary_disorder, :string
-    field :compensation, :string
+    field :primary_disorder, Ecto.Enum, values: @valid_primary_disorders
+    field :compensation, Ecto.Enum, values: @valid_compensations
 
     # Shared fields from both schemas
     field :ph, :decimal
@@ -38,10 +49,6 @@ defmodule Astrup.PatientCase do
     field :lactate, :decimal
     field :checked_at, :utc_datetime
 
-    # New field for case type
-    # "reference", "interpretation", "mixed"
-    field :case_type, :string, default: "reference"
-
     timestamps(type: :utc_datetime)
   end
 
@@ -50,16 +57,11 @@ defmodule Astrup.PatientCase do
     :pco2,
     :po2,
     :bicarbonate,
-    :base_excess
-  ]
-
-  @optional_fields [
+    :base_excess,
     :scenario,
     :case_summary,
     :primary_disorder,
     :compensation,
-    :age,
-    :sex,
     :anion_gap,
     :hemoglobin,
     :oxygen_content,
@@ -72,16 +74,21 @@ defmodule Astrup.PatientCase do
     :ionized_calcium_corrected_to_ph_7_4,
     :chloride,
     :glucose,
-    :lactate,
+    :lactate
+  ]
+
+  @optional_fields [
     :checked_at,
-    :case_type
+    :age,
+    :sex
   ]
 
   def changeset(patient_case, attrs \\ %{}, _metadata \\ []) do
     patient_case
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(:case_type, ["reference", "interpretation", "mixed"])
+    |> validate_inclusion(:primary_disorder, @valid_primary_disorders)
+    |> validate_inclusion(:compensation, @valid_compensations)
   end
 
   @doc """
@@ -100,16 +107,6 @@ defmodule Astrup.PatientCase do
     else
       nil
     end
-  end
-
-  @doc """
-  Returns a random patient case by type.
-  """
-  def get_random_case_by_type(case_type) do
-    PatientCase
-    |> from(order_by: fragment("RANDOM()"), limit: 1)
-    |> where([p], p.case_type == ^case_type)
-    |> Repo.one()
   end
 
   @doc """

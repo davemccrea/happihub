@@ -3,10 +3,14 @@ defmodule AstrupWeb.Admin.PatientCasesLive do
     adapter_config: [
       schema: Astrup.PatientCase,
       repo: Astrup.Repo,
-      update_changeset: &Astrup.PatientCase.changeset/3,
-      create_changeset: &Astrup.PatientCase.changeset/3
+      update_changeset: &AstrupWeb.Admin.PatientCasesLive.admin_changeset/3,
+      create_changeset: &AstrupWeb.Admin.PatientCasesLive.admin_changeset/3
     ],
     layout: {AstrupWeb.Layouts, :admin}
+
+  def admin_changeset(patient_case, attrs, _metadata) do
+    Astrup.PatientCase.changeset(patient_case, attrs, admin: true)
+  end
 
   @impl Backpex.LiveResource
   def singular_name, do: "Patient Case"
@@ -17,15 +21,6 @@ defmodule AstrupWeb.Admin.PatientCasesLive do
   @impl Backpex.LiveResource
   def fields do
     [
-      case_type: %{
-        module: Backpex.Fields.Select,
-        label: "Case Type",
-        options: [
-          %{label: "Reference", value: "reference"},
-          %{label: "Interpretation", value: "interpretation"},
-          %{label: "Mixed", value: "mixed"}
-        ]
-      },
       scenario: %{
         module: Backpex.Fields.Text,
         label: "Scenario"
@@ -57,9 +52,10 @@ defmodule AstrupWeb.Admin.PatientCasesLive do
       sex: %{
         module: Backpex.Fields.Select,
         label: "Sex",
+        prompt: "Select option...",
         options: [
-          %{label: "Male", value: "male"},
-          %{label: "Female", value: "female"}
+          {"Male", "male"},
+          {"Female", "female"}
         ]
       },
       anion_gap: %{
@@ -119,12 +115,27 @@ defmodule AstrupWeb.Admin.PatientCasesLive do
         label: "Case Summary"
       },
       primary_disorder: %{
-        module: Backpex.Fields.Text,
-        label: "Primary Disorder"
+        module: Backpex.Fields.Select,
+        label: "Primary Disorder",
+        prompt: "Select option ...",
+        options: [
+          {"Normal", :normal},
+          {"Respiratory Acidosis", :respiratory_acidosis},
+          {"Respiratory Alkalosis", :respiratory_alkalosis},
+          {"Metabolic Acidosis", :metabolic_acidosis},
+          {"Metabolic Alkalosis", :metabolic_alkalosis},
+          {"Not Determined", :not_determined}
+        ]
       },
       compensation: %{
-        module: Backpex.Fields.Text,
-        label: "Compensation"
+        module: Backpex.Fields.Select,
+        label: "Compensation",
+        prompt: "Select option ...",
+        options: [
+          {"Uncompensated", :uncompensated},
+          {"Partially Compensated", :partially_compensated},
+          {"Fully Compensated", :fully_compensated}
+        ]
       },
       checked_at: %{
         module: Backpex.Fields.DateTime,

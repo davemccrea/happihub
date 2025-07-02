@@ -559,7 +559,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
 
   # Helper functions
   defp setup_new_case(socket) do
-    case_data = PatientCase.get_random_case_by_type("interpretation")
+    case_data = PatientCase.get_random_case()
 
     if case_data do
       socket
