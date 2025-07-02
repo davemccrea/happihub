@@ -1,12 +1,12 @@
 defmodule AstrupWeb.SubmitLive do
   use AstrupWeb, :live_view
 
-  alias Astrup.{Repo, Printout}
+  alias Astrup.{Repo, PatientCase}
 
   def mount(_params, _session, socket) do
     form =
-      %Printout{}
-      |> Printout.changeset()
+      %PatientCase{}
+      |> PatientCase.changeset()
       |> to_form()
 
     {:ok, assign(socket, form: form)}
@@ -121,17 +121,17 @@ defmodule AstrupWeb.SubmitLive do
     """
   end
 
-  def handle_event("validate", %{"printout" => params}, socket) do
+  def handle_event("validate", %{"patient_case" => params}, socket) do
     changeset =
-      %Printout{}
-      |> Printout.changeset(params)
+      %PatientCase{}
+      |> PatientCase.changeset(params)
       |> Map.put(:action, :validate)
 
     {:noreply, assign(socket, form: to_form(changeset))}
   end
 
-  def handle_event("save", %{"printout" => params}, socket) do
-    changeset = Printout.changeset(%Printout{}, params)
+  def handle_event("save", %{"patient_case" => params}, socket) do
+    changeset = PatientCase.changeset(%PatientCase{}, params)
 
     case Repo.insert(changeset) do
       {:ok, _} ->

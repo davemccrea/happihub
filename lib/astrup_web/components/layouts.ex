@@ -228,9 +228,9 @@ defmodule AstrupWeb.Layouts do
       </:topbar>
 
       <:sidebar>
-        <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/printouts"}>
+        <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/patient-cases"}>
           <%!-- TODO: choose appropriate icon --%>
-          <.icon name="hero-book-open" class="size-5" /> {gettext("Printouts")}
+          <.icon name="hero-book-open" class="size-5" /> {gettext("Patient Cases")}
         </Backpex.HTML.Layout.sidebar_item>
       </:sidebar>
 
