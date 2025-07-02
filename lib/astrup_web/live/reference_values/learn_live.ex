@@ -97,7 +97,7 @@ defmodule AstrupWeb.ReferenceValues.LearnLive do
           
     <!-- Printout Section -->
           <div class="w-full lg:flex-1">
-            <AstrupWeb.RadiometerABL90FlexPlux.render
+            <AstrupWeb.RadiometerABL90FlexPlus.render
               printout={@printout}
               selections={%{}}
               state={:ready}
