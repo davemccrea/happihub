@@ -49,14 +49,6 @@ defmodule AstrupWeb.SettingsLive do
             </button>
           </div>
         </.form>
-
-        <div class="mt-8 pt-6 border-t border-base-300">
-          <h2 class="text-lg font-medium mb-4">{gettext("Theme")}</h2>
-          <div class="flex items-center gap-3">
-            <span class="text-sm text-base-content/70">{gettext("Appearance")}</span>
-            <Layouts.theme_toggle />
-          </div>
-        </div>
       </div>
     </Layouts.app>
     """
