@@ -19,8 +19,8 @@ defmodule Astrup.PatientCase do
 
   schema "patient_cases" do
     # From Case schema (abg_cases)
-    field :scenario, :string
-    field :case_summary, :string
+    field :summary, :string
+    field :description, :string
     field :primary_disorder, Ecto.Enum, values: @valid_primary_disorders
     field :compensation, Ecto.Enum, values: @valid_compensations
 
@@ -58,8 +58,8 @@ defmodule Astrup.PatientCase do
     :po2,
     :bicarbonate,
     :base_excess,
-    :scenario,
-    :case_summary,
+    :summary,
+    :description,
     :primary_disorder,
     :compensation,
     :anion_gap,

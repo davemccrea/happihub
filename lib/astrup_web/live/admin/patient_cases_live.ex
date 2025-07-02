@@ -21,9 +21,9 @@ defmodule AstrupWeb.Admin.PatientCasesLive do
   @impl Backpex.LiveResource
   def fields do
     [
-      scenario: %{
+      summary: %{
         module: Backpex.Fields.Text,
-        label: "Scenario"
+        label: "Summary"
       },
       ph: %{
         module: Backpex.Fields.Number,
@@ -110,9 +110,9 @@ defmodule AstrupWeb.Admin.PatientCasesLive do
         module: Backpex.Fields.Number,
         label: "Lactate"
       },
-      case_summary: %{
+      description: %{
         module: Backpex.Fields.Textarea,
-        label: "Case Summary"
+        label: "Description"
       },
       primary_disorder: %{
         module: Backpex.Fields.Select,

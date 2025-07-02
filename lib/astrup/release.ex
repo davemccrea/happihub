@@ -38,7 +38,7 @@ defmodule Astrup.Release do
               # Reference cases with full lab data (from printouts)
               # COPD
               %{
-                scenario: "copd_exacerbation",
+                summary: "copd_exacerbation",
                 ph: Decimal.new("7.335"),
                 pco2: Decimal.new("8.9"),
                 po2: Decimal.new("6.7"),
@@ -63,7 +63,7 @@ defmodule Astrup.Release do
               },
               # DKA
               %{
-                scenario: "dka",
+                summary: "dka",
                 ph: Decimal.new("7.152"),
                 pco2: Decimal.new("3.1"),
                 po2: Decimal.new("13.5"),
@@ -90,7 +90,7 @@ defmodule Astrup.Release do
               # Interpretation cases with clinical scenarios (from abg_cases)
               # COPD exacerbation - respiratory acidosis with partial compensation
               %{
-                scenario: "copd_exacerbation",
+                summary: "copd_exacerbation",
                 ph: Decimal.new("7.32"),
                 pco2: Decimal.new("7.2"),
                 po2: Decimal.new("8.5"),
@@ -111,7 +111,7 @@ defmodule Astrup.Release do
                 lactate: Decimal.new("2.1"),
                 age: 65,
                 sex: "male",
-                case_summary:
+                description:
                   "A 65-year-old male presents to the emergency department with worsening shortness of breath over the past 3 days. He has a history of COPD and is a current smoker. Physical examination reveals use of accessory muscles, prolonged expiration, and decreased breath sounds bilaterally. The patient appears drowsy and confused.",
                 primary_disorder: :respiratory_acidosis,
                 compensation: :partially_compensated,
@@ -120,7 +120,7 @@ defmodule Astrup.Release do
               },
               # Diabetic ketoacidosis - metabolic acidosis with respiratory compensation
               %{
-                scenario: "dka",
+                summary: "dka",
                 ph: Decimal.new("7.22"),
                 pco2: Decimal.new("3.8"),
                 po2: Decimal.new("12.5"),
@@ -141,7 +141,7 @@ defmodule Astrup.Release do
                 lactate: Decimal.new("3.8"),
                 age: 28,
                 sex: "female",
-                case_summary:
+                description:
                   "A 28-year-old female with type 1 diabetes is brought in by ambulance after being found unconscious at home. Family reports the patient has been unwell with flu-like symptoms for several days and may have missed insulin doses. The patient is dehydrated with fruity breath odor and Kussmaul respirations.",
                 primary_disorder: :metabolic_acidosis,
                 compensation: :partially_compensated,
@@ -150,7 +150,7 @@ defmodule Astrup.Release do
               },
               # Anxiety/panic attack - respiratory alkalosis
               %{
-                scenario: "anxiety",
+                summary: "anxiety",
                 ph: Decimal.new("7.52"),
                 pco2: Decimal.new("3.2"),
                 po2: Decimal.new("13.8"),
@@ -171,7 +171,7 @@ defmodule Astrup.Release do
                 lactate: Decimal.new("1.2"),
                 age: 25,
                 sex: "female",
-                case_summary:
+                description:
                   "A 25-year-old female presents to the emergency department with sudden onset of chest tightness, palpitations, and feeling short of breath. The patient appears anxious and reports tingling in fingers and around the mouth. No significant medical history. Symptoms started during a stressful work meeting.",
                 primary_disorder: :respiratory_alkalosis,
                 compensation: :uncompensated,
@@ -181,7 +181,7 @@ defmodule Astrup.Release do
 
               # Mixed cases with both lab data and clinical context
               %{
-                scenario: "normal",
+                summary: "normal",
                 ph: Decimal.new("7.405"),
                 pco2: Decimal.new("5.32"),
                 po2: Decimal.new("12.8"),
@@ -202,7 +202,7 @@ defmodule Astrup.Release do
                 lactate: Decimal.new("0.9"),
                 age: 35,
                 sex: "male",
-                case_summary:
+                description:
                   "A 35-year-old male undergoing elective surgery. Pre-operative assessment shows the patient is healthy with no significant medical history. Vital signs are stable and the patient is breathing room air comfortably.",
                 primary_disorder: :normal,
                 compensation: nil,

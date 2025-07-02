@@ -565,7 +565,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
       socket
       |> assign(:state, :ready)
       |> assign(:case_data, case_data)
-      |> assign(:case_summary, case_data.case_summary)
+      |> assign(:case_summary, case_data.description)
       |> assign(:selections, %{ph: nil, pco2: nil, bicarbonate: nil})
       |> assign(:selected_primary_disorder, nil)
       |> assign(:selected_compensation, nil)
