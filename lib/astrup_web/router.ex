@@ -23,7 +23,7 @@ defmodule AstrupWeb.Router do
 
     backpex_routes()
 
-    get "/", RedirectController, :redirect_to_printouts
+    get "/", RedirectController, :redirect_to_patient_cases
 
     live_session :admin_session, on_mount: Backpex.InitAssigns do
       live_resources "/patient-cases", Admin.PatientCasesLive
