@@ -564,7 +564,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
     {:noreply, setup_new_case(socket)}
   end
 
-  def handle_event("toggle_reference_values", %{"show_reference_values" => "on"}, socket) do
+  def handle_event("toggle_reference_values", %{"show_reference_values" => "true"}, socket) do
     {:noreply, assign(socket, :show_reference_values, true)}
   end
 
