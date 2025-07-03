@@ -21,40 +21,6 @@ defmodule AstrupWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/admin", AstrupWeb do
-    pipe_through :browser
-
-    backpex_routes()
-
-    get "/", RedirectController, :redirect_to_patient_cases
-
-    live_session :admin_session, on_mount: Backpex.InitAssigns do
-      live_resources "/patient-cases", Admin.PatientCasesLive
-    end
-  end
-
-  scope "/", AstrupWeb do
-    pipe_through :browser
-
-    live_session :regular_session, on_mount: AstrupWeb.Hooks.LocaleHook do
-      live "/", HomeLive
-
-      live "/reference-values/learn", ReferenceValues.LearnLive
-      live "/reference-values/quiz", ReferenceValues.QuizLive
-
-      live "/interpretation/learn", Interpretation.LearnLive
-      live "/interpretation/quiz", Interpretation.QuizLive
-      live "/interpretation/interpreter", Interpretation.InterpreterLive
-
-      live "/submit", SubmitLive
-      live "/settings", SettingsLive
-    end
-
-    get "/update_settings", SettingsController, :update
-
-    get "/locale/:locale", ChangeLocale, :index
-  end
-
   # Other scopes may use custom stacks.
   # scope "/api", AstrupWeb do
   #   pipe_through :api
@@ -83,12 +49,33 @@ defmodule AstrupWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :require_authenticated_user,
-      on_mount: [{AstrupWeb.UserAuth, :require_authenticated}] do
+      on_mount: [AstrupWeb.Hooks.LocaleHook, {AstrupWeb.UserAuth, :require_authenticated}] do
+      live "/", HomeLive
+      live "/reference-values/learn", ReferenceValues.LearnLive
+      live "/reference-values/quiz", ReferenceValues.QuizLive
+      live "/interpretation/learn", Interpretation.LearnLive
+      live "/interpretation/quiz", Interpretation.QuizLive
+      live "/interpretation/interpreter", Interpretation.InterpreterLive
+      live "/submit", SubmitLive
+      live "/settings", SettingsLive
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end
 
+    get "/update_settings", SettingsController, :update
     post "/users/update-password", UserSessionController, :update_password
+  end
+
+  scope "/admin", AstrupWeb do
+    pipe_through :browser
+
+    backpex_routes()
+
+    get "/", RedirectController, :redirect_to_patient_cases
+
+    live_session :admin_session, on_mount: Backpex.InitAssigns do
+      live_resources "/patient-cases", Admin.PatientCasesLive
+    end
   end
 
   scope "/", AstrupWeb do
@@ -101,6 +88,7 @@ defmodule AstrupWeb.Router do
       live "/users/log-in/:token", UserLive.Confirmation, :new
     end
 
+    get "/locale/:locale", ChangeLocale, :index
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end

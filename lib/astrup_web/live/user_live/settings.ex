@@ -73,7 +73,10 @@ defmodule AstrupWeb.UserLive.Settings do
           put_flash(socket, :error, "Email change link is invalid or it has expired.")
       end
 
-    {:ok, socket |> assign(:locale, session["locale"] || "en") |> push_navigate(to: ~p"/users/settings")}
+    {:ok,
+     socket
+     |> assign(:locale, session["locale"] || "en")
+     |> push_navigate(to: ~p"/users/settings")}
   end
 
   def mount(_params, session, socket) do

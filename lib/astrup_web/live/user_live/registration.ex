@@ -46,7 +46,8 @@ defmodule AstrupWeb.UserLive.Registration do
   def mount(_params, session, socket) do
     changeset = Accounts.change_user_email(%User{})
 
-    {:ok, assign_form(socket, changeset) |> assign(:locale, session["locale"] || "en"), temporary_assigns: [form: nil]}
+    {:ok, assign_form(socket, changeset) |> assign(:locale, session["locale"] || "en"),
+     temporary_assigns: [form: nil]}
   end
 
   def handle_event("save", %{"user" => user_params}, socket) do

@@ -7,7 +7,7 @@ defmodule AstrupWeb.HomeLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} locale={@locale}>
+    <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
       <div class="min-h-screen flex items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
         <div class="w-full max-w-4xl">
           

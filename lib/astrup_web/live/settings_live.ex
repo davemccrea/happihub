@@ -22,7 +22,7 @@ defmodule AstrupWeb.SettingsLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} locale={@locale}>
+    <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
       <div class="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <h1 class="text-2xl font-semibold mb-6">{gettext("Settings")}</h1>
 

@@ -530,4 +530,60 @@ defmodule AstrupWeb.CoreComponents do
       true -> gettext("Keep practicing!")
     end
   end
+
+  @doc """
+  Renders an authentication dropdown menu.
+
+  Shows different options based on user authentication status:
+  - If user is logged in: Shows user email, Settings, and Logout
+  - If user is not logged in: Shows Login and Register links
+
+  ## Examples
+
+      <.auth_dropdown current_scope={@current_scope} />
+  """
+  attr :current_scope, :map, default: nil, doc: "the current user scope"
+
+  def auth_dropdown(assigns) do
+    ~H"""
+    <div class="dropdown dropdown-end">
+      <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+        <.icon name="hero-user" class="size-5" />
+      </div>
+      <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+        <%= if @current_scope do %>
+          <li class="menu-title">
+            <span class="text-xs truncate">{@current_scope.user.email}</span>
+          </li>
+          <div class="divider my-1"></div>
+          <li>
+            <.link navigate={~p"/users/settings"} class="flex items-center">
+              <.icon name="hero-cog-6-tooth" class="size-4" />
+              {gettext("Settings")}
+            </.link>
+          </li>
+          <li>
+            <.link href={~p"/users/log-out"} method="delete" class="flex items-center text-error">
+              <.icon name="hero-arrow-right-on-rectangle" class="size-4" />
+              {gettext("Logout")}
+            </.link>
+          </li>
+        <% else %>
+          <li>
+            <.link navigate={~p"/users/log-in"} class="flex items-center">
+              <.icon name="hero-arrow-right-on-rectangle" class="size-4" />
+              {gettext("Login")}
+            </.link>
+          </li>
+          <li>
+            <.link navigate={~p"/users/register"} class="flex items-center">
+              <.icon name="hero-user-plus" class="size-4" />
+              {gettext("Register")}
+            </.link>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+    """
+  end
 end

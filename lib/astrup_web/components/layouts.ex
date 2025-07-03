@@ -123,6 +123,8 @@ defmodule AstrupWeb.Layouts do
           <.link navigate={~p"/settings"} class="btn btn-ghost btn-circle">
             <.icon name="hero-cog-6-tooth" class="size-5" />
           </.link>
+
+          <.auth_dropdown current_scope={@current_scope} />
         </div>
       </div>
     </header>
@@ -228,7 +230,10 @@ defmodule AstrupWeb.Layouts do
       </:topbar>
 
       <:sidebar>
-        <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/patient-cases"}>
+        <Backpex.HTML.Layout.sidebar_item
+          current_url={@current_url}
+          navigate={~p"/admin/patient-cases"}
+        >
           <%!-- TODO: choose appropriate icon --%>
           <.icon name="hero-book-open" class="size-5" /> {gettext("Patient Cases")}
         </Backpex.HTML.Layout.sidebar_item>
