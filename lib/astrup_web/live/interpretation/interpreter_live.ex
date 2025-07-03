@@ -132,8 +132,8 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
                         {@form.params["ph"]}
                       </div>
                       <div class="card-actions justify-start mt-4">
-                        <div class={["badge", status_badge_class(@parameter_status[:ph])]}>
-                          {status_text(@parameter_status[:ph])}
+                        <div class={["badge", status_badge_class(:ph, @parameter_status[:ph])]}>
+                          {ph_status_text(@parameter_status[:ph])}
                         </div>
                       </div>
                     </div>
@@ -145,8 +145,8 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
                         {@form.params["pco2"]} kPa
                       </div>
                       <div class="card-actions justify-start mt-4">
-                        <div class={["badge", status_badge_class(@parameter_status[:pco2])]}>
-                          {status_text(@parameter_status[:pco2])}
+                        <div class={["badge", status_badge_class(:pco2, @parameter_status[:pco2])]}>
+                          {pco2_status_text(@parameter_status[:pco2])}
                         </div>
                       </div>
                     </div>
@@ -158,8 +158,8 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
                         {@form.params["bicarbonate"]} mmol/L
                       </div>
                       <div class="card-actions justify-start mt-4">
-                        <div class={["badge", status_badge_class(@parameter_status[:bicarbonate])]}>
-                          {status_text(@parameter_status[:bicarbonate])}
+                        <div class={["badge", status_badge_class(:bicarbonate, @parameter_status[:bicarbonate])]}>
+                          {bicarbonate_status_text(@parameter_status[:bicarbonate])}
                         </div>
                       </div>
                     </div>
@@ -169,14 +169,13 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
                 <div class="space-y-4">
                   <%= case @interpretation do %>
                     <% {disorder, compensation} when disorder != :normal -> %>
-                      <div class="alert alert-info">
-                        <div class="flex-1">
-                          <h4 class="font-semibold mb-2">{gettext("Primary Disorder")}</h4>
-                          <p class="text-lg">{disorder_text(disorder)}</p>
+                      <div class="bg-base-100 border-2 border-primary/20 rounded-lg p-6">
+                        <div class="text-center space-y-4">
+                          <h3 class="text-2xl font-bold text-primary">{disorder_text(disorder)}</h3>
                           <%= if compensation != :not_determined do %>
-                            <p class="text-sm mt-2 opacity-80">
+                            <div class="text-lg text-base-content/80 font-medium">
                               {compensation_text(compensation)}
-                            </p>
+                            </div>
                           <% end %>
                         </div>
                       </div>
@@ -282,13 +281,29 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
 
   # Helper functions
 
-  defp status_badge_class(:normal), do: "badge-success"
-  defp status_badge_class(:high), do: "badge-error"
-  defp status_badge_class(:low), do: "badge-warning"
+  defp status_badge_class(parameter, status)
+  defp status_badge_class(_parameter, :normal), do: "badge-success"
+  defp status_badge_class(:ph, :high), do: "badge-info"  # pH high = Alkalosis = blue
+  defp status_badge_class(:ph, :low), do: "badge-error"  # pH low = Acidosis = red
+  defp status_badge_class(:pco2, :high), do: "badge-error"  # pCO₂ high = Acidosis = red
+  defp status_badge_class(:pco2, :low), do: "badge-info"  # pCO₂ low = Alkalosis = blue
+  defp status_badge_class(:bicarbonate, :high), do: "badge-info"  # HCO₃⁻ high = Alkalosis = blue
+  defp status_badge_class(:bicarbonate, :low), do: "badge-error"  # HCO₃⁻ low = Acidosis = red
 
-  defp status_text(:normal), do: gettext("Normal")
-  defp status_text(:high), do: gettext("High")
-  defp status_text(:low), do: gettext("Low")
+  # pH: Low = Acidosis, High = Alkalosis
+  defp ph_status_text(:normal), do: gettext("Normal")
+  defp ph_status_text(:high), do: gettext("Alkalosis")
+  defp ph_status_text(:low), do: gettext("Acidosis")
+
+  # pCO₂: Low = Alkalosis, High = Acidosis (respiratory)
+  defp pco2_status_text(:normal), do: gettext("Normal")
+  defp pco2_status_text(:high), do: gettext("Acidosis")
+  defp pco2_status_text(:low), do: gettext("Alkalosis")
+
+  # HCO₃⁻: Low = Acidosis, High = Alkalosis (metabolic)
+  defp bicarbonate_status_text(:normal), do: gettext("Normal")
+  defp bicarbonate_status_text(:high), do: gettext("Alkalosis")
+  defp bicarbonate_status_text(:low), do: gettext("Acidosis")
 
   defp disorder_text(:respiratory_acidosis), do: gettext("Respiratory Acidosis")
   defp disorder_text(:respiratory_alkalosis), do: gettext("Respiratory Alkalosis")
