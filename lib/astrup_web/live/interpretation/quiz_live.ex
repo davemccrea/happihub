@@ -67,7 +67,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
               <h2 class="text-lg font-semibold mb-3 text-primary">{gettext("Instructions")}</h2>
               <p class="mb-4">
                 {gettext(
-                  "Read the clinical case, classify each parameter, and select the most appropriate interpretation."
+                  "Read the clinical presentation, classify each parameter, and select the most appropriate interpretation."
                 )}
               </p>
 
@@ -113,7 +113,20 @@ defmodule AstrupWeb.Interpretation.QuizLive do
           
     <!-- Main Content Section -->
           <div class="w-full lg:flex-1 order-2 lg:order-2 space-y-6">
-            <!-- Results Comparison Table (shown after checking answers) -->
+            <!-- Explanation (shown after checking answers) -->
+            <%= if @state == :review do %>
+              <div class="border border-base-content/20 shadow p-6 mb-6 bg-base-100">
+                <h2 class="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                  <.icon name="hero-academic-cap" class="w-5 h-5" />
+                  {gettext("Explanation")}
+                </h2>
+                <div class="max-w-none">
+                  {@case_data.explanation}
+                </div>
+              </div>
+            <% end %>
+            
+    <!-- Results Comparison Table (shown after checking answers) -->
             <%= if @state == :review do %>
               <.results_comparison_table
                 score={@score}
@@ -130,9 +143,11 @@ defmodule AstrupWeb.Interpretation.QuizLive do
             
     <!-- Case Interpretation -->
             <div class="border border-base-content/20 shadow p-6 space-y-8">
-              <!-- Clinical Case -->
+              <!-- Clinical Presentation -->
               <div>
-                <h2 class="text-lg font-semibold mb-4 text-primary">{gettext("Clinical Case")}</h2>
+                <h2 class="text-lg font-semibold mb-4 text-primary">
+                  {gettext("Clinical Presentation")}
+                </h2>
                 <div class="max-w-none">
                   {@case_summary}
                 </div>
@@ -500,7 +515,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
 
         <div class="card-actions justify-start mt-4">
           <div class="text-xs">
-            {gettext("Reference only")}
+            {gettext("Reference Values")}
           </div>
         </div>
       </div>

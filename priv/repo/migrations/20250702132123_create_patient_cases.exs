@@ -3,7 +3,7 @@ defmodule Astrup.Repo.Migrations.CreatePatientCases do
 
   def change do
     create table(:patient_cases) do
-      # Clinical case information
+      # Clinical presentation information
       add :scenario, :text
       add :case_summary, :text
       add :primary_disorder, :string

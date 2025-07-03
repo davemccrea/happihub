@@ -110,9 +110,13 @@ defmodule AstrupWeb.Admin.PatientCasesLive do
         module: Backpex.Fields.Number,
         label: "Lactate"
       },
-      description: %{
+      quiz_description: %{
         module: Backpex.Fields.Textarea,
-        label: "Description"
+        label: "Quiz Description"
+      },
+      explanation: %{
+        module: Backpex.Fields.Textarea,
+        label: "Explanation"
       },
       primary_disorder: %{
         module: Backpex.Fields.Select,

@@ -238,8 +238,8 @@ msgstr "Luokittele jokainen parametri asidoosiksi, normaaliksi tai alkaloosiksi:
 
 #: lib/astrup_web/live/interpretation/quiz_live.ex:135
 #, elixir-autogen, elixir-format
-msgid "Clinical Case"
-msgstr "Kliininen tapaus"
+msgid "Clinical Presentation"
+msgstr "Kliininen esitys"
 
 #: lib/astrup_web/live/interpretation/interpreter_live.ex:105
 #, elixir-autogen, elixir-format
@@ -284,8 +284,8 @@ msgstr "Tulkinta"
 
 #: lib/astrup_web/live/interpretation/quiz_live.ex:69
 #, elixir-autogen, elixir-format
-msgid "Read the clinical case, classify each parameter, and select the most appropriate interpretation."
-msgstr "Lue kliininen tapaus, luokittele jokainen parametri ja valitse sopivin tulkinta."
+msgid "Read the clinical presentation, classify each parameter, and select the most appropriate interpretation."
+msgstr "Lue kliininen esitys, luokittele jokainen parametri ja valitse sopivin tulkinta."
 
 #: lib/astrup_web/components/core_components.ex:504
 #, elixir-autogen, elixir-format

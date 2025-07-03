@@ -41,7 +41,7 @@ defmodule AstrupWeb.ReferenceValues.QuizLive do
     |> assign(:state, :ready)
     |> assign(:selections, selections)
     |> assign(:number_of_parameters, map_size(selections))
-    |> assign(:printout, PatientCase.get_random_checked_case())
+    |> assign(:printout, PatientCase.get_random_case())
     |> assign(:lab_module, lab_module)
     |> assign(:age_range, "31-50")
     |> assign(:sex, "female")

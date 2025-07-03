@@ -22,7 +22,8 @@ defmodule Astrup.PatientCase do
   schema "patient_cases" do
     # From Case schema (abg_cases)
     field :summary, :string
-    field :description, :string
+    field :quiz_description, :string
+    field :explanation, :string
     field :primary_disorder, Ecto.Enum, values: @valid_primary_disorders
     field :compensation, Ecto.Enum, values: @valid_compensations
     field :time_course, Ecto.Enum, values: @valid_time_courses
@@ -62,7 +63,8 @@ defmodule Astrup.PatientCase do
     :bicarbonate,
     :base_excess,
     :summary,
-    :description,
+    :quiz_description,
+    :explanation,
     :primary_disorder,
     :compensation,
     :anion_gap,
@@ -169,7 +171,8 @@ defmodule Astrup.PatientCase do
 
     {
       "summary": "string - Concise clinical diagnosis",
-      "description": "string - Patient presentation (max 100 words)",
+      "quiz_description": "string - Patient presentation for quiz (max 100 words, no spoilers)",
+      "explanation": "string - Explanation of findings and pathophysiology",
       "primary_disorder": "enum - normal|respiratory_acidosis|respiratory_alkalosis|metabolic_acidosis|metabolic_alkalosis",
       "compensation": "enum - uncompensated|partially_compensated|fully_compensated",
       "time_course": "enum - acute|chronic|acute_on_chronic",

@@ -238,7 +238,7 @@ msgstr ""
 
 #: lib/astrup_web/live/interpretation/quiz_live.ex:135
 #, elixir-autogen, elixir-format
-msgid "Clinical Case"
+msgid "Clinical Presentation"
 msgstr ""
 
 #: lib/astrup_web/live/interpretation/interpreter_live.ex:105
@@ -284,7 +284,7 @@ msgstr ""
 
 #: lib/astrup_web/live/interpretation/quiz_live.ex:69
 #, elixir-autogen, elixir-format
-msgid "Read the clinical case, classify each parameter, and select the most appropriate interpretation."
+msgid "Read the clinical presentation, classify each parameter, and select the most appropriate interpretation."
 msgstr ""
 
 #: lib/astrup_web/components/core_components.ex:504
@@ -485,7 +485,7 @@ msgstr ""
 
 #: lib/astrup_web/live/interpretation/quiz_live.ex:36
 #, elixir-autogen, elixir-format
-msgid "Practice interpreting ABG results with clinical cases"
+msgid "Practice interpreting ABG results with clinical presentations"
 msgstr ""
 
 #: lib/astrup_web/live/interpretation/interpreter_live.ex:174
