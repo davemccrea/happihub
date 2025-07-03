@@ -553,7 +553,7 @@ defmodule AstrupWeb.CoreComponents do
       <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
         <%= if @current_scope do %>
           <li class="menu-title">
-            <span class="text-xs truncate">{@current_scope.user.email}</span>
+            <span class="truncate">{@current_scope.user.email}</span>
           </li>
           <div class="divider my-1"></div>
           <li>

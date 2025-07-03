@@ -57,12 +57,9 @@ defmodule AstrupWeb.Router do
       live "/interpretation/quiz", Interpretation.QuizLive
       live "/interpretation/interpreter", Interpretation.InterpreterLive
       live "/submit", SubmitLive
-      live "/settings", SettingsLive
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end
-
-    get "/update_settings", SettingsController, :update
     post "/users/update-password", UserSessionController, :update_password
   end
 

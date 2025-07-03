@@ -175,6 +175,37 @@ defmodule Astrup.Accounts do
     end
   end
 
+  @doc """
+  Returns an `%Ecto.Changeset{}` for changing the user settings.
+
+  ## Examples
+
+      iex> change_user_settings(user)
+      %Ecto.Changeset{data: %User{}}
+
+  """
+  def change_user_settings(user, attrs \\ %{}) do
+    User.settings_changeset(user, attrs)
+  end
+
+  @doc """
+  Updates the user settings.
+
+  ## Examples
+
+      iex> update_user_settings(user, %{laboratory: "Fimlab"})
+      {:ok, %User{}}
+
+      iex> update_user_settings(user, %{laboratory: nil})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_user_settings(user, attrs) do
+    user
+    |> User.settings_changeset(attrs)
+    |> Repo.update()
+  end
+
   ## Session
 
   @doc """

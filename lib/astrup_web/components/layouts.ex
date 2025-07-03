@@ -105,7 +105,6 @@ defmodule AstrupWeb.Layouts do
               />
             </svg>
             <span class="text-xl font-bold">HappiHub</span>
-            <span class="badge badge-warning badge-sm ml-2 text-xs font-medium">BETA</span>
           </.link>
         </div>
 
@@ -119,10 +118,6 @@ defmodule AstrupWeb.Layouts do
             id="locale-picker"
             locale={@locale}
           />
-
-          <.link navigate={~p"/settings"} class="btn btn-ghost btn-circle">
-            <.icon name="hero-cog-6-tooth" class="size-5" />
-          </.link>
 
           <.auth_dropdown current_scope={@current_scope} />
         </div>
@@ -154,9 +149,10 @@ defmodule AstrupWeb.Layouts do
         <.link navigate={~p"/submit"} class="link link-hover">
           {gettext("Submit ABG")}
         </.link>
-        <a href="https://github.com/davemccrea" class="link link-hover">GitHub</a>
+        <a href="https://github.com/davemccrea/happihub" class="link link-hover">GitHub</a>
       </nav>
-      <div class="grid grid-flow-col gap-4">
+      <div class="grid grid-flow-col gap-4 items-center">
+        <span class="badge badge-warning badge-sm text-xs font-medium">BETA</span>
         <.theme_toggle />
       </div>
     </footer>

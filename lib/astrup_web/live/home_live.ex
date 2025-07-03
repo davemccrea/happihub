@@ -84,7 +84,7 @@ defmodule AstrupWeb.HomeLive do
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <.link
-                navigate={~p"/settings"}
+                navigate={~p"/users/settings"}
                 class="group relative rounded-box p-8 text-center bg-base-200 hover:bg-base-300 transition-all duration-200 hover:scale-105"
               >
                 <div class="mb-4">

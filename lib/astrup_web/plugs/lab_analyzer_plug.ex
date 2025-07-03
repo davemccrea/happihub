@@ -4,21 +4,16 @@ defmodule AstrupWeb.Plugs.LabAnalyzerPlug do
   def init(opts), do: opts
 
   def call(conn, _opts) do
-    conn =
-      case get_session(conn, "current_lab") do
-        nil ->
-          put_session(conn, "current_lab", "Astrup.Lab.Fimlab")
-
-        _ ->
-          conn
-      end
-
-    case get_session(conn, "current_analyzer") do
-      nil ->
-        put_session(conn, "current_analyzer", "Astrup.Analyzer.RadiometerAbl90FlexPlus")
+    case conn.assigns[:current_scope] do
+      %{user: user} when not is_nil(user) ->
+        conn
+        |> put_session("current_lab", user.laboratory)
+        |> put_session("current_analyzer", user.analyzer)
 
       _ ->
         conn
+        |> put_session("current_lab", "Astrup.Lab.Fimlab")
+        |> put_session("current_analyzer", "Astrup.Analyzer.RadiometerAbl90FlexPlus")
     end
   end
 end

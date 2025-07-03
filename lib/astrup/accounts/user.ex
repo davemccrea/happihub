@@ -8,6 +8,8 @@ defmodule Astrup.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+    field :laboratory, :string, default: "Astrup.Lab.Fimlab"
+    field :analyzer, :string, default: "Astrup.Analyzer.RadiometerAbl90FlexPlus"
 
     timestamps(type: :utc_datetime)
   end
@@ -104,6 +106,15 @@ defmodule Astrup.Accounts.User do
     else
       changeset
     end
+  end
+
+  @doc """
+  A user changeset for updating settings.
+  """
+  def settings_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:laboratory, :analyzer])
+    |> validate_required([:laboratory, :analyzer])
   end
 
   @doc """
