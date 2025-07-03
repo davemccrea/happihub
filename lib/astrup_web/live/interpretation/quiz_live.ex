@@ -60,7 +60,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
           <!-- Sidebar Section -->
           <div class="w-full lg:w-80 lg:sticky lg:top-4 lg:self-start space-y-4 order-1 lg:order-1">
             <%= if @state == :review do %>
-              <.score_section score={@score} total={5} show_perfect_message={@score == 5} />
+              <.score_section score={@score} total={5} />
             <% end %>
 
             <section class="border border-base-content/20 shadow p-4">
@@ -391,9 +391,11 @@ defmodule AstrupWeb.Interpretation.QuizLive do
               {@score}/5
             </span>
           </div>
-          <div class="text-sm opacity-70">
-            {score_message_text(@score)}
-          </div>
+          <%= if @score == 5 do %>
+            <div class="text-sm text-success font-semibold">
+              {gettext("Perfect!")} 🎉
+            </div>
+          <% end %>
         </div>
       </div>
 
@@ -778,15 +780,4 @@ defmodule AstrupWeb.Interpretation.QuizLive do
   defp classify_metabolic_value(:normal), do: :normal
   defp classify_metabolic_value(:high), do: :alkalosis
 
-  defp score_message_text(score) do
-    percentage = score / 5 * 100
-
-    cond do
-      percentage >= 90 -> gettext("Perfect!")
-      percentage >= 80 -> gettext("Excellent!")
-      percentage >= 70 -> gettext("Good job!")
-      percentage >= 60 -> gettext("Not bad!")
-      true -> gettext("Keep practicing!")
-    end
-  end
 end

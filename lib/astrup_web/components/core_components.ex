@@ -487,19 +487,15 @@ defmodule AstrupWeb.CoreComponents do
   """
   attr :score, :integer, required: true, doc: "Current score"
   attr :total, :integer, required: true, doc: "Maximum possible score"
-  attr :perfect_message, :string, default: nil, doc: "Optional message to show for perfect scores"
-
-  attr :show_perfect_message, :boolean,
-    default: false,
-    doc: "Whether to show the perfect score message"
 
   def score_section(assigns) do
     percentage = assigns.score / assigns.total * 100
+    is_perfect = assigns.score == assigns.total
 
     assigns =
       assigns
       |> assign(:percentage, percentage)
-      |> assign(:score_message, get_score_message(percentage))
+      |> assign(:is_perfect, is_perfect)
 
     ~H"""
     <section class="border border-base-content/20 shadow p-4">
@@ -510,26 +506,14 @@ defmodule AstrupWeb.CoreComponents do
             {@score}/{@total}
           </span>
         </div>
-        <div class="text-sm">
-          {@score_message}
-        </div>
-        <div :if={@show_perfect_message} class="text-lg font-semibold text-success mt-2">
-          {@perfect_message || gettext("Nice one!")} 🎉
+        <div :if={@is_perfect} class="text-lg font-semibold text-success mt-2">
+          {gettext("Perfect!")} 🎉
         </div>
       </div>
     </section>
     """
   end
 
-  defp get_score_message(percentage) do
-    cond do
-      percentage >= 90 -> gettext("Perfect!")
-      percentage >= 80 -> gettext("Excellent!")
-      percentage >= 70 -> gettext("Good job!")
-      percentage >= 60 -> gettext("Not bad!")
-      true -> gettext("Keep practicing!")
-    end
-  end
 
   @doc """
   Renders an authentication dropdown menu.

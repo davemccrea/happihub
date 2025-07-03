@@ -93,7 +93,6 @@ defmodule AstrupWeb.ReferenceValues.QuizLive do
               <.score_section
                 score={correct_count(@selections)}
                 total={total_count(@selections)}
-                show_perfect_message={full_score?(@selections)}
               />
             <% end %>
 
