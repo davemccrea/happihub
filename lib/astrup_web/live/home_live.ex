@@ -7,7 +7,7 @@ defmodule AstrupWeb.HomeLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} locale={@locale}>
+    <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
       <div class="min-h-screen flex items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
         <div class="w-full max-w-4xl">
           
@@ -84,7 +84,7 @@ defmodule AstrupWeb.HomeLive do
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <.link
-                navigate={~p"/settings"}
+                navigate={~p"/users/settings"}
                 class="group relative rounded-box p-8 text-center bg-base-200 hover:bg-base-300 transition-all duration-200 hover:scale-105"
               >
                 <div class="mb-4">

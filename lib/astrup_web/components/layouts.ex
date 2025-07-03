@@ -105,7 +105,6 @@ defmodule AstrupWeb.Layouts do
               />
             </svg>
             <span class="text-xl font-bold">HappiHub</span>
-            <span class="badge badge-warning badge-sm ml-2 text-xs font-medium">BETA</span>
           </.link>
         </div>
 
@@ -120,9 +119,7 @@ defmodule AstrupWeb.Layouts do
             locale={@locale}
           />
 
-          <.link navigate={~p"/settings"} class="btn btn-ghost btn-circle">
-            <.icon name="hero-cog-6-tooth" class="size-5" />
-          </.link>
+          <.auth_dropdown current_scope={@current_scope} />
         </div>
       </div>
     </header>
@@ -152,9 +149,10 @@ defmodule AstrupWeb.Layouts do
         <.link navigate={~p"/submit"} class="link link-hover">
           {gettext("Submit ABG")}
         </.link>
-        <a href="https://github.com/davemccrea" class="link link-hover">GitHub</a>
+        <a href="https://github.com/davemccrea/happihub" class="link link-hover">GitHub</a>
       </nav>
-      <div class="grid grid-flow-col gap-4">
+      <div class="grid grid-flow-col gap-4 items-center">
+        <span class="badge badge-warning badge-sm text-xs font-medium">BETA</span>
         <.theme_toggle />
       </div>
     </footer>
@@ -228,7 +226,10 @@ defmodule AstrupWeb.Layouts do
       </:topbar>
 
       <:sidebar>
-        <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/patient-cases"}>
+        <Backpex.HTML.Layout.sidebar_item
+          current_url={@current_url}
+          navigate={~p"/admin/patient-cases"}
+        >
           <%!-- TODO: choose appropriate icon --%>
           <.icon name="hero-book-open" class="size-5" /> {gettext("Patient Cases")}
         </Backpex.HTML.Layout.sidebar_item>

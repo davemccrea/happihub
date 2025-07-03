@@ -26,7 +26,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} locale={@locale}>
+    <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div class="mb-8">
           <h1 class="text-2xl sm:text-3xl font-bold mb-4">

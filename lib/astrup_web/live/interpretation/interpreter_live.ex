@@ -29,7 +29,7 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
 
   def render(assigns) do
     ~H"""
-    <AstrupWeb.Layouts.app flash={@flash} locale={@locale}>
+    <AstrupWeb.Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
       <div class="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="mb-8">
           <h1 class="text-2xl font-semibold mb-4">
