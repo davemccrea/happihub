@@ -115,8 +115,16 @@
   .app-content {
     display: none !important;
   }
-  
+
   .screen-size-warning {
     display: flex !important;
   }
+}
+
+.paper {
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0.2)
+    ),
+    url("https://www.transparenttextures.com/patterns/beige-paper.png");
 }

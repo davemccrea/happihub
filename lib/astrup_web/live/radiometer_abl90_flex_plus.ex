@@ -17,7 +17,8 @@ defmodule AstrupWeb.RadiometerABL90FlexPlus do
 
   def render(assigns) do
     ~H"""
-    <article class="relative max-w-2xl flex-1 select-none py-12 px-8 shadow border border-base-content/20">
+    <article class="relative max-w-2xl flex-1 select-none py-12 px-8">
+      <div class="paper absolute inset-0 -z-10 border-border-base-content/5 shadow-xl"></div>
       <header class="text-center">
         <h2 class="text-3xl font-serif font-medium mb-6">RADIOMETER ABL90 SERIES</h2>
         <div class="space-y-1">
@@ -332,7 +333,7 @@ defmodule AstrupWeb.RadiometerABL90FlexPlus do
 
   defp format_parameter_value(%Decimal{} = value, parameter) do
     precision = Map.get(@parameter_precision, parameter, 1)
-    
+
     value
     |> Decimal.round(precision)
     |> Decimal.to_string()
