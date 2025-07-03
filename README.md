@@ -1,22 +1,54 @@
-# Astrup
+# HappiHub
 
-To start your Phoenix server:
+🩸 **Interactive learning platform for arterial blood gas interpretation**
 
-- Run `mix setup` to install and setup dependencies
-- Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+HappiHub helps healthcare professionals learn ABG analysis through learning modules, interactive quizzes and guided interpretation tools.
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+## Quick Start
 
-## Production
+```bash
+mix setup
+mix phx.server
+```
 
-### Connect to running system
+Visit [localhost:4000](http://localhost:4000) to start learning!
 
-`ssh -t david@happihub.mccrea.link "dokku enter happihub web -- /app/bin/astrup remote"`
+## Deployment (Dokku)
 
-## Learn more
+This app is deployed using [Dokku](https://dokku.com/). Common deployment commands:
 
-- Official website: https://www.phoenixframework.org/
-- Guides: https://hexdocs.pm/phoenix/overview.html
-- Docs: https://hexdocs.pm/phoenix
-- Forum: https://elixirforum.com/c/phoenix-forum
-- Source: https://github.com/phoenixframework/phoenix
+### Deploy
+
+```bash
+git push dokku main
+```
+
+### Database Console
+
+```bash
+# Connect to PostgreSQL console
+ssh -t user@server "dokku postgres:connect happihub_db"
+```
+
+### Remote IEx Console
+
+```bash
+# Connect to running application remote console
+ssh -t user@server "dokku enter happihub web -- /app/bin/your_app remote"
+```
+
+### Common Tasks
+
+```bash
+# Run migrations
+ssh -t user@server "dokku enter happihub web -- /app/bin/migrate"
+
+# Seed database
+ssh -t user@server "dokku run happihub web -- /app/bin/seed"
+
+# Check logs
+ssh -t user@server "dokku logs happihub --tail"
+
+# View app info
+ssh -t user@server "dokku apps:info happihub"
+```
