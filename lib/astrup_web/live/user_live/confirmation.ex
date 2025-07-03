@@ -5,7 +5,7 @@ defmodule AstrupWeb.UserLive.Confirmation do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} locale={@locale}>
       <div class="mx-auto max-w-sm">
         <.header class="text-center">Welcome {@user.email}</.header>
 
@@ -55,16 +55,17 @@ defmodule AstrupWeb.UserLive.Confirmation do
     """
   end
 
-  def mount(%{"token" => token}, _session, socket) do
+  def mount(%{"token" => token}, session, socket) do
     if user = Accounts.get_user_by_magic_link_token(token) do
       form = to_form(%{"token" => token}, as: "user")
 
-      {:ok, assign(socket, user: user, form: form, trigger_submit: false),
+      {:ok, assign(socket, user: user, form: form, trigger_submit: false, locale: session["locale"] || "en"),
        temporary_assigns: [form: nil]}
     else
       {:ok,
        socket
        |> put_flash(:error, "Magic link is invalid or it has expired.")
+       |> assign(:locale, session["locale"] || "en")
        |> push_navigate(to: ~p"/users/log-in")}
     end
   end

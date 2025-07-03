@@ -5,7 +5,7 @@ defmodule AstrupWeb.UserLive.Login do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} locale={@locale}>
       <div class="mx-auto max-w-sm space-y-4">
         <.header class="text-center">
           <p>Log in</p>
@@ -92,14 +92,14 @@ defmodule AstrupWeb.UserLive.Login do
     """
   end
 
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     email =
       Phoenix.Flash.get(socket.assigns.flash, :email) ||
         get_in(socket.assigns, [:current_scope, Access.key(:user), Access.key(:email)])
 
     form = to_form(%{"email" => email}, as: "user")
 
-    {:ok, assign(socket, form: form, trigger_submit: false)}
+    {:ok, assign(socket, form: form, trigger_submit: false, locale: session["locale"] || "en")}
   end
 
   def handle_event("submit_password", _params, socket) do

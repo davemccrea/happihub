@@ -7,7 +7,7 @@ defmodule AstrupWeb.UserLive.Settings do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} locale={@locale}>
       <.header class="text-center">
         Account Settings
         <:subtitle>Manage your account email address and password settings</:subtitle>
@@ -63,7 +63,7 @@ defmodule AstrupWeb.UserLive.Settings do
     """
   end
 
-  def mount(%{"token" => token}, _session, socket) do
+  def mount(%{"token" => token}, session, socket) do
     socket =
       case Accounts.update_user_email(socket.assigns.current_scope.user, token) do
         :ok ->
@@ -73,10 +73,10 @@ defmodule AstrupWeb.UserLive.Settings do
           put_flash(socket, :error, "Email change link is invalid or it has expired.")
       end
 
-    {:ok, push_navigate(socket, to: ~p"/users/settings")}
+    {:ok, socket |> assign(:locale, session["locale"] || "en") |> push_navigate(to: ~p"/users/settings")}
   end
 
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     user = socket.assigns.current_scope.user
     email_changeset = Accounts.change_user_email(user, %{}, validate_email: false)
     password_changeset = Accounts.change_user_password(user, %{}, hash_password: false)
@@ -87,6 +87,7 @@ defmodule AstrupWeb.UserLive.Settings do
       |> assign(:email_form, to_form(email_changeset))
       |> assign(:password_form, to_form(password_changeset))
       |> assign(:trigger_submit, false)
+      |> assign(:locale, session["locale"] || "en")
 
     {:ok, socket}
   end
