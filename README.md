@@ -34,7 +34,7 @@ ssh -t user@server "dokku postgres:connect happihub_db"
 
 ```bash
 # Connect to running application remote console
-ssh -t user@server "dokku enter happihub web -- /app/bin/your_app remote"
+ssh -t user@server "dokku enter happihub web -- /app/bin/astrup remote"
 ```
 
 ### Common Tasks
