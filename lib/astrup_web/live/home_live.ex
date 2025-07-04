@@ -65,7 +65,7 @@ defmodule AstrupWeb.HomeLive do
                 <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("Quiz")}</h3>
               </.link>
 
-              <.link
+              <%!-- <.link
                 navigate={~p"/interpretation/interpreter"}
                 class="group relative rounded-box p-8 text-center bg-base-200 hover:bg-base-300 transition-all duration-200 hover:scale-105"
               >
@@ -73,7 +73,7 @@ defmodule AstrupWeb.HomeLive do
                   <.icon name="hero-calculator" class="h-12 w-12 mx-auto text-primary" />
                 </div>
                 <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("Interpreter")}</h3>
-              </.link>
+              </.link> --%>
             </div>
           </div>
           
