@@ -9,7 +9,7 @@ defmodule Astrup.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Astrup", "contact@example.com"})
+      |> from({"HappiHub", "noreply@happihub.net"})
       |> subject(subject)
       |> text_body(body)
 
