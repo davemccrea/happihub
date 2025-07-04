@@ -77,6 +77,24 @@ defmodule AstrupWeb.HomeLive do
             </div>
           </div>
           
+    <!-- ECG Section -->
+          <div class="mb-12">
+            <h2 class="text-2xl font-semibold text-base-content mb-6">
+              {gettext("ECG Tools")}
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <.link
+                navigate={~p"/ecg"}
+                class="group relative rounded-box p-8 text-center bg-base-200 hover:bg-base-300 transition-all duration-200 hover:scale-105"
+              >
+                <div class="mb-4">
+                  <.icon name="hero-heart" class="h-12 w-12 mx-auto text-primary" />
+                </div>
+                <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("ECG Playback")}</h3>
+              </.link>
+            </div>
+          </div>
+          
     <!-- Settings Section -->
           <div class="mb-12">
             <h2 class="text-2xl font-semibold text-base-content mb-6">

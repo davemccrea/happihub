@@ -57,6 +57,7 @@ defmodule AstrupWeb.Router do
       live "/interpretation/quiz", Interpretation.QuizLive
       live "/interpretation/interpreter", Interpretation.InterpreterLive
       live "/submit", SubmitLive
+      live "/ecg", ECGLive
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end

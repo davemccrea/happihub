@@ -1,0 +1,52 @@
+# wfdb
+
+## Section
+
+```elixir
+Mix.install([
+  {:pythonx, "~> 0.4.0"}
+])
+```
+
+```elixir
+Pythonx.uv_init("""
+[project]
+name = "project"
+version = "0.0.0"
+requires-python = "==3.13.*"
+dependencies = [
+  "wfdb==4.3.0",
+]
+""")
+```
+
+```elixir
+{result, _globals} = Pythonx.eval(
+  """
+  import wfdb
+  import json
+  
+  record = wfdb.rdrecord('/Users/david/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3/records100/00000/00282_lr')  
+  
+  data = {
+    'signals': record.p_signal.tolist(),
+    'fs': record.fs,
+    'sig_names': record.sig_name
+    }
+
+  data
+  """,
+  %{}
+)
+```
+
+```elixir
+binary = 
+  result
+  |> Pythonx.decode()
+  |> JSON.encode_to_iodata!()
+
+"text.txt"
+|> Path.absname()
+|> File.write!(binary)
+```
