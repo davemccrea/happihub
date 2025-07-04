@@ -26,6 +26,12 @@ claude_api_key =
     environment variable CLAUDE_API_KEY is missing.
     """
 
+sendgrid_api_key =
+  System.get_env("SENDGRID_API_KEY") ||
+    raise """
+    environment variable SENDGRID_API_KEY is missing.
+    """
+
 config :astrup, :claude_api_key, claude_api_key
 
 if(config_env() == :prod) do
@@ -113,11 +119,10 @@ if(config_env() == :prod) do
   # Also, you may need to configure the Swoosh API client of your choice if you
   # are not using SMTP. Here is an example of the configuration:
   #
-  #     config :astrup, Astrup.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
+  config :astrup, Astrup.Mailer,
+    adapter: Swoosh.Adapters.Sendgrid,
+    api_key: sendgrid_api_key
+
   # For this example you need include a HTTP client required by Swoosh API client.
   # Swoosh supports Hackney, Req and Finch out of the box:
   #
