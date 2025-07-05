@@ -3,7 +3,7 @@ import * as d3 from "d3";
 const MM_PER_SECOND = 25; // Standard ECG paper speed
 const MM_PER_MILLIVOLT = 10; // Standard ECG paper voltage scale
 const PIXELS_PER_MM = 4; // Screen resolution conversion
-const WIDTH_SECONDS = 10; // Chart width in seconds
+const WIDTH_SECONDS = 5; // Chart width in seconds
 const HEIGHT_MILLIVOLTS = 4; // Chart height in millivolts
 
 const ECGPlayback = {
@@ -84,7 +84,7 @@ const ECGPlayback = {
       .curve(d3.curveLinear);
   },
 
-  // Create SVG clipping path for progressive reveal animation
+  // Create SVG clipping path for GE-style monitor display
   createClippingPath(height) {
     // Generate unique clip path ID to avoid conflicts with multiple charts
     this.clipId = `clip-playback-${Math.random()
@@ -95,19 +95,39 @@ const ECGPlayback = {
       .append("clipPath")
       .attr("id", this.clipId)
       .append("rect")
-      .attr("width", 0)
+      .attr("width", this.chartConfig.width)
       .attr("height", height);
   },
 
   drawECGPath() {
-    this.path = this.svg
+    // Create a group for the ECG display
+    this.ecgGroup = this.svg
+      .append("g")
+      .attr("clip-path", `url(#${this.clipId})`);
+
+    // Create the old waveform path (previous cycle)
+    this.oldPath = this.ecgGroup
       .append("path")
-      .datum(this.ecgData)
       .attr("fill", "none")
       .attr("stroke", "#000000")
-      .attr("stroke-width", 1.25)
-      .attr("d", this.line)
-      .attr("clip-path", `url(#${this.clipId})`);
+      .attr("stroke-width", 1.25);
+
+    // Create the new waveform path (current cycle)
+    this.newPath = this.ecgGroup
+      .append("path")
+      .attr("fill", "none")
+      .attr("stroke", "#000000")
+      .attr("stroke-width", 1.25);
+
+    // Create sweep line to show current position
+    this.sweepLine = this.ecgGroup
+      .append("line")
+      .attr("stroke", "#00ff00")
+      .attr("stroke-width", 2)
+      .attr("y1", 0)
+      .attr("y2", this.chartConfig.height)
+      .attr("x1", 0)
+      .attr("x2", 0);
   },
 
   // Draw ECG paper grid with minor (1mm) and major (5mm) lines
@@ -245,12 +265,25 @@ const ECGPlayback = {
   },
 
   updateChart() {
-    this.path.datum(this.ecgData).attr("d", this.line);
+    // Update both paths when switching leads
+    this.newPath.datum(this.ecgData).attr("d", this.line);
+    this.oldPath.datum([]).attr("d", this.line);
   },
 
   resetPlayback() {
     this.stopAnimation();
-    this.svg.select(`#${this.clipId} rect`).attr("width", 0);
+    this.animationStartTime = null;
+    this.sweepPosition = 0;
+    this.currentDataIndex = 0;
+    if (this.sweepLine) {
+      this.sweepLine.attr("x1", 0).attr("x2", 0);
+    }
+    if (this.newPath) {
+      this.newPath.datum([]).attr("d", this.line);
+    }
+    if (this.oldPath) {
+      this.oldPath.datum([]).attr("d", this.line);
+    }
     this.updatePlayButton("Play");
     this.isPlaying = false;
   },
@@ -274,39 +307,153 @@ const ECGPlayback = {
     }
   },
 
-  // Animate ECG waveform reveal using clipping path transition
+  // Animate ECG waveform with GE-style sweep effect
   startAnimation() {
     const { width, widthSeconds } = this.chartConfig;
-    const clipRect = this.svg.select(`#${this.clipId} rect`);
-    const initialWidth = parseFloat(clipRect.attr("width"));
 
-    // If playback is at the end, restart it
-    if (initialWidth >= width) {
-      clipRect.attr("width", 0);
+    // Initialize animation state
+    if (!this.animationStartTime) {
+      this.animationStartTime = Date.now();
+      this.sweepPosition = 0;
     }
 
-    // Calculate remaining animation duration proportional to remaining width
-    const remainingWidth = width - parseFloat(clipRect.attr("width"));
-    const duration = widthSeconds * 1000 * (remainingWidth / width);
+    // Calculate the total duration of ECG data
+    const totalDuration = this.ecgData[this.ecgData.length - 1].time;
 
-    // Animate clipping rectangle width to reveal ECG waveform progressively
-    clipRect
-      .transition()
-      .duration(duration)
-      .ease(d3.easeLinear) // Constant speed for realistic ECG playback
-      .attr("width", width)
-      .on("end", () => {
-        // Loop animation if still playing
-        if (this.isPlaying) {
-          clipRect.attr("width", 0);
-          this.startAnimation();
-        }
-      });
+    // Start animation loop
+    const animate = () => {
+      if (!this.isPlaying) return;
+
+      const currentTime = Date.now();
+      const elapsedSeconds = (currentTime - this.animationStartTime) / 1000;
+
+      // Calculate sweep position (0 to width, then reset)
+      const sweepCycleTime = widthSeconds;
+      const sweepProgress = (elapsedSeconds % sweepCycleTime) / sweepCycleTime;
+      this.sweepPosition = sweepProgress * width;
+
+      // Update sweep line position
+      this.sweepLine
+        .attr("x1", this.sweepPosition)
+        .attr("x2", this.sweepPosition);
+
+      // Calculate current data time based on elapsed time
+      const currentDataTime = elapsedSeconds % totalDuration;
+
+      // Show only the waveform data up to the current sweep position
+      this.updateWaveformDisplay(currentDataTime, totalDuration);
+
+      // Continue animation
+      this.animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+  },
+
+  // Update waveform display using efficient clipping approach
+  updateWaveformDisplay(currentDataTime, totalDuration) {
+    const { widthSeconds } = this.chartConfig;
+
+    // Calculate which screen cycle we're in and position within that cycle
+    const screenCycle = Math.floor(currentDataTime / widthSeconds);
+    const timeWithinScreen = currentDataTime - screenCycle * widthSeconds;
+
+    // Get current screen data
+    const currentScreenData = this.getScreenData(screenCycle, widthSeconds, totalDuration);
+    
+    // Get previous screen data
+    const previousScreenData = screenCycle > 0 ? 
+      this.getScreenData(screenCycle - 1, widthSeconds, totalDuration) : [];
+
+    // Update old path (previous cycle data) - clip to show only unwritten area
+    if (previousScreenData.length > 0) {
+      const normalizedOldData = previousScreenData.map(d => ({
+        time: d.time - (screenCycle - 1) * widthSeconds,
+        value: d.value
+      }));
+      this.oldPath.datum(normalizedOldData).attr("d", this.line);
+      
+      // Create clipping mask for old data (show only after sweep position)
+      const oldClipId = `${this.clipId}-old`;
+      this.createOldDataClip(oldClipId, timeWithinScreen);
+      this.oldPath.attr("clip-path", `url(#${oldClipId})`);
+    } else {
+      this.oldPath.datum([]).attr("d", this.line);
+    }
+
+    // Update new path (current cycle data) - clip to show only written area
+    const normalizedNewData = currentScreenData.map(d => ({
+      time: d.time - screenCycle * widthSeconds,
+      value: d.value
+    }));
+    this.newPath.datum(normalizedNewData).attr("d", this.line);
+    
+    // Create clipping mask for new data (show only up to sweep position)
+    const newClipId = `${this.clipId}-new`;
+    this.createNewDataClip(newClipId, timeWithinScreen);
+    this.newPath.attr("clip-path", `url(#${newClipId})`);
+  },
+
+  // Helper to get screen data for a given cycle
+  getScreenData(screenCycle, widthSeconds, totalDuration) {
+    const screenStartTime = screenCycle * widthSeconds;
+    const screenEndTime = screenStartTime + widthSeconds;
+
+    if (screenEndTime <= totalDuration) {
+      return this.ecgData.filter(d => d.time >= screenStartTime && d.time < screenEndTime);
+    } else {
+      const endData = this.ecgData.filter(d => d.time >= screenStartTime);
+      const wrapAmount = screenEndTime - totalDuration;
+      const startData = this.ecgData.filter(d => d.time < wrapAmount);
+      
+      const adjustedStartData = startData.map(d => ({
+        time: d.time + totalDuration,
+        value: d.value
+      }));
+      
+      return [...endData, ...adjustedStartData];
+    }
+  },
+
+  // Create clipping path for old data (show only after sweep)
+  createOldDataClip(clipId, sweepPosition) {
+    const { width } = this.chartConfig;
+    const sweepX = (sweepPosition / this.chartConfig.widthSeconds) * width;
+    
+    let clipPath = this.svg.select(`#${clipId}`);
+    if (clipPath.empty()) {
+      clipPath = this.svg.select("defs").append("clipPath").attr("id", clipId);
+      clipPath.append("rect").attr("height", this.chartConfig.height);
+    }
+    
+    clipPath.select("rect")
+      .attr("x", sweepX)
+      .attr("width", width - sweepX);
+  },
+
+  // Create clipping path for new data (show only up to sweep)
+  createNewDataClip(clipId, sweepPosition) {
+    const { width } = this.chartConfig;
+    const sweepX = (sweepPosition / this.chartConfig.widthSeconds) * width;
+    
+    let clipPath = this.svg.select(`#${clipId}`);
+    if (clipPath.empty()) {
+      clipPath = this.svg.select("defs").append("clipPath").attr("id", clipId);
+      clipPath.append("rect").attr("height", this.chartConfig.height);
+    }
+    
+    clipPath.select("rect")
+      .attr("x", 0)
+      .attr("width", sweepX);
   },
 
   stopAnimation() {
-    // Stop current animation by setting duration to 0
-    this.svg.select(`#${this.clipId} rect`).transition().duration(0);
+    // Stop the animation loop
+    this.isPlaying = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   },
 };
 
