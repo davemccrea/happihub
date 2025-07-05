@@ -214,7 +214,15 @@ const ECGPlayback = {
       this.animationState.isPlaying = true;
       this.executeAnimationLoop();
     } else {
-      this.waveformPath.datum([]).attr("d", this.line);
+      // When paused, redraw the current visible waveform for the new lead
+      if (this.animationState.startTime && this.animationState.pausedTime) {
+        const elapsedSeconds = (this.animationState.pausedTime - this.animationState.startTime) / 1000;
+        const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
+        const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
+        this.updateProgressiveWaveform(sweepProgress, currentCycle);
+      } else {
+        this.waveformPath.datum([]).attr("d", this.line);
+      }
     }
   },
 
