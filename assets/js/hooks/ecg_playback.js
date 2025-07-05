@@ -31,18 +31,25 @@ const ECGPlayback = {
 
     await this.initializeECGChart();
 
-    // Handle server-pushed events
-    this.handleEvent("playback_changed", (payload) => {
-      this.handlePlaybackChange(payload.is_playing);
-    });
+    // Handle server-pushed events and store references for cleanup
+    this.eventHandlers = {
+      playback_changed: (payload) => {
+        this.handlePlaybackChange(payload.is_playing);
+      },
+      lead_changed: (payload) => {
+        this.handleLeadChange(payload.lead);
+      },
+      grid_style_changed: (payload) => {
+        this.handleGridStyleChange(payload.grid_style);
+      },
+    };
 
-    this.handleEvent("lead_changed", (payload) => {
-      this.handleLeadChange(payload.lead);
-    });
-
-    this.handleEvent("grid_style_changed", (payload) => {
-      this.handleGridStyleChange(payload.grid_style);
-    });
+    this.handleEvent("playback_changed", this.eventHandlers.playback_changed);
+    this.handleEvent("lead_changed", this.eventHandlers.lead_changed);
+    this.handleEvent(
+      "grid_style_changed",
+      this.eventHandlers.grid_style_changed
+    );
   },
 
   destroyed() {
@@ -57,6 +64,28 @@ const ECGPlayback = {
     if (this.svg) {
       this.svg.selectAll("*").remove();
     }
+
+    // Clear cached D3 data from all leads
+    if (this.ecgLeadDatasets) {
+      this.ecgLeadDatasets.forEach((dataset) => {
+        if (dataset.clearCache) {
+          dataset.clearCache();
+        }
+      });
+      this.ecgLeadDatasets = null;
+    }
+
+    // Clear other data references
+    this.currentLeadData = null;
+    this.leadNames = null;
+
+    // Clear streaming state
+    if (this.streamingState) {
+      this.streamingState.visibleDataPoints = [];
+    }
+
+    // Clear event handler references
+    this.eventHandlers = null;
   },
 
   // Initialize ECG chart with medical standard dimensions and load data
@@ -207,6 +236,7 @@ const ECGPlayback = {
           name: leadName,
           times: timeArray,
           values: values,
+          _d3Data: null,
           get data() {
             // Lazy conversion to D3 format only when accessed
             if (!this._d3Data) {
@@ -219,6 +249,9 @@ const ECGPlayback = {
               }
             }
             return this._d3Data;
+          },
+          clearCache() {
+            this._d3Data = null;
           },
         };
       });
@@ -236,6 +269,11 @@ const ECGPlayback = {
   switchLead(leadIndex) {
     const wasPlaying = this.animationState.isPlaying;
     if (wasPlaying) this.stopAnimation();
+
+    // Clear cached data from previous lead to prevent memory leaks
+    if (this.ecgLeadDatasets && this.ecgLeadDatasets[this.currentLead]) {
+      this.ecgLeadDatasets[this.currentLead].clearCache();
+    }
 
     this.currentLead = leadIndex;
     const leadData = this.ecgLeadDatasets[leadIndex].data;
@@ -265,12 +303,12 @@ const ECGPlayback = {
     this.animationState.startTime = null;
     this.animationState.pausedTime = 0;
     this.animationState.currentCycle = 0;
-    
+
     // Reset streaming state
     this.streamingState.currentDataIndex = 0;
     this.streamingState.visibleDataPoints = [];
     this.streamingState.lastUpdateTime = 0;
-    
+
     if (this.sweepLine) this.sweepLine.attr("x1", 0).attr("x2", 0);
     if (this.waveformPath) this.waveformPath.datum([]).attr("d", this.line);
   },
@@ -301,12 +339,12 @@ const ECGPlayback = {
     this.animationState.pausedTime = 0;
     this.animationState.sweepLinePosition = 0;
     this.animationState.currentCycle = 0;
-    
+
     // Reset streaming state for new animation
     this.streamingState.currentDataIndex = 0;
     this.streamingState.visibleDataPoints = [];
     this.streamingState.lastUpdateTime = 0;
-    
+
     this.executeAnimationLoop();
   },
 
@@ -329,9 +367,15 @@ const ECGPlayback = {
   },
 
   executeAnimationLoop() {
+    // Stop any existing timer first to prevent multiple timers
+    if (this.animationState.timer) {
+      this.animationState.timer.stop();
+      this.animationState.timer = null;
+    }
+
     this.animationState.timer = d3.timer(() => {
       if (!this.animationState.isPlaying) {
-        this.animationState.timer.stop();
+        this.stopAnimation();
         return;
       }
 
@@ -359,17 +403,17 @@ const ECGPlayback = {
   // Stream data points one at a time for smooth performance
   streamWaveformData(elapsedSeconds, sweepProgress, currentCycle) {
     const totalCycles = Math.ceil(this.totalDuration / WIDTH_SECONDS);
-    
+
     // Check if we've reached the end of the data first
     if (currentCycle >= totalCycles) {
       this.stopAnimation();
       this.resetPlayback();
-      
+
       // Notify LiveView that playback has ended
       this.pushEvent("playback_ended", {});
       return;
     }
-    
+
     const cycleIndex = currentCycle;
     const cycleStartTime = cycleIndex * WIDTH_SECONDS;
     const currentTimeInCycle = sweepProgress * WIDTH_SECONDS;
@@ -381,40 +425,59 @@ const ECGPlayback = {
       this.streamingState.currentDataIndex = 0;
     }
 
-    // Calculate target data index based on current time
-    const targetIndex = Math.floor(absoluteTime * this.samplingRate);
+    // Calculate target data index based on current time with bounds checking
+    const targetIndex = Math.min(
+      Math.floor(absoluteTime * this.samplingRate),
+      this.currentLeadData.length - 1
+    );
 
-    // Stream new data points up to current position
-    while (this.streamingState.currentDataIndex <= targetIndex && 
-           this.streamingState.currentDataIndex < this.currentLeadData.length) {
-      
-      const dataPoint = this.currentLeadData[this.streamingState.currentDataIndex];
-      if (dataPoint && dataPoint.time >= cycleStartTime && dataPoint.time < cycleStartTime + WIDTH_SECONDS) {
+    // Stream new data points up to current position with improved bounds checking
+    const maxIterations = 1000; // Prevent infinite loops
+    let iterations = 0;
+
+    while (
+      this.streamingState.currentDataIndex <= targetIndex &&
+      this.streamingState.currentDataIndex < this.currentLeadData.length &&
+      iterations < maxIterations
+    ) {
+      const dataPoint =
+        this.currentLeadData[this.streamingState.currentDataIndex];
+      if (
+        dataPoint &&
+        dataPoint.time >= cycleStartTime &&
+        dataPoint.time < cycleStartTime + WIDTH_SECONDS
+      ) {
         const screenTime = dataPoint.time - cycleStartTime;
         if (screenTime <= currentTimeInCycle) {
           this.streamingState.visibleDataPoints.push({
             time: screenTime,
-            value: dataPoint.value
+            value: dataPoint.value,
           });
         }
       }
-      
+
       this.streamingState.currentDataIndex++;
+      iterations++;
     }
 
     // Remove old points that are outside the visible window
-    this.streamingState.visibleDataPoints = this.streamingState.visibleDataPoints.filter(
-      point => point.time <= currentTimeInCycle
-    );
+    this.streamingState.visibleDataPoints =
+      this.streamingState.visibleDataPoints.filter(
+        (point) => point.time <= currentTimeInCycle
+      );
 
-    // Limit visible points to prevent memory bloat
-    const MAX_VISIBLE_POINTS = 1000;
+    // Limit visible points to prevent memory bloat with more aggressive trimming
+    const MAX_VISIBLE_POINTS = 500;
     if (this.streamingState.visibleDataPoints.length > MAX_VISIBLE_POINTS) {
-      this.streamingState.visibleDataPoints = this.streamingState.visibleDataPoints.slice(-MAX_VISIBLE_POINTS);
+      // Remove from the beginning to keep the most recent points
+      this.streamingState.visibleDataPoints =
+        this.streamingState.visibleDataPoints.slice(-MAX_VISIBLE_POINTS);
     }
 
     // Update the waveform path
-    this.waveformPath.datum(this.streamingState.visibleDataPoints).attr("d", this.line);
+    this.waveformPath
+      .datum(this.streamingState.visibleDataPoints)
+      .attr("d", this.line);
   },
 
   stopAnimation() {
