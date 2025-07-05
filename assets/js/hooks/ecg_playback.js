@@ -8,6 +8,11 @@ const HEIGHT_MILLIVOLTS = 4; // Chart height in millivolts
 const CHART_WIDTH = WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM; // 500px
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM; // 160px
 
+// Performance and safety constants
+const MAX_VISIBLE_POINTS = 500;
+const MAX_STREAMING_ITERATIONS = 1000;
+const DOT_RADIUS = 1.2;
+
 const ECGPlayback = {
   async mounted() {
     // Initialize state
@@ -61,8 +66,8 @@ const ECGPlayback = {
       this.animationState.timer.stop();
       this.animationState.timer = null;
     }
-    if (this.svg) {
-      this.svg.selectAll("*").remove();
+    if (this.canvas) {
+      this.canvas.remove();
     }
 
     // Clear cached D3 data from all leads
@@ -92,13 +97,22 @@ const ECGPlayback = {
   async initializeECGChart() {
     this.currentLeadData = await this.loadECGData();
 
-    // Create SVG chart
-    this.svg = d3
+    // Create Canvas chart
+    this.canvas = d3
       .select(this.el.querySelector("[data-ecg-chart]"))
-      .append("svg")
+      .append("canvas")
       .attr("width", CHART_WIDTH)
-      .attr("height", CHART_HEIGHT)
-      .append("g");
+      .attr("height", CHART_HEIGHT);
+    
+    this.context = this.canvas.node().getContext("2d");
+    
+    // Set high DPI support
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    this.canvas.attr("width", CHART_WIDTH * devicePixelRatio)
+               .attr("height", CHART_HEIGHT * devicePixelRatio)
+               .style("width", CHART_WIDTH + "px")
+               .style("height", CHART_HEIGHT + "px");
+    this.context.scale(devicePixelRatio, devicePixelRatio);
 
     // Create scales
     this.xScale = d3
@@ -107,88 +121,75 @@ const ECGPlayback = {
       .range([0, CHART_WIDTH]);
     this.yScale = d3.scaleLinear().domain([-2, 2]).range([CHART_HEIGHT, 0]);
 
-    // Create line generator
+    // Create line generator with canvas context
     this.line = d3
       .line()
       .x((d) => this.xScale(d.time))
       .y((d) => this.yScale(d.value))
-      .curve(d3.curveLinear);
+      .curve(d3.curveLinear)
+      .context(this.context);
 
     // Draw grid
     this.drawGrid();
-
-    // Create ECG display group and paths
-    this.ecgGroup = this.svg.append("g");
-    this.waveformPath = this.ecgGroup
-      .append("path")
-      .attr("fill", "none")
-      .attr("stroke", "#000000")
-      .attr("stroke-width", 1.25);
-    this.sweepLine = this.ecgGroup
-      .append("line")
-      .attr("stroke", "#00ff00")
-      .attr("stroke-width", 2)
-      .attr("y1", 0)
-      .attr("y2", CHART_HEIGHT)
-      .attr("x1", 0)
-      .attr("x2", 0);
   },
 
   // Draw grid based on current style
   drawGrid() {
-    // Remove existing grid
-    this.svg.selectAll(".grid-line").remove();
+    // Clear canvas
+    this.context.clearRect(0, 0, CHART_WIDTH, CHART_HEIGHT);
 
     if (this.gridStyle === "ecg_paper") {
-      this.draw_ecg_paper();
+      this.drawEcgPaper();
     } else if (this.gridStyle === "clean_grid") {
-      this.draw_clean_grid();
+      this.drawCleanGrid();
     }
   },
 
   // Draw ecg_paper-style ECG grid (current implementation)
-  draw_ecg_paper() {
-    const generateGridPath = (spacing) => {
-      const lines = [];
-      for (let x = 0; x <= CHART_WIDTH; x += spacing)
-        lines.push(`M${x},0L${x},${CHART_HEIGHT}`);
-      for (let y = 0; y <= CHART_HEIGHT; y += spacing)
-        lines.push(`M0,${y}L${CHART_WIDTH},${y}`);
-      return lines.join("");
-    };
-
-    this.svg
-      .append("path")
-      .attr("class", "grid-line")
-      .attr("d", generateGridPath(PIXELS_PER_MM))
-      .attr("stroke", "#f9c4c4")
-      .attr("stroke-width", 0.5)
-      .attr("fill", "none");
-    this.svg
-      .append("path")
-      .attr("class", "grid-line")
-      .attr("d", generateGridPath(PIXELS_PER_MM * 5))
-      .attr("stroke", "#f4a8a8")
-      .attr("stroke-width", 1)
-      .attr("fill", "none");
+  drawEcgPaper() {
+    // Draw fine grid lines
+    this.context.strokeStyle = "#f9c4c4";
+    this.context.lineWidth = 0.5;
+    this.context.beginPath();
+    
+    for (let x = 0; x <= CHART_WIDTH; x += PIXELS_PER_MM) {
+      this.context.moveTo(x, 0);
+      this.context.lineTo(x, CHART_HEIGHT);
+    }
+    for (let y = 0; y <= CHART_HEIGHT; y += PIXELS_PER_MM) {
+      this.context.moveTo(0, y);
+      this.context.lineTo(CHART_WIDTH, y);
+    }
+    this.context.stroke();
+    
+    // Draw major grid lines
+    this.context.strokeStyle = "#f4a8a8";
+    this.context.lineWidth = 1;
+    this.context.beginPath();
+    
+    for (let x = 0; x <= CHART_WIDTH; x += PIXELS_PER_MM * 5) {
+      this.context.moveTo(x, 0);
+      this.context.lineTo(x, CHART_HEIGHT);
+    }
+    for (let y = 0; y <= CHART_HEIGHT; y += PIXELS_PER_MM * 5) {
+      this.context.moveTo(0, y);
+      this.context.lineTo(CHART_WIDTH, y);
+    }
+    this.context.stroke();
   },
 
   // Draw simple clean_grid-style grid
-  draw_clean_grid() {
+  drawCleanGrid() {
     // Use 5mm spacing for dots
     const dotSpacing = 5 * PIXELS_PER_MM; // 5mm (20px)
 
-    // Create dots at grid intersections only
-    const dotsGroup = this.svg.append("g").attr("class", "grid-line");
-
+    this.context.fillStyle = "#d0d0d0";
+    
     for (let x = 5; x < CHART_WIDTH - 5; x += dotSpacing) {
       for (let y = 5; y < CHART_HEIGHT - 5; y += dotSpacing) {
-        dotsGroup
-          .append("circle")
-          .attr("cx", x)
-          .attr("cy", y)
-          .attr("r", 1.2)
-          .attr("fill", "#d0d0d0");
+        this.context.beginPath();
+        this.context.arc(x, y, DOT_RADIUS, 0, 2 * Math.PI);
+        this.context.fill();
       }
     }
   },
@@ -211,7 +212,15 @@ const ECGPlayback = {
   async loadECGData() {
     try {
       const response = await fetch("/assets/js/00020.json");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      
+      if (!data || !data.fs || !data.sig_names || !data.signals) {
+        throw new Error("Invalid ECG data format");
+      }
 
       const samplingRate = data.fs;
       const leadNames = data.sig_names;
@@ -261,6 +270,10 @@ const ECGPlayback = {
       return currentData;
     } catch (error) {
       console.error("Failed to load ECG data:", error);
+      // Return empty array with minimal structure to prevent crashes
+      this.leadNames = [];
+      this.samplingRate = 500; // Default sampling rate
+      this.totalDuration = 0;
       return [];
     }
   },
@@ -291,9 +304,9 @@ const ECGPlayback = {
           1000;
         const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
         const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
-        this.updateProgressiveWaveform(sweepProgress, currentCycle);
+        this.redrawCurrentWaveform(sweepProgress, currentCycle);
       } else {
-        this.waveformPath.datum([]).attr("d", this.line);
+        this.clearWaveform();
       }
     }
   },
@@ -309,8 +322,7 @@ const ECGPlayback = {
     this.streamingState.visibleDataPoints = [];
     this.streamingState.lastUpdateTime = 0;
 
-    if (this.sweepLine) this.sweepLine.attr("x1", 0).attr("x2", 0);
-    if (this.waveformPath) this.waveformPath.datum([]).attr("d", this.line);
+    this.clearWaveform();
   },
 
   handlePlaybackChange(isPlaying) {
@@ -386,98 +398,104 @@ const ECGPlayback = {
       const sweepLinePosition = sweepProgress * CHART_WIDTH;
       const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
 
-      // Update sweep line position
-      this.sweepLine
-        .attr("x1", sweepLinePosition)
-        .attr("x2", sweepLinePosition);
+      // Sweep line will be drawn in streamWaveformData
 
       if (currentCycle !== this.animationState.currentCycle) {
         this.animationState.currentCycle = currentCycle;
       }
 
       // Stream data points up to sweep position
-      this.streamWaveformData(elapsedSeconds, sweepProgress, currentCycle);
+      this.streamWaveformData(sweepProgress, currentCycle);
+      
+      // Draw sweep line
+      this.drawSweepLine(sweepLinePosition);
     });
   },
 
   // Stream data points one at a time for smooth performance
-  streamWaveformData(elapsedSeconds, sweepProgress, currentCycle) {
-    const totalCycles = Math.ceil(this.totalDuration / WIDTH_SECONDS);
+  streamWaveformData(sweepProgress, currentCycle) {
+    try {
+      const totalCycles = Math.ceil(this.totalDuration / WIDTH_SECONDS);
 
-    // Check if we've reached the end of the data first
-    if (currentCycle >= totalCycles) {
-      this.stopAnimation();
-      this.resetPlayback();
+      // Check if we've reached the end of the data first
+      if (currentCycle >= totalCycles) {
+        this.stopAnimation();
+        this.resetPlayback();
 
-      // Notify LiveView that playback has ended
-      this.pushEvent("playback_ended", {});
-      return;
-    }
-
-    const cycleIndex = currentCycle;
-    const cycleStartTime = cycleIndex * WIDTH_SECONDS;
-    const currentTimeInCycle = sweepProgress * WIDTH_SECONDS;
-    const absoluteTime = cycleStartTime + currentTimeInCycle;
-
-    // Clear data when starting a new cycle
-    if (currentCycle !== this.animationState.currentCycle) {
-      this.streamingState.visibleDataPoints = [];
-      this.streamingState.currentDataIndex = 0;
-    }
-
-    // Calculate target data index based on current time with bounds checking
-    const targetIndex = Math.min(
-      Math.floor(absoluteTime * this.samplingRate),
-      this.currentLeadData.length - 1
-    );
-
-    // Stream new data points up to current position with improved bounds checking
-    const maxIterations = 1000; // Prevent infinite loops
-    let iterations = 0;
-
-    while (
-      this.streamingState.currentDataIndex <= targetIndex &&
-      this.streamingState.currentDataIndex < this.currentLeadData.length &&
-      iterations < maxIterations
-    ) {
-      const dataPoint =
-        this.currentLeadData[this.streamingState.currentDataIndex];
-      if (
-        dataPoint &&
-        dataPoint.time >= cycleStartTime &&
-        dataPoint.time < cycleStartTime + WIDTH_SECONDS
-      ) {
-        const screenTime = dataPoint.time - cycleStartTime;
-        if (screenTime <= currentTimeInCycle) {
-          this.streamingState.visibleDataPoints.push({
-            time: screenTime,
-            value: dataPoint.value,
-          });
-        }
+        // Notify LiveView that playback has ended
+        this.pushEvent("playback_ended", {});
+        return;
       }
 
-      this.streamingState.currentDataIndex++;
-      iterations++;
-    }
+      const cycleIndex = currentCycle;
+      const cycleStartTime = cycleIndex * WIDTH_SECONDS;
+      const currentTimeInCycle = sweepProgress * WIDTH_SECONDS;
+      const absoluteTime = cycleStartTime + currentTimeInCycle;
 
-    // Remove old points that are outside the visible window
-    this.streamingState.visibleDataPoints =
-      this.streamingState.visibleDataPoints.filter(
-        (point) => point.time <= currentTimeInCycle
+      // Clear data when starting a new cycle
+      if (currentCycle !== this.animationState.currentCycle) {
+        this.streamingState.visibleDataPoints = [];
+        this.streamingState.currentDataIndex = 0;
+      }
+
+      // Safety check for data availability
+      if (!this.currentLeadData || this.currentLeadData.length === 0) {
+        return;
+      }
+
+      // Calculate target data index based on current time with bounds checking
+      const targetIndex = Math.min(
+        Math.floor(absoluteTime * this.samplingRate),
+        this.currentLeadData.length - 1
       );
 
-    // Limit visible points to prevent memory bloat with more aggressive trimming
-    const MAX_VISIBLE_POINTS = 500;
-    if (this.streamingState.visibleDataPoints.length > MAX_VISIBLE_POINTS) {
-      // Remove from the beginning to keep the most recent points
-      this.streamingState.visibleDataPoints =
-        this.streamingState.visibleDataPoints.slice(-MAX_VISIBLE_POINTS);
-    }
+      // Stream new data points up to current position with improved bounds checking
+      let iterations = 0;
 
-    // Update the waveform path
-    this.waveformPath
-      .datum(this.streamingState.visibleDataPoints)
-      .attr("d", this.line);
+      while (
+        this.streamingState.currentDataIndex <= targetIndex &&
+        this.streamingState.currentDataIndex < this.currentLeadData.length &&
+        iterations < MAX_STREAMING_ITERATIONS
+      ) {
+        const dataPoint =
+          this.currentLeadData[this.streamingState.currentDataIndex];
+        if (
+          dataPoint &&
+          dataPoint.time >= cycleStartTime &&
+          dataPoint.time < cycleStartTime + WIDTH_SECONDS
+        ) {
+          const screenTime = dataPoint.time - cycleStartTime;
+          if (screenTime <= currentTimeInCycle) {
+            this.streamingState.visibleDataPoints.push({
+              time: screenTime,
+              value: dataPoint.value,
+            });
+          }
+        }
+
+        this.streamingState.currentDataIndex++;
+        iterations++;
+      }
+
+      // Remove old points that are outside the visible window
+      this.streamingState.visibleDataPoints =
+        this.streamingState.visibleDataPoints.filter(
+          (point) => point.time <= currentTimeInCycle
+        );
+
+      // Limit visible points to prevent memory bloat with more aggressive trimming
+      if (this.streamingState.visibleDataPoints.length > MAX_VISIBLE_POINTS) {
+        // Remove from the beginning to keep the most recent points
+        this.streamingState.visibleDataPoints =
+          this.streamingState.visibleDataPoints.slice(-MAX_VISIBLE_POINTS);
+      }
+
+      // Update the waveform on canvas
+      this.drawWaveform();
+    } catch (error) {
+      console.error("Error in streamWaveformData:", error);
+      this.stopAnimation();
+    }
   },
 
   stopAnimation() {
@@ -486,6 +504,42 @@ const ECGPlayback = {
       this.animationState.timer = null;
     }
     this.animationState.isPlaying = false;
+  },
+
+  // Canvas drawing methods
+  clearWaveform() {
+    this.drawGrid();
+  },
+
+  drawWaveform() {
+    // Redraw grid first
+    this.drawGrid();
+    
+    // Draw ECG waveform
+    if (this.streamingState.visibleDataPoints.length > 0) {
+      this.context.strokeStyle = "#000000";
+      this.context.lineWidth = 1.25;
+      this.context.beginPath();
+      this.line(this.streamingState.visibleDataPoints);
+      this.context.stroke();
+    }
+  },
+
+  drawSweepLine(sweepLinePosition) {
+    // Draw sweep line
+    this.context.strokeStyle = "#00ff00";
+    this.context.lineWidth = 2;
+    this.context.beginPath();
+    this.context.moveTo(sweepLinePosition, 0);
+    this.context.lineTo(sweepLinePosition, CHART_HEIGHT);
+    this.context.stroke();
+  },
+
+  redrawCurrentWaveform(sweepProgress, currentCycle) {
+    // Implementation for redrawing current waveform when paused
+    // This would need to be implemented based on your specific needs
+    this.drawGrid();
+    console.log("Redrawing waveform at progress:", sweepProgress, "cycle:", currentCycle);
   },
 };
 
