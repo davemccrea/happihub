@@ -53,136 +53,68 @@ const ECGPlayback = {
     // Calculate pixel dimensions based on medical standards
     const width = WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
     const height = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
-    const margin = { top: 0, right: 0, bottom: 0, left: 0 };
 
-    this.chartConfig = {
-      width,
-      height,
-      margin,
-      widthSeconds: WIDTH_SECONDS,
-      heightMilliVolts: HEIGHT_MILLIVOLTS,
-      mmPerSecond: MM_PER_SECOND,
-      mmPerMilliVolt: MM_PER_MILLIVOLT,
-      pixelsPerMm: PIXELS_PER_MM,
-    };
+    this.chartConfig = { width, height };
 
     this.currentLeadData = await this.loadECGData();
-    this.createLeadSelectorIfNeeded();
-    this.createSVGChart(width, height, margin);
-    this.createScales();
-    this.renderGrid();
-    this.setupLineGenerator();
-    this.drawECGPath();
-    this.animationState.isPlaying = false;
-  },
-
-  createLeadSelectorIfNeeded() {
+    
+    // Create lead selector if multiple leads available
     if (this.leadNames && this.leadNames.length > 1) {
       this.createLeadSelector();
     }
-  },
-
-  createSVGChart(width, height, margin) {
+    
+    // Create SVG chart
     this.svg = d3
       .select(this.el.querySelector("[data-ecg-chart]"))
       .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-  },
-
-  // Create D3 scales for mapping time and voltage values to pixel coordinates
-  createScales() {
-    const { width, height, widthSeconds, heightMilliVolts } = this.chartConfig;
-    // Map time (0 to widthSeconds) to horizontal pixels (0 to width)
-    this.xScale = d3.scaleLinear().domain([0, widthSeconds]).range([0, width]);
-    // Map voltage (-heightMilliVolts/2 to +heightMilliVolts/2) to vertical pixels
-    // Note: SVG y-axis is inverted (0 at top), so range is [height, 0]
-    this.yScale = d3
-      .scaleLinear()
-      .domain([-heightMilliVolts / 2, heightMilliVolts / 2])
-      .range([height, 0]);
-  },
-
-  setupLineGenerator() {
-    this.line = d3
-      .line()
-      .x((d) => this.xScale(d.time))
-      .y((d) => this.yScale(d.value))
-      .curve(d3.curveLinear);
-  },
-
-
-  drawECGPath() {
-    // Create a group for the ECG display
+      .attr("width", width)
+      .attr("height", height)
+      .append("g");
+    
+    // Create scales
+    this.xScale = d3.scaleLinear().domain([0, WIDTH_SECONDS]).range([0, width]);
+    this.yScale = d3.scaleLinear().domain([-HEIGHT_MILLIVOLTS / 2, HEIGHT_MILLIVOLTS / 2]).range([height, 0]);
+    
+    // Create line generator
+    this.line = d3.line().x((d) => this.xScale(d.time)).y((d) => this.yScale(d.value)).curve(d3.curveLinear);
+    
+    // Draw grid
+    const minorSpacing = PIXELS_PER_MM;
+    const majorSpacing = PIXELS_PER_MM * 5;
+    
+    // Generate grid paths inline
+    const generateGridPath = (spacing) => {
+      const lines = [];
+      for (let x = 0; x <= width; x += spacing) lines.push(`M${x},0L${x},${height}`);
+      for (let y = 0; y <= height; y += spacing) lines.push(`M0,${y}L${width},${y}`);
+      return lines.join("");
+    };
+    
+    this.svg.append("path").attr("d", generateGridPath(minorSpacing)).attr("stroke", "#f9c4c4").attr("stroke-width", 0.5).attr("fill", "none");
+    this.svg.append("path").attr("d", generateGridPath(majorSpacing)).attr("stroke", "#f4a8a8").attr("stroke-width", 1).attr("fill", "none");
+    
+    // Create ECG display group and paths
     this.ecgGroup = this.svg.append("g");
-
-    // Create single waveform path for real-time drawing
-    this.waveformPath = this.ecgGroup
-      .append("path")
-      .attr("fill", "none")
-      .attr("stroke", "#000000")
-      .attr("stroke-width", 1.25);
-
-    // Create sweep line to show current position
-    this.sweepLine = this.ecgGroup
-      .append("line")
-      .attr("stroke", "#00ff00")
-      .attr("stroke-width", 2)
-      .attr("y1", 0)
-      .attr("y2", this.chartConfig.height)
-      .attr("x1", 0)
-      .attr("x2", 0);
-  },
-
-  // Draw ECG paper grid with minor (1mm) and major (5mm) lines using batch operations
-  renderGrid() {
-    const { width, height, pixelsPerMm } = this.chartConfig;
-    this.renderGridLines(width, height, pixelsPerMm);
-  },
-
-  renderGridLines(width, height, pixelsPerMm) {
-    const minorSpacing = pixelsPerMm;
-    const majorSpacing = pixelsPerMm * 5;
-
-    // Pre-generate grid paths
-    const minorGridPath = this.generateGridPath(width, height, minorSpacing);
-    const majorGridPath = this.generateGridPath(width, height, majorSpacing);
-
-    // Append minor grid lines as single path
-    this.svg
-      .append("path")
-      .attr("d", minorGridPath)
-      .attr("stroke", "#f9c4c4")
-      .attr("stroke-width", 0.5)
-      .attr("fill", "none");
-
-    // Append major grid lines as single path
-    this.svg
-      .append("path")
-      .attr("d", majorGridPath)
-      .attr("stroke", "#f4a8a8")
-      .attr("stroke-width", 1)
-      .attr("fill", "none");
-  },
-
-  generateGridPath(width, height, spacing) {
-    const verticalLines = [];
-    const horizontalLines = [];
-
-    // Generate vertical lines
-    for (let x = 0; x <= width; x += spacing) {
-      verticalLines.push(`M${x},0L${x},${height}`);
+    this.waveformPath = this.ecgGroup.append("path").attr("fill", "none").attr("stroke", "#000000").attr("stroke-width", 1.25);
+    this.sweepLine = this.ecgGroup.append("line").attr("stroke", "#00ff00").attr("stroke-width", 2).attr("y1", 0).attr("y2", height).attr("x1", 0).attr("x2", 0);
+    
+    // Setup event listeners
+    const playBtn = this.el.querySelector("[data-ecg-play]");
+    if (playBtn) playBtn.addEventListener("click", () => this.togglePlayback());
+    
+    const leadSelector = this.el.querySelector("[data-lead-selector]");
+    if (leadSelector) {
+      leadSelector.addEventListener("change", (e) => {
+        const leadIndex = parseInt(e.target.value, 10);
+        if (!isNaN(leadIndex) && this.ecgLeadDatasets && leadIndex >= 0 && leadIndex < this.ecgLeadDatasets.length) {
+          this.switchLead(leadIndex);
+        }
+      });
     }
-
-    // Generate horizontal lines
-    for (let y = 0; y <= height; y += spacing) {
-      horizontalLines.push(`M0,${y}L${width},${y}`);
-    }
-
-    return verticalLines.join("") + horizontalLines.join("");
+    
+    this.animationState.isPlaying = false;
   },
+
 
   // Load ECG data from JSON file and convert to optimized format with data windowing
   async loadECGData() {
@@ -236,29 +168,6 @@ const ECGPlayback = {
 
 
 
-  setupEventListeners() {
-    this.setupPlayButton();
-    this.setupLeadSelector();
-  },
-
-  setupPlayButton() {
-    const playBtn = this.el.querySelector("[data-ecg-play]");
-    if (playBtn) {
-      playBtn.addEventListener("click", () => this.togglePlayback());
-    }
-  },
-
-  setupLeadSelector() {
-    const leadSelector = this.el.querySelector("[data-lead-selector]");
-    if (leadSelector) {
-      leadSelector.addEventListener("change", (e) => {
-        const leadIndex = parseInt(e.target.value, 10);
-        if (!isNaN(leadIndex)) {
-          this.switchLead(leadIndex);
-        }
-      });
-    }
-  },
 
   createLeadSelector() {
     const container = this.el.querySelector("[data-ecg-chart]");
@@ -279,41 +188,18 @@ const ECGPlayback = {
 
   // Switch to different ECG lead while preserving playback state
   switchLead(leadIndex) {
-    if (!this.isValidLeadIndex(leadIndex)) return;
-
     const wasPlaying = this.animationState.isPlaying;
-
-    // Stop current animation if playing
-    if (wasPlaying) {
-      this.stopAnimation();
-    }
+    if (wasPlaying) this.stopAnimation();
 
     this.currentLead = leadIndex;
-    this.currentLeadData = this.convertToD3Format(
-      this.ecgLeadDatasets[leadIndex]
-    );
+    this.currentLeadData = this.convertToD3Format(this.ecgLeadDatasets[leadIndex]);
 
     if (wasPlaying) {
-      // Resume animation
       this.animationState.isPlaying = true;
       this.executeAnimationLoop();
     } else {
-      // Just update the chart for static display
-      this.updateChart();
+      this.waveformPath.datum(this.currentLeadData).attr("d", this.line);
     }
-  },
-
-  isValidLeadIndex(leadIndex) {
-    return (
-      this.ecgLeadDatasets &&
-      leadIndex >= 0 &&
-      leadIndex < this.ecgLeadDatasets.length
-    );
-  },
-
-  updateChart() {
-    // Update waveform path when switching leads
-    this.waveformPath.datum(this.currentLeadData).attr("d", this.line);
   },
 
   resetPlayback() {
@@ -322,31 +208,22 @@ const ECGPlayback = {
     this.animationState.pausedTime = 0;
     this.animationState.sweepLinePosition = 0;
     this.animationState.currentCycle = 0;
-    if (this.sweepLine) {
-      this.sweepLine.attr("x1", 0).attr("x2", 0);
-    }
-    if (this.waveformPath) {
-      this.waveformPath.datum([]).attr("d", this.line);
-    }
-    this.updatePlayButton("Play");
-    this.animationState.isPlaying = false;
-  },
-
-  updatePlayButton(text) {
+    if (this.sweepLine) this.sweepLine.attr("x1", 0).attr("x2", 0);
+    if (this.waveformPath) this.waveformPath.datum([]).attr("d", this.line);
     const playBtn = this.el.querySelector("[data-ecg-play]");
-    if (playBtn) {
-      playBtn.textContent = text;
-    }
+    if (playBtn) playBtn.textContent = "Play";
+    this.animationState.isPlaying = false;
   },
 
   togglePlayback() {
     this.animationState.isPlaying = !this.animationState.isPlaying;
-
+    const playBtn = this.el.querySelector("[data-ecg-play]");
+    
     if (this.animationState.isPlaying) {
-      this.updatePlayButton("Pause");
+      if (playBtn) playBtn.textContent = "Pause";
       this.resumeAnimation();
     } else {
-      this.updatePlayButton("Play");
+      if (playBtn) playBtn.textContent = "Play";
       this.pauseAnimation();
     }
   },
@@ -379,9 +256,8 @@ const ECGPlayback = {
   },
 
   executeAnimationLoop() {
-    const { width, widthSeconds } = this.chartConfig;
+    const { width } = this.chartConfig;
 
-    // Use d3.timer for better performance control
     this.animationState.timer = d3.timer(() => {
       if (!this.animationState.isPlaying) {
         this.animationState.timer.stop();
@@ -389,25 +265,24 @@ const ECGPlayback = {
       }
 
       const currentTime = Date.now();
-
+      
       // Calculate FPS
-      this.updateFPS(currentTime);
+      this.frameRateMetrics.frameCount++;
+      if (currentTime - this.frameRateMetrics.lastTime >= 1000) {
+        this.frameRateMetrics.fps = this.frameRateMetrics.frameCount;
+        this.frameRateMetrics.frameCount = 0;
+        this.frameRateMetrics.lastTime = currentTime;
+        console.log(`ECG Animation FPS: ${this.frameRateMetrics.fps}`);
+      }
 
-      const elapsedSeconds =
-        (currentTime - this.animationState.startTime) / 1000;
-
-      // Calculate sweep position (0 to width, then reset)
-      const sweepCycleTime = widthSeconds;
-      const sweepProgress = (elapsedSeconds % sweepCycleTime) / sweepCycleTime;
+      const elapsedSeconds = (currentTime - this.animationState.startTime) / 1000;
+      const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
       this.animationState.sweepLinePosition = sweepProgress * width;
-      const currentCycle = Math.floor(elapsedSeconds / sweepCycleTime);
+      const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
 
       // Update sweep line position
-      this.sweepLine
-        .attr("x1", this.animationState.sweepLinePosition)
-        .attr("x2", this.animationState.sweepLinePosition);
+      this.sweepLine.attr("x1", this.animationState.sweepLinePosition).attr("x2", this.animationState.sweepLinePosition);
 
-      // Update waveform when cycle changes or on first run
       if (currentCycle !== this.animationState.currentCycle) {
         this.animationState.currentCycle = currentCycle;
       }
@@ -417,44 +292,23 @@ const ECGPlayback = {
     });
   },
 
-  updateFPS(currentTime) {
-    this.frameRateMetrics.frameCount++;
-
-    if (currentTime - this.frameRateMetrics.lastTime >= 1000) {
-      this.frameRateMetrics.fps = this.frameRateMetrics.frameCount;
-      this.frameRateMetrics.frameCount = 0;
-      this.frameRateMetrics.lastTime = currentTime;
-
-      // Log FPS to console
-      console.log(`ECG Animation FPS: ${this.frameRateMetrics.fps}`);
-    }
-  },
 
   // Update waveform progressively by drawing data up to sweep position
   updateProgressiveWaveform(sweepProgress, currentCycle) {
-    const { widthSeconds } = this.chartConfig;
     const totalDuration = this.currentLeadData[this.currentLeadData.length - 1]?.time || 0;
-    const cycleDuration = widthSeconds;
-    const totalCycles = Math.ceil(totalDuration / cycleDuration);
+    const totalCycles = Math.ceil(totalDuration / WIDTH_SECONDS);
     
     // Calculate current cycle index (loop back to start)
     const cycleIndex = currentCycle % totalCycles;
-    const cycleStartTime = cycleIndex * cycleDuration;
-    const cycleEndTime = Math.min((cycleIndex + 1) * cycleDuration, totalDuration);
+    const cycleStartTime = cycleIndex * WIDTH_SECONDS;
+    const cycleEndTime = Math.min((cycleIndex + 1) * WIDTH_SECONDS, totalDuration);
     
-    // Find data points for current cycle
-    const cycleData = this.currentLeadData.filter(d => 
-      d.time >= cycleStartTime && d.time < cycleEndTime
-    );
-    
-    // Map cycle data to screen coordinates (0 to widthSeconds)
-    const screenData = cycleData.map(d => ({
-      time: d.time - cycleStartTime,
-      value: d.value
-    }));
+    // Find data points for current cycle and map to screen coordinates
+    const cycleData = this.currentLeadData.filter(d => d.time >= cycleStartTime && d.time < cycleEndTime);
+    const screenData = cycleData.map(d => ({ time: d.time - cycleStartTime, value: d.value }));
     
     // Calculate how much of the cycle to show based on sweep progress
-    const sweepTime = sweepProgress * cycleDuration;
+    const sweepTime = sweepProgress * WIDTH_SECONDS;
     const visibleData = screenData.filter(d => d.time <= sweepTime);
     
     // Update waveform path with visible data
