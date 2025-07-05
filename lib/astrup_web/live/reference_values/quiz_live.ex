@@ -90,10 +90,7 @@ defmodule AstrupWeb.ReferenceValues.QuizLive do
         <div class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
           <div class="lg:sticky lg:top-4 lg:self-start space-y-4 w-full lg:w-80 order-1 lg:order-1">
             <%= if @state == :review do %>
-              <.score_section
-                score={correct_count(@selections)}
-                total={total_count(@selections)}
-              />
+              <.score_section score={correct_count(@selections)} total={total_count(@selections)} />
             <% end %>
 
             <section class="space-y-4 border border-base-content/20 shadow p-4">

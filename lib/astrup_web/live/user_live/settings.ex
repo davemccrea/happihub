@@ -12,7 +12,9 @@ defmodule AstrupWeb.UserLive.Settings do
         <div class="w-full max-w-2xl">
           <.header class="text-center mb-10">
             Account Settings
-            <:subtitle>Manage your account email address, password, and application settings</:subtitle>
+            <:subtitle>
+              Manage your account email address, password, and application settings
+            </:subtitle>
           </.header>
 
           <div class="space-y-8">
@@ -20,7 +22,12 @@ defmodule AstrupWeb.UserLive.Settings do
             <div class="card bg-base-200 shadow-sm">
               <div class="card-body">
                 <h3 class="card-title text-lg mb-4">Email Address</h3>
-                <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
+                <.form
+                  for={@email_form}
+                  id="email_form"
+                  phx-submit="update_email"
+                  phx-change="validate_email"
+                >
                   <.input
                     field={@email_form[:email]}
                     type="email"
@@ -34,8 +41,8 @@ defmodule AstrupWeb.UserLive.Settings do
                 </.form>
               </div>
             </div>
-
-            <!-- Password Settings -->
+            
+    <!-- Password Settings -->
             <div class="card bg-base-200 shadow-sm">
               <div class="card-body">
                 <h3 class="card-title text-lg mb-4">Password</h3>
@@ -76,12 +83,17 @@ defmodule AstrupWeb.UserLive.Settings do
                 </.form>
               </div>
             </div>
-
-            <!-- Application Settings -->
+            
+    <!-- Application Settings -->
             <div class="card bg-base-200 shadow-sm">
               <div class="card-body">
                 <h3 class="card-title text-lg mb-4">Application Settings</h3>
-                <.form for={@settings_form} id="settings_form" phx-submit="update_settings" phx-change="validate_settings">
+                <.form
+                  for={@settings_form}
+                  id="settings_form"
+                  phx-submit="update_settings"
+                  phx-change="validate_settings"
+                >
                   <.input
                     field={@settings_form[:laboratory]}
                     type="select"
@@ -93,7 +105,9 @@ defmodule AstrupWeb.UserLive.Settings do
                     field={@settings_form[:analyzer]}
                     type="select"
                     label="Analyzer"
-                    options={[{"Radiometer ABL90 FLEX PLUS", "Astrup.Analyzer.RadiometerAbl90FlexPlus"}]}
+                    options={[
+                      {"Radiometer ABL90 FLEX PLUS", "Astrup.Analyzer.RadiometerAbl90FlexPlus"}
+                    ]}
                     required
                   />
                   <div class="card-actions justify-end mt-6">

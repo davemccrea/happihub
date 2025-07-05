@@ -514,7 +514,6 @@ defmodule AstrupWeb.CoreComponents do
     """
   end
 
-
   @doc """
   Renders an authentication dropdown menu.
 

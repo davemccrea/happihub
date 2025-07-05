@@ -158,7 +158,10 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
                         {@form.params["bicarbonate"]} mmol/L
                       </div>
                       <div class="card-actions justify-start mt-4">
-                        <div class={["badge", status_badge_class(:bicarbonate, @parameter_status[:bicarbonate])]}>
+                        <div class={[
+                          "badge",
+                          status_badge_class(:bicarbonate, @parameter_status[:bicarbonate])
+                        ]}>
                           {bicarbonate_status_text(@parameter_status[:bicarbonate])}
                         </div>
                       </div>
@@ -283,12 +286,18 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
 
   defp status_badge_class(parameter, status)
   defp status_badge_class(_parameter, :normal), do: "badge-success"
-  defp status_badge_class(:ph, :high), do: "badge-info"  # pH high = Alkalosis = blue
-  defp status_badge_class(:ph, :low), do: "badge-error"  # pH low = Acidosis = red
-  defp status_badge_class(:pco2, :high), do: "badge-error"  # pCO₂ high = Acidosis = red
-  defp status_badge_class(:pco2, :low), do: "badge-info"  # pCO₂ low = Alkalosis = blue
-  defp status_badge_class(:bicarbonate, :high), do: "badge-info"  # HCO₃⁻ high = Alkalosis = blue
-  defp status_badge_class(:bicarbonate, :low), do: "badge-error"  # HCO₃⁻ low = Acidosis = red
+  # pH high = Alkalosis = blue
+  defp status_badge_class(:ph, :high), do: "badge-info"
+  # pH low = Acidosis = red
+  defp status_badge_class(:ph, :low), do: "badge-error"
+  # pCO₂ high = Acidosis = red
+  defp status_badge_class(:pco2, :high), do: "badge-error"
+  # pCO₂ low = Alkalosis = blue
+  defp status_badge_class(:pco2, :low), do: "badge-info"
+  # HCO₃⁻ high = Alkalosis = blue
+  defp status_badge_class(:bicarbonate, :high), do: "badge-info"
+  # HCO₃⁻ low = Acidosis = red
+  defp status_badge_class(:bicarbonate, :low), do: "badge-error"
 
   # pH: Low = Acidosis, High = Alkalosis
   defp ph_status_text(:normal), do: gettext("Normal")

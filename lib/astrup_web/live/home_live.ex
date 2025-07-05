@@ -90,7 +90,9 @@ defmodule AstrupWeb.HomeLive do
                 <div class="mb-4">
                   <.icon name="hero-heart" class="h-12 w-12 mx-auto text-primary" />
                 </div>
-                <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("ECG Playback")}</h3>
+                <h3 class="text-xl font-semibold text-base-content mb-2">
+                  {gettext("ECG Playback")}
+                </h3>
               </.link>
             </div>
           </div>

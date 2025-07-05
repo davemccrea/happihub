@@ -779,5 +779,4 @@ defmodule AstrupWeb.Interpretation.QuizLive do
   defp classify_metabolic_value(:low), do: :acidosis
   defp classify_metabolic_value(:normal), do: :normal
   defp classify_metabolic_value(:high), do: :alkalosis
-
 end
