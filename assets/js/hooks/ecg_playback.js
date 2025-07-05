@@ -19,11 +19,6 @@ const ECGPlayback = {
       timer: null,
     };
 
-    this.frameRateMetrics = {
-      fps: 0,
-      frameCount: 0,
-      lastTime: Date.now(),
-    };
 
     await this.initializeECGChart();
     this.setupEventListeners();
@@ -45,8 +40,6 @@ const ECGPlayback = {
 
   // Initialize ECG chart with medical standard dimensions and load data
   async initializeECGChart() {
-    this.chartConfig = { width: CHART_WIDTH, height: CHART_HEIGHT };
-
     this.currentLeadData = await this.loadECGData();
 
     // Create lead selector if multiple leads available
@@ -74,10 +67,6 @@ const ECGPlayback = {
       .curve(d3.curveLinear);
 
     // Draw grid
-    const minorSpacing = PIXELS_PER_MM;
-    const majorSpacing = PIXELS_PER_MM * 5;
-
-    // Generate grid paths inline
     const generateGridPath = (spacing) => {
       const lines = [];
       for (let x = 0; x <= CHART_WIDTH; x += spacing)
@@ -89,13 +78,13 @@ const ECGPlayback = {
 
     this.svg
       .append("path")
-      .attr("d", generateGridPath(minorSpacing))
+      .attr("d", generateGridPath(PIXELS_PER_MM))
       .attr("stroke", "#f9c4c4")
       .attr("stroke-width", 0.5)
       .attr("fill", "none");
     this.svg
       .append("path")
-      .attr("d", generateGridPath(majorSpacing))
+      .attr("d", generateGridPath(PIXELS_PER_MM * 5))
       .attr("stroke", "#f4a8a8")
       .attr("stroke-width", 1)
       .attr("fill", "none");
@@ -116,7 +105,9 @@ const ECGPlayback = {
       .attr("x1", 0)
       .attr("x2", 0);
 
-    // Cache DOM elements and setup event listeners
+  },
+
+  setupEventListeners() {
     this.playBtn = this.el.querySelector("[data-ecg-play]");
     if (this.playBtn) this.playBtn.addEventListener("click", () => this.togglePlayback());
 
@@ -134,8 +125,6 @@ const ECGPlayback = {
         }
       });
     }
-
-    this.animationState.isPlaying = false;
   },
 
   // Load ECG data from JSON file and convert to optimized format with data windowing
@@ -151,43 +140,27 @@ const ECGPlayback = {
       this.currentLead = 0;
       this.samplingRate = samplingRate;
 
-      // Convert raw signal data to optimized format with typed arrays
+      // Convert raw signal data to D3 format directly
       this.ecgLeadDatasets = leadNames.map((leadName, leadIndex) => {
-        const signalData = new Float32Array(data.signals.length);
-        const timeData = new Float32Array(data.signals.length);
-
+        const d3Data = [];
         for (let i = 0; i < data.signals.length; i++) {
-          timeData[i] = i / samplingRate;
-          signalData[i] = data.signals[i][leadIndex] || 0;
+          d3Data.push({
+            time: i / samplingRate,
+            value: data.signals[i][leadIndex] || 0
+          });
         }
-
-        return {
-          name: leadName,
-          timeData,
-          signalData,
-          length: data.signals.length,
-        };
+        return { name: leadName, data: d3Data };
       });
 
-      const leadData = this.ecgLeadDatasets[this.currentLead];
-      this.totalDuration = leadData.timeData[leadData.length - 1];
-      return this.convertToD3Format(leadData);
+      const currentData = this.ecgLeadDatasets[this.currentLead].data;
+      this.totalDuration = currentData[currentData.length - 1].time;
+      return currentData;
     } catch (error) {
       console.error("Failed to load ECG data:", error);
       return [];
     }
   },
 
-  convertToD3Format(leadData) {
-    const result = [];
-    for (let i = 0; i < leadData.length; i++) {
-      result.push({
-        time: leadData.timeData[i],
-        value: leadData.signalData[i],
-      });
-    }
-    return result;
-  },
 
   createLeadSelector() {
     const container = this.el.querySelector("[data-ecg-chart]");
@@ -212,9 +185,9 @@ const ECGPlayback = {
     if (wasPlaying) this.stopAnimation();
 
     this.currentLead = leadIndex;
-    const leadData = this.ecgLeadDatasets[leadIndex];
-    this.totalDuration = leadData.timeData[leadData.length - 1];
-    this.currentLeadData = this.convertToD3Format(leadData);
+    const leadData = this.ecgLeadDatasets[leadIndex].data;
+    this.totalDuration = leadData[leadData.length - 1].time;
+    this.currentLeadData = leadData;
 
     if (wasPlaying) {
       this.animationState.isPlaying = true;
@@ -228,21 +201,19 @@ const ECGPlayback = {
     this.stopAnimation();
     this.animationState.startTime = null;
     this.animationState.pausedTime = 0;
-    this.animationState.sweepLinePosition = 0;
     this.animationState.currentCycle = 0;
     if (this.sweepLine) this.sweepLine.attr("x1", 0).attr("x2", 0);
     if (this.waveformPath) this.waveformPath.datum([]).attr("d", this.line);
     if (this.playBtn) this.playBtn.textContent = "Play";
-    this.animationState.isPlaying = false;
   },
 
   togglePlayback() {
     this.animationState.isPlaying = !this.animationState.isPlaying;
     if (this.animationState.isPlaying) {
-      if (this.playBtn) this.playBtn.textContent = "Pause";
+      this.playBtn.textContent = "Pause";
       this.resumeAnimation();
     } else {
-      if (this.playBtn) this.playBtn.textContent = "Play";
+      this.playBtn.textContent = "Play";
       this.pauseAnimation();
     }
   },
@@ -275,7 +246,6 @@ const ECGPlayback = {
   },
 
   executeAnimationLoop() {
-
     this.animationState.timer = d3.timer(() => {
       if (!this.animationState.isPlaying) {
         this.animationState.timer.stop();
@@ -283,16 +253,6 @@ const ECGPlayback = {
       }
 
       const currentTime = Date.now();
-
-      // Calculate FPS
-      this.frameRateMetrics.frameCount++;
-      if (currentTime - this.frameRateMetrics.lastTime >= 1000) {
-        this.frameRateMetrics.fps = this.frameRateMetrics.frameCount;
-        this.frameRateMetrics.frameCount = 0;
-        this.frameRateMetrics.lastTime = currentTime;
-        console.log(`ECG Animation FPS: ${this.frameRateMetrics.fps}`);
-      }
-
       const elapsedSeconds = (currentTime - this.animationState.startTime) / 1000;
       const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
       const sweepLinePosition = sweepProgress * CHART_WIDTH;
@@ -333,11 +293,11 @@ const ECGPlayback = {
   },
 
   stopAnimation() {
-    this.animationState.isPlaying = false;
     if (this.animationState.timer) {
       this.animationState.timer.stop();
       this.animationState.timer = null;
     }
+    this.animationState.isPlaying = false;
   },
 };
 
