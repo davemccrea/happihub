@@ -1,10 +1,10 @@
 import * as d3 from "d3";
 
-const MM_PER_SECOND = 25;
-const MM_PER_MILLIVOLT = 10;
-const PIXELS_PER_MM = 4;
-const WIDTH_SECONDS = 10;
-const HEIGHT_MILLIVOLTS = 3;
+const MM_PER_SECOND = 25; // Standard ECG paper speed
+const MM_PER_MILLIVOLT = 10; // Standard ECG paper voltage scale
+const PIXELS_PER_MM = 4; // Screen resolution conversion
+const WIDTH_SECONDS = 10; // Chart width in seconds
+const HEIGHT_MILLIVOLTS = 4; // Chart height in millivolts
 
 const ECGPlayback = {
   async mounted() {
@@ -18,7 +18,9 @@ const ECGPlayback = {
     }
   },
 
+  // Initialize ECG chart with medical standard dimensions and load data
   async initializeECGChart() {
+    // Calculate pixel dimensions based on medical standards
     const width = WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
     const height = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
     const margin = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -61,9 +63,13 @@ const ECGPlayback = {
       .attr("transform", `translate(${margin.left},${margin.top})`);
   },
 
+  // Create D3 scales for mapping time and voltage values to pixel coordinates
   createScales() {
     const { width, height, widthSeconds, heightMilliVolts } = this.chartConfig;
+    // Map time (0 to widthSeconds) to horizontal pixels (0 to width)
     this.xScale = d3.scaleLinear().domain([0, widthSeconds]).range([0, width]);
+    // Map voltage (-heightMilliVolts/2 to +heightMilliVolts/2) to vertical pixels
+    // Note: SVG y-axis is inverted (0 at top), so range is [height, 0]
     this.yScale = d3
       .scaleLinear()
       .domain([-heightMilliVolts / 2, heightMilliVolts / 2])
@@ -78,8 +84,12 @@ const ECGPlayback = {
       .curve(d3.curveLinear);
   },
 
+  // Create SVG clipping path for progressive reveal animation
   createClippingPath(height) {
-    this.clipId = `clip-playback-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate unique clip path ID to avoid conflicts with multiple charts
+    this.clipId = `clip-playback-${Math.random()
+      .toString(36)
+      .substring(2, 11)}`;
     this.svg
       .append("defs")
       .append("clipPath")
@@ -93,34 +103,49 @@ const ECGPlayback = {
     this.path = this.svg
       .append("path")
       .datum(this.ecgData)
-      .attr("class", "ecg-path")
+      .attr("fill", "none")
+      .attr("stroke", "#000000")
+      .attr("stroke-width", 1.25)
       .attr("d", this.line)
       .attr("clip-path", `url(#${this.clipId})`);
   },
 
+  // Draw ECG paper grid with minor (1mm) and major (5mm) lines
   drawGrid() {
     const { width, height, pixelsPerMm } = this.chartConfig;
-    this.drawGridLines(width, height, pixelsPerMm, 1, "grid-line-minor");
-    this.drawGridLines(width, height, pixelsPerMm, 5, "grid-line-major");
+    this.drawGridLines(width, height, pixelsPerMm, 1, 0.5, "#f9c4c4");
+    this.drawGridLines(width, height, pixelsPerMm, 5, 1, "#f4a8a8");
   },
 
-  drawGridLines(width, height, pixelsPerMm, interval, className) {
+  drawGridLines(
+    width,
+    height,
+    pixelsPerMm,
+    interval,
+    strokeWidth,
+    strokeColor
+  ) {
+    // Calculate spacing between grid lines in pixels
     const spacing = pixelsPerMm * interval;
 
+    // Draw vertical grid lines
     for (let x = 0; x <= width; x += spacing) {
       this.svg
         .append("line")
-        .attr("class", className)
+        .attr("stroke", strokeColor)
+        .attr("stroke-width", strokeWidth)
         .attr("x1", x)
         .attr("x2", x)
         .attr("y1", 0)
         .attr("y2", height);
     }
 
+    // Draw horizontal grid lines
     for (let y = 0; y <= height; y += spacing) {
       this.svg
         .append("line")
-        .attr("class", className)
+        .attr("stroke", strokeColor)
+        .attr("stroke-width", strokeWidth)
         .attr("x1", 0)
         .attr("x2", width)
         .attr("y1", y)
@@ -128,9 +153,10 @@ const ECGPlayback = {
     }
   },
 
+  // Load ECG data from JSON file and convert to chart format
   async loadECGData() {
     try {
-      const response = await fetch("/assets/js/00282.json");
+      const response = await fetch("/assets/js/00020.json");
       const data = await response.json();
 
       const samplingRate = data.fs;
@@ -139,11 +165,12 @@ const ECGPlayback = {
       this.leadNames = leadNames;
       this.currentLead = 0;
 
+      // Convert raw signal data to time-value pairs for each lead
       this.allLeadsData = leadNames.map((leadName, leadIndex) => ({
         name: leadName,
         data: data.signals.map((sample, index) => ({
-          time: index / samplingRate,
-          value: sample[leadIndex] || 0,
+          time: index / samplingRate, // Convert sample index to time in seconds
+          value: sample[leadIndex] || 0, // Get voltage value for this lead
         })),
       }));
 
@@ -182,7 +209,7 @@ const ECGPlayback = {
     const container = this.el.querySelector("[data-ecg-chart]");
     const selector = document.createElement("select");
     selector.setAttribute("data-lead-selector", "");
-    selector.className = "form-select mb-3";
+    selector.className = "select select-bordered w-full max-w-xs mb-3";
 
     this.leadNames.forEach((leadName, index) => {
       const option = document.createElement("option");
@@ -195,6 +222,7 @@ const ECGPlayback = {
     container.insertBefore(selector, container.firstChild);
   },
 
+  // Switch to different ECG lead while preserving playback state
   switchLead(leadIndex) {
     if (!this.isValidLeadIndex(leadIndex)) return;
 
@@ -202,7 +230,7 @@ const ECGPlayback = {
     this.currentLead = leadIndex;
     this.ecgData = this.allLeadsData[leadIndex].data;
     this.updateChart();
-    
+
     if (wasPlaying) {
       this.startAnimation();
     }
@@ -246,6 +274,7 @@ const ECGPlayback = {
     }
   },
 
+  // Animate ECG waveform reveal using clipping path transition
   startAnimation() {
     const { width, widthSeconds } = this.chartConfig;
     const clipRect = this.svg.select(`#${this.clipId} rect`);
@@ -256,15 +285,18 @@ const ECGPlayback = {
       clipRect.attr("width", 0);
     }
 
+    // Calculate remaining animation duration proportional to remaining width
     const remainingWidth = width - parseFloat(clipRect.attr("width"));
     const duration = widthSeconds * 1000 * (remainingWidth / width);
 
+    // Animate clipping rectangle width to reveal ECG waveform progressively
     clipRect
       .transition()
       .duration(duration)
-      .ease(d3.easeLinear)
+      .ease(d3.easeLinear) // Constant speed for realistic ECG playback
       .attr("width", width)
       .on("end", () => {
+        // Loop animation if still playing
         if (this.isPlaying) {
           clipRect.attr("width", 0);
           this.startAnimation();
@@ -273,6 +305,7 @@ const ECGPlayback = {
   },
 
   stopAnimation() {
+    // Stop current animation by setting duration to 0
     this.svg.select(`#${this.clipId} rect`).transition().duration(0);
   },
 };

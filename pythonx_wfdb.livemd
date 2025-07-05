@@ -26,7 +26,7 @@ dependencies = [
   import wfdb
   import json
   
-  record = wfdb.rdrecord('/Users/david/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3/records100/00000/00282_lr')  
+  record = wfdb.rdrecord('/Users/david/ptb-xl-a-large-publicly-available-electrocardiography-dataset-1.0.3/records100/00000/00020_lr')  
   
   data = {
     'signals': record.p_signal.tolist(),
