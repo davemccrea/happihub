@@ -20,7 +20,25 @@ const ECGPlayback = {
     };
 
     await this.initializeECGChart();
-    this.setupEventListeners();
+
+    this.playBtn = this.el.querySelector("[data-ecg-play]");
+    if (this.playBtn)
+      this.playBtn.addEventListener("click", () => this.togglePlayback());
+
+    const leadSelector = this.el.querySelector("[data-lead-selector]");
+    if (leadSelector) {
+      leadSelector.addEventListener("change", (e) => {
+        const leadIndex = parseInt(e.target.value, 10);
+        if (
+          !isNaN(leadIndex) &&
+          this.ecgLeadDatasets &&
+          leadIndex >= 0 &&
+          leadIndex < this.ecgLeadDatasets.length
+        ) {
+          this.switchLead(leadIndex);
+        }
+      });
+    }
   },
 
   destroyed() {
@@ -106,27 +124,6 @@ const ECGPlayback = {
       .attr("y2", CHART_HEIGHT)
       .attr("x1", 0)
       .attr("x2", 0);
-  },
-
-  setupEventListeners() {
-    this.playBtn = this.el.querySelector("[data-ecg-play]");
-    if (this.playBtn)
-      this.playBtn.addEventListener("click", () => this.togglePlayback());
-
-    const leadSelector = this.el.querySelector("[data-lead-selector]");
-    if (leadSelector) {
-      leadSelector.addEventListener("change", (e) => {
-        const leadIndex = parseInt(e.target.value, 10);
-        if (
-          !isNaN(leadIndex) &&
-          this.ecgLeadDatasets &&
-          leadIndex >= 0 &&
-          leadIndex < this.ecgLeadDatasets.length
-        ) {
-          this.switchLead(leadIndex);
-        }
-      });
-    }
   },
 
   // Load ECG data from JSON file and convert to optimized format with data windowing
