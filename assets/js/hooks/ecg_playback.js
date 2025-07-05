@@ -193,7 +193,7 @@ const ECGPlayback = {
       this.animationState.isPlaying = true;
       this.executeAnimationLoop();
     } else {
-      this.waveformPath.datum(this.currentLeadData).attr("d", this.line);
+      this.waveformPath.datum([]).attr("d", this.line);
     }
   },
 
