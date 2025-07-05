@@ -27,7 +27,7 @@ const ECGPlayback = {
     };
 
     // Grid style options
-    this.gridStyle = "notebook"; // 'medical' or 'notebook'
+    this.gridStyle = "clean_grid"; // 'ecg_paper' or 'clean_grid'
 
     await this.initializeECGChart();
 
@@ -88,7 +88,7 @@ const ECGPlayback = {
     this.eventHandlers = null;
   },
 
-  // Initialize ECG chart with medical standard dimensions and load data
+  // Initialize ECG chart with ecg_paper standard dimensions and load data
   async initializeECGChart() {
     this.currentLeadData = await this.loadECGData();
 
@@ -139,15 +139,15 @@ const ECGPlayback = {
     // Remove existing grid
     this.svg.selectAll(".grid-line").remove();
 
-    if (this.gridStyle === "medical") {
-      this.drawMedicalGrid();
-    } else if (this.gridStyle === "notebook") {
-      this.drawNotebookGrid();
+    if (this.gridStyle === "ecg_paper") {
+      this.draw_ecg_paper();
+    } else if (this.gridStyle === "clean_grid") {
+      this.draw_clean_grid();
     }
   },
 
-  // Draw medical-style ECG grid (current implementation)
-  drawMedicalGrid() {
+  // Draw ecg_paper-style ECG grid (current implementation)
+  draw_ecg_paper() {
     const generateGridPath = (spacing) => {
       const lines = [];
       for (let x = 0; x <= CHART_WIDTH; x += spacing)
@@ -173,8 +173,8 @@ const ECGPlayback = {
       .attr("fill", "none");
   },
 
-  // Draw simple notebook-style grid
-  drawNotebookGrid() {
+  // Draw simple clean_grid-style grid
+  draw_clean_grid() {
     // Use 5mm spacing for dots
     const dotSpacing = 5 * PIXELS_PER_MM; // 5mm (20px)
 
@@ -195,7 +195,7 @@ const ECGPlayback = {
 
   // Handle grid style change
   handleGridStyleChange(gridStyle) {
-    if (gridStyle === "medical" || gridStyle === "notebook") {
+    if (gridStyle === "ecg_paper" || gridStyle === "clean_grid") {
       this.gridStyle = gridStyle;
       this.drawGrid();
     }
