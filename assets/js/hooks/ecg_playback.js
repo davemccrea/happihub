@@ -5,6 +5,8 @@ const MM_PER_MILLIVOLT = 10; // Standard ECG paper voltage scale
 const PIXELS_PER_MM = 4; // Screen resolution conversion
 const WIDTH_SECONDS = 5; // Chart width in seconds
 const HEIGHT_MILLIVOLTS = 4; // Chart height in millivolts
+const CHART_WIDTH = WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM; // 500px
+const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM; // 160px
 
 const ECGPlayback = {
   async mounted() {
@@ -13,17 +15,16 @@ const ECGPlayback = {
       isPlaying: false,
       startTime: null,
       pausedTime: 0,
-      sweepLinePosition: 0,
       currentCycle: 0,
-      timer: null
+      timer: null,
     };
-    
+
     this.frameRateMetrics = {
       fps: 0,
       frameCount: 0,
-      lastTime: Date.now()
+      lastTime: Date.now(),
     };
-    
+
     await this.initializeECGChart();
     this.setupEventListeners();
   },
@@ -37,12 +38,6 @@ const ECGPlayback = {
       this.animationState.timer.stop();
       this.animationState.timer = null;
     }
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
-
-    // Clean up SVG elements
     if (this.svg) {
       this.svg.selectAll("*").remove();
     }
@@ -50,71 +45,98 @@ const ECGPlayback = {
 
   // Initialize ECG chart with medical standard dimensions and load data
   async initializeECGChart() {
-    // Calculate pixel dimensions based on medical standards
-    const width = WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
-    const height = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
-
-    this.chartConfig = { width, height };
+    this.chartConfig = { width: CHART_WIDTH, height: CHART_HEIGHT };
 
     this.currentLeadData = await this.loadECGData();
-    
+
     // Create lead selector if multiple leads available
     if (this.leadNames && this.leadNames.length > 1) {
       this.createLeadSelector();
     }
-    
+
     // Create SVG chart
     this.svg = d3
       .select(this.el.querySelector("[data-ecg-chart]"))
       .append("svg")
-      .attr("width", width)
-      .attr("height", height)
+      .attr("width", CHART_WIDTH)
+      .attr("height", CHART_HEIGHT)
       .append("g");
-    
+
     // Create scales
-    this.xScale = d3.scaleLinear().domain([0, WIDTH_SECONDS]).range([0, width]);
-    this.yScale = d3.scaleLinear().domain([-HEIGHT_MILLIVOLTS / 2, HEIGHT_MILLIVOLTS / 2]).range([height, 0]);
-    
+    this.xScale = d3.scaleLinear().domain([0, WIDTH_SECONDS]).range([0, CHART_WIDTH]);
+    this.yScale = d3.scaleLinear().domain([-2, 2]).range([CHART_HEIGHT, 0]);
+
     // Create line generator
-    this.line = d3.line().x((d) => this.xScale(d.time)).y((d) => this.yScale(d.value)).curve(d3.curveLinear);
-    
+    this.line = d3
+      .line()
+      .x((d) => this.xScale(d.time))
+      .y((d) => this.yScale(d.value))
+      .curve(d3.curveLinear);
+
     // Draw grid
     const minorSpacing = PIXELS_PER_MM;
     const majorSpacing = PIXELS_PER_MM * 5;
-    
+
     // Generate grid paths inline
     const generateGridPath = (spacing) => {
       const lines = [];
-      for (let x = 0; x <= width; x += spacing) lines.push(`M${x},0L${x},${height}`);
-      for (let y = 0; y <= height; y += spacing) lines.push(`M0,${y}L${width},${y}`);
+      for (let x = 0; x <= CHART_WIDTH; x += spacing)
+        lines.push(`M${x},0L${x},${CHART_HEIGHT}`);
+      for (let y = 0; y <= CHART_HEIGHT; y += spacing)
+        lines.push(`M0,${y}L${CHART_WIDTH},${y}`);
       return lines.join("");
     };
-    
-    this.svg.append("path").attr("d", generateGridPath(minorSpacing)).attr("stroke", "#f9c4c4").attr("stroke-width", 0.5).attr("fill", "none");
-    this.svg.append("path").attr("d", generateGridPath(majorSpacing)).attr("stroke", "#f4a8a8").attr("stroke-width", 1).attr("fill", "none");
-    
+
+    this.svg
+      .append("path")
+      .attr("d", generateGridPath(minorSpacing))
+      .attr("stroke", "#f9c4c4")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none");
+    this.svg
+      .append("path")
+      .attr("d", generateGridPath(majorSpacing))
+      .attr("stroke", "#f4a8a8")
+      .attr("stroke-width", 1)
+      .attr("fill", "none");
+
     // Create ECG display group and paths
     this.ecgGroup = this.svg.append("g");
-    this.waveformPath = this.ecgGroup.append("path").attr("fill", "none").attr("stroke", "#000000").attr("stroke-width", 1.25);
-    this.sweepLine = this.ecgGroup.append("line").attr("stroke", "#00ff00").attr("stroke-width", 2).attr("y1", 0).attr("y2", height).attr("x1", 0).attr("x2", 0);
-    
-    // Setup event listeners
-    const playBtn = this.el.querySelector("[data-ecg-play]");
-    if (playBtn) playBtn.addEventListener("click", () => this.togglePlayback());
-    
+    this.waveformPath = this.ecgGroup
+      .append("path")
+      .attr("fill", "none")
+      .attr("stroke", "#000000")
+      .attr("stroke-width", 1.25);
+    this.sweepLine = this.ecgGroup
+      .append("line")
+      .attr("stroke", "#00ff00")
+      .attr("stroke-width", 2)
+      .attr("y1", 0)
+      .attr("y2", CHART_HEIGHT)
+      .attr("x1", 0)
+      .attr("x2", 0);
+
+    // Cache DOM elements and setup event listeners
+    this.playBtn = this.el.querySelector("[data-ecg-play]");
+    if (this.playBtn) this.playBtn.addEventListener("click", () => this.togglePlayback());
+
     const leadSelector = this.el.querySelector("[data-lead-selector]");
     if (leadSelector) {
       leadSelector.addEventListener("change", (e) => {
         const leadIndex = parseInt(e.target.value, 10);
-        if (!isNaN(leadIndex) && this.ecgLeadDatasets && leadIndex >= 0 && leadIndex < this.ecgLeadDatasets.length) {
+        if (
+          !isNaN(leadIndex) &&
+          this.ecgLeadDatasets &&
+          leadIndex >= 0 &&
+          leadIndex < this.ecgLeadDatasets.length
+        ) {
           this.switchLead(leadIndex);
         }
       });
     }
-    
+
     this.animationState.isPlaying = false;
   },
-
 
   // Load ECG data from JSON file and convert to optimized format with data windowing
   async loadECGData() {
@@ -147,8 +169,9 @@ const ECGPlayback = {
         };
       });
 
-
-      return this.convertToD3Format(this.ecgLeadDatasets[this.currentLead]);
+      const leadData = this.ecgLeadDatasets[this.currentLead];
+      this.totalDuration = leadData.timeData[leadData.length - 1];
+      return this.convertToD3Format(leadData);
     } catch (error) {
       console.error("Failed to load ECG data:", error);
       return [];
@@ -165,9 +188,6 @@ const ECGPlayback = {
     }
     return result;
   },
-
-
-
 
   createLeadSelector() {
     const container = this.el.querySelector("[data-ecg-chart]");
@@ -192,7 +212,9 @@ const ECGPlayback = {
     if (wasPlaying) this.stopAnimation();
 
     this.currentLead = leadIndex;
-    this.currentLeadData = this.convertToD3Format(this.ecgLeadDatasets[leadIndex]);
+    const leadData = this.ecgLeadDatasets[leadIndex];
+    this.totalDuration = leadData.timeData[leadData.length - 1];
+    this.currentLeadData = this.convertToD3Format(leadData);
 
     if (wasPlaying) {
       this.animationState.isPlaying = true;
@@ -210,20 +232,17 @@ const ECGPlayback = {
     this.animationState.currentCycle = 0;
     if (this.sweepLine) this.sweepLine.attr("x1", 0).attr("x2", 0);
     if (this.waveformPath) this.waveformPath.datum([]).attr("d", this.line);
-    const playBtn = this.el.querySelector("[data-ecg-play]");
-    if (playBtn) playBtn.textContent = "Play";
+    if (this.playBtn) this.playBtn.textContent = "Play";
     this.animationState.isPlaying = false;
   },
 
   togglePlayback() {
     this.animationState.isPlaying = !this.animationState.isPlaying;
-    const playBtn = this.el.querySelector("[data-ecg-play]");
-    
     if (this.animationState.isPlaying) {
-      if (playBtn) playBtn.textContent = "Pause";
+      if (this.playBtn) this.playBtn.textContent = "Pause";
       this.resumeAnimation();
     } else {
-      if (playBtn) playBtn.textContent = "Play";
+      if (this.playBtn) this.playBtn.textContent = "Play";
       this.pauseAnimation();
     }
   },
@@ -256,7 +275,6 @@ const ECGPlayback = {
   },
 
   executeAnimationLoop() {
-    const { width } = this.chartConfig;
 
     this.animationState.timer = d3.timer(() => {
       if (!this.animationState.isPlaying) {
@@ -265,7 +283,7 @@ const ECGPlayback = {
       }
 
       const currentTime = Date.now();
-      
+
       // Calculate FPS
       this.frameRateMetrics.frameCount++;
       if (currentTime - this.frameRateMetrics.lastTime >= 1000) {
@@ -277,11 +295,11 @@ const ECGPlayback = {
 
       const elapsedSeconds = (currentTime - this.animationState.startTime) / 1000;
       const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
-      this.animationState.sweepLinePosition = sweepProgress * width;
+      const sweepLinePosition = sweepProgress * CHART_WIDTH;
       const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
 
       // Update sweep line position
-      this.sweepLine.attr("x1", this.animationState.sweepLinePosition).attr("x2", this.animationState.sweepLinePosition);
+      this.sweepLine.attr("x1", sweepLinePosition).attr("x2", sweepLinePosition);
 
       if (currentCycle !== this.animationState.currentCycle) {
         this.animationState.currentCycle = currentCycle;
@@ -292,40 +310,33 @@ const ECGPlayback = {
     });
   },
 
-
   // Update waveform progressively by drawing data up to sweep position
   updateProgressiveWaveform(sweepProgress, currentCycle) {
-    const totalDuration = this.currentLeadData[this.currentLeadData.length - 1]?.time || 0;
-    const totalCycles = Math.ceil(totalDuration / WIDTH_SECONDS);
-    
-    // Calculate current cycle index (loop back to start)
+    const totalCycles = Math.ceil(this.totalDuration / WIDTH_SECONDS);
     const cycleIndex = currentCycle % totalCycles;
     const cycleStartTime = cycleIndex * WIDTH_SECONDS;
-    const cycleEndTime = Math.min((cycleIndex + 1) * WIDTH_SECONDS, totalDuration);
-    
-    // Find data points for current cycle and map to screen coordinates
-    const cycleData = this.currentLeadData.filter(d => d.time >= cycleStartTime && d.time < cycleEndTime);
-    const screenData = cycleData.map(d => ({ time: d.time - cycleStartTime, value: d.value }));
-    
-    // Calculate how much of the cycle to show based on sweep progress
+    const cycleEndTime = Math.min((cycleIndex + 1) * WIDTH_SECONDS, this.totalDuration);
     const sweepTime = sweepProgress * WIDTH_SECONDS;
-    const visibleData = screenData.filter(d => d.time <= sweepTime);
-    
-    // Update waveform path with visible data
+
+    // Build visible data array directly without intermediate filtering
+    const visibleData = [];
+    for (const d of this.currentLeadData) {
+      if (d.time >= cycleStartTime && d.time < cycleEndTime) {
+        const screenTime = d.time - cycleStartTime;
+        if (screenTime <= sweepTime) {
+          visibleData.push({ time: screenTime, value: d.value });
+        }
+      }
+    }
+
     this.waveformPath.datum(visibleData).attr("d", this.line);
   },
 
-
   stopAnimation() {
-    // Stop the animation loop
     this.animationState.isPlaying = false;
     if (this.animationState.timer) {
       this.animationState.timer.stop();
       this.animationState.timer = null;
-    }
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
     }
   },
 };
