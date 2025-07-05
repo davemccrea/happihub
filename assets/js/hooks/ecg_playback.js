@@ -59,6 +59,11 @@ const ECGPlayback = {
     this.visibleTimes = [];
     this.visibleValues = [];
     this.eventHandlers = null;
+    
+    // Clean up grid cache
+    if (this.gridCanvas) {
+      this.gridCanvas = null;
+    }
   },
 
   // === Initialization Methods ===
@@ -73,13 +78,15 @@ const ECGPlayback = {
       this.canvas.remove();
     }
 
-    const canvasHeight = this.displayMode === "multi" 
-      ? this.leadNames.length * (CHART_HEIGHT / 4) 
-      : CHART_HEIGHT;
-    
-    this.leadHeight = this.displayMode === "multi" 
-      ? canvasHeight / this.leadNames.length 
-      : CHART_HEIGHT;
+    const canvasHeight =
+      this.displayMode === "multi"
+        ? this.leadNames.length * (CHART_HEIGHT / 4)
+        : CHART_HEIGHT;
+
+    this.leadHeight =
+      this.displayMode === "multi"
+        ? canvasHeight / this.leadNames.length
+        : CHART_HEIGHT;
 
     const canvas = document.createElement("canvas");
     canvas.width = CHART_WIDTH;
@@ -155,11 +162,12 @@ const ECGPlayback = {
     if (displayMode === "single" || displayMode === "multi") {
       const wasPlaying = this.isPlaying;
       if (wasPlaying) this.stopAnimation();
-      
+
       this.displayMode = displayMode;
+      this.gridCanvas = null; // Invalidate grid cache
       this.updateCanvasSize();
       this.drawGrid();
-      
+
       if (wasPlaying) {
         this.isPlaying = true;
         this.executeAnimationLoop();
@@ -210,8 +218,12 @@ const ECGPlayback = {
     } else {
       // Multi-lead mode: prepare data for all leads
       this.multiLeadVisibleData = [];
-      
-      for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
+
+      for (
+        let leadIndex = 0;
+        leadIndex < this.ecgLeadDatasets.length;
+        leadIndex++
+      ) {
         const leadData = this.ecgLeadDatasets[leadIndex];
         const leadVisibleTimes = [];
         const leadVisibleValues = [];
@@ -228,7 +240,7 @@ const ECGPlayback = {
         this.multiLeadVisibleData.push({
           times: leadVisibleTimes,
           values: leadVisibleValues,
-          name: this.leadNames[leadIndex]
+          name: this.leadNames[leadIndex],
         });
       }
     }
@@ -308,27 +320,18 @@ const ECGPlayback = {
 
       this.updateWaveform(sweepProgress, currentCycle);
       this.drawSweepLine(sweepLinePosition);
-      
+
       this.animationId = requestAnimationFrame(animate);
     };
-    
+
     this.animationId = requestAnimationFrame(animate);
   },
 
   // === Rendering Methods ===
   drawGrid() {
-    const canvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
-    this.context.clearRect(0, 0, CHART_WIDTH, canvasHeight);
-    
-    if (this.displayMode === "multi") {
-      for (let i = 0; i < this.leadNames.length; i++) {
-        const yOffset = i * this.leadHeight;
-        this.drawGridForLead(yOffset);
-        this.drawLeadLabel(i, yOffset);
-      }
-    } else {
-      this.drawGridForLead(0);
-    }
+    // Invalidate grid cache when grid changes
+    this.gridCanvas = null;
+    this.drawGridOnly();
   },
 
   drawGridForLead(yOffset) {
@@ -348,46 +351,56 @@ const ECGPlayback = {
   drawMedicalGridAtOffset(yOffset) {
     const smallSquareSize = PIXELS_PER_MM;
     const largeSquareSize = 5 * PIXELS_PER_MM;
-    const gridHeight = this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
-    
+    const gridHeight =
+      this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
+
     // Fine grid lines (1mm squares)
     this.context.strokeStyle = "#ff9999";
     this.context.lineWidth = 0.5;
     this.context.beginPath();
-    
+
+    // Vertical lines - always use proper 1mm spacing
     for (let x = smallSquareSize; x < CHART_WIDTH; x += smallSquareSize) {
       this.context.moveTo(x, yOffset);
       this.context.lineTo(x, yOffset + gridHeight);
     }
-    
-    for (let y = smallSquareSize; y < gridHeight; y += smallSquareSize) {
-      this.context.moveTo(0, yOffset + y);
-      this.context.lineTo(CHART_WIDTH, yOffset + y);
+
+    // Horizontal lines - only draw within the lead strip bounds and maintain 1mm spacing
+    for (let y = smallSquareSize; y <= gridHeight; y += smallSquareSize) {
+      if (yOffset + y <= yOffset + gridHeight) {
+        this.context.moveTo(0, yOffset + y);
+        this.context.lineTo(CHART_WIDTH, yOffset + y);
+      }
     }
-    
+
     this.context.stroke();
-    
+
     // Bold grid lines (5mm squares)
     this.context.strokeStyle = "#ff6666";
     this.context.lineWidth = 1;
     this.context.beginPath();
-    
+
+    // Vertical bold lines - always use proper 5mm spacing
     for (let x = largeSquareSize; x < CHART_WIDTH; x += largeSquareSize) {
       this.context.moveTo(x, yOffset);
       this.context.lineTo(x, yOffset + gridHeight);
     }
-    
-    for (let y = largeSquareSize; y < gridHeight; y += largeSquareSize) {
-      this.context.moveTo(0, yOffset + y);
-      this.context.lineTo(CHART_WIDTH, yOffset + y);
+
+    // Horizontal bold lines - only draw within bounds and maintain 5mm spacing
+    for (let y = largeSquareSize; y <= gridHeight; y += largeSquareSize) {
+      if (yOffset + y <= yOffset + gridHeight) {
+        this.context.moveTo(0, yOffset + y);
+        this.context.lineTo(CHART_WIDTH, yOffset + y);
+      }
     }
-    
+
     this.context.stroke();
   },
 
   drawSimpleGridAtOffset(yOffset) {
     const dotSpacing = 5 * PIXELS_PER_MM;
-    const gridHeight = this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
+    const gridHeight =
+      this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
     this.context.fillStyle = "#d0d0d0";
 
     for (let x = 5; x < CHART_WIDTH - 5; x += dotSpacing) {
@@ -400,16 +413,75 @@ const ECGPlayback = {
   },
 
   clearWaveform() {
-    this.drawGrid();
+    this.clearWaveformOnly();
   },
 
   drawWaveform() {
-    this.drawGrid();
-    
+    // Only clear the waveform area, not the entire canvas
+    this.clearWaveformOnly();
+
     if (this.displayMode === "single") {
       this.drawSingleLeadWaveform();
     } else {
       this.drawMultiLeadWaveform();
+    }
+  },
+
+  clearWaveformOnly() {
+    // Create a temporary canvas to preserve the grid
+    if (!this.gridCanvas) {
+      this.cacheGrid();
+    }
+    
+    // Clear entire canvas
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.canvas.height / devicePixelRatio;
+    this.context.clearRect(0, 0, CHART_WIDTH, canvasHeight);
+    
+    // Restore grid from cache at proper scale
+    this.context.drawImage(this.gridCanvas, 0, 0, CHART_WIDTH, canvasHeight);
+  },
+
+  cacheGrid() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.canvas.height / devicePixelRatio;
+    
+    this.gridCanvas = document.createElement('canvas');
+    this.gridCanvas.width = CHART_WIDTH;
+    this.gridCanvas.height = canvasHeight;
+    
+    // Set actual canvas size for high-DPI displays
+    this.gridCanvas.width = CHART_WIDTH * devicePixelRatio;
+    this.gridCanvas.height = canvasHeight * devicePixelRatio;
+    this.gridCanvas.style.width = CHART_WIDTH + "px";
+    this.gridCanvas.style.height = canvasHeight + "px";
+    
+    const gridContext = this.gridCanvas.getContext('2d');
+    gridContext.scale(devicePixelRatio, devicePixelRatio);
+    
+    // Draw grid to cache
+    const originalContext = this.context;
+    this.context = gridContext;
+    this.drawGridOnly();
+    this.context = originalContext;
+  },
+
+  drawGridOnly() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.canvas ? 
+      this.canvas.height / devicePixelRatio : 
+      (this.displayMode === "multi" ? this.leadNames.length * (CHART_HEIGHT / 4) : CHART_HEIGHT);
+    
+    this.context.clearRect(0, 0, CHART_WIDTH, canvasHeight);
+
+    if (this.displayMode === "multi") {
+      for (let i = 0; i < this.leadNames.length; i++) {
+        const yOffset = i * this.leadHeight;
+        this.drawGridForLead(yOffset);
+        this.drawLeadLabel(i, yOffset);
+      }
+    } else {
+      this.drawGridForLead(0);
     }
   },
 
@@ -422,7 +494,10 @@ const ECGPlayback = {
 
       for (let i = 0; i < pointCount; i++) {
         const x = (this.visibleTimes[i] / WIDTH_SECONDS) * CHART_WIDTH;
-        const y = CHART_HEIGHT - ((this.visibleValues[i] - this.yMin) / (this.yMax - this.yMin)) * CHART_HEIGHT;
+        const y =
+          CHART_HEIGHT -
+          ((this.visibleValues[i] - this.yMin) / (this.yMax - this.yMin)) *
+            CHART_HEIGHT;
 
         if (i === 0) {
           this.context.moveTo(x, y);
@@ -439,9 +514,13 @@ const ECGPlayback = {
     if (!this.multiLeadVisibleData) return;
 
     this.context.strokeStyle = "#000000";
-    this.context.lineWidth = 1.25;
+    this.context.lineWidth = 1;
 
-    for (let leadIndex = 0; leadIndex < this.multiLeadVisibleData.length; leadIndex++) {
+    for (
+      let leadIndex = 0;
+      leadIndex < this.multiLeadVisibleData.length;
+      leadIndex++
+    ) {
       const leadData = this.multiLeadVisibleData[leadIndex];
       const yOffset = leadIndex * this.leadHeight;
       const pointCount = leadData.times.length;
@@ -451,7 +530,11 @@ const ECGPlayback = {
 
         for (let i = 0; i < pointCount; i++) {
           const x = (leadData.times[i] / WIDTH_SECONDS) * CHART_WIDTH;
-          const y = yOffset + this.leadHeight - ((leadData.values[i] - this.yMin) / (this.yMax - this.yMin)) * this.leadHeight;
+          const y =
+            yOffset +
+            this.leadHeight -
+            ((leadData.values[i] - this.yMin) / (this.yMax - this.yMin)) *
+              this.leadHeight;
 
           if (i === 0) {
             this.context.moveTo(x, y);
