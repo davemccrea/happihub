@@ -21,24 +21,14 @@ const ECGPlayback = {
 
     await this.initializeECGChart();
 
-    this.playBtn = this.el.querySelector("[data-ecg-play]");
-    if (this.playBtn)
-      this.playBtn.addEventListener("click", () => this.togglePlayback());
+    // Handle server-pushed events
+    this.handleEvent("playback_changed", (payload) => {
+      this.handlePlaybackChange(payload.is_playing);
+    });
 
-    const leadSelector = this.el.querySelector("[data-lead-selector]");
-    if (leadSelector) {
-      leadSelector.addEventListener("change", (e) => {
-        const leadIndex = parseInt(e.target.value, 10);
-        if (
-          !isNaN(leadIndex) &&
-          this.ecgLeadDatasets &&
-          leadIndex >= 0 &&
-          leadIndex < this.ecgLeadDatasets.length
-        ) {
-          this.switchLead(leadIndex);
-        }
-      });
-    }
+    this.handleEvent("lead_changed", (payload) => {
+      this.handleLeadChange(payload.lead);
+    });
   },
 
   destroyed() {
@@ -58,11 +48,6 @@ const ECGPlayback = {
   // Initialize ECG chart with medical standard dimensions and load data
   async initializeECGChart() {
     this.currentLeadData = await this.loadECGData();
-
-    // Create lead selector if multiple leads available
-    if (this.leadNames && this.leadNames.length > 1) {
-      this.createLeadSelector();
-    }
 
     // Create SVG chart
     this.svg = d3
@@ -180,22 +165,6 @@ const ECGPlayback = {
     }
   },
 
-  createLeadSelector() {
-    const container = this.el.querySelector("[data-ecg-chart]");
-    const selector = document.createElement("select");
-    selector.setAttribute("data-lead-selector", "");
-    selector.className = "select select-bordered w-full max-w-xs mb-3";
-
-    this.leadNames.forEach((leadName, index) => {
-      const option = document.createElement("option");
-      option.value = index;
-      option.textContent = `Lead ${leadName}`;
-      if (index === this.currentLead) option.selected = true;
-      selector.appendChild(option);
-    });
-
-    container.insertBefore(selector, container.firstChild);
-  },
 
   // Switch to different ECG lead while preserving playback state
   switchLead(leadIndex) {
@@ -232,17 +201,25 @@ const ECGPlayback = {
     this.animationState.currentCycle = 0;
     if (this.sweepLine) this.sweepLine.attr("x1", 0).attr("x2", 0);
     if (this.waveformPath) this.waveformPath.datum([]).attr("d", this.line);
-    if (this.playBtn) this.playBtn.textContent = "Play";
   },
 
-  togglePlayback() {
-    this.animationState.isPlaying = !this.animationState.isPlaying;
-    if (this.animationState.isPlaying) {
-      this.playBtn.textContent = "Pause";
+  handlePlaybackChange(isPlaying) {
+    this.animationState.isPlaying = isPlaying;
+    if (isPlaying) {
       this.resumeAnimation();
     } else {
-      this.playBtn.textContent = "Play";
       this.pauseAnimation();
+    }
+  },
+
+  handleLeadChange(leadIndex) {
+    if (
+      !isNaN(leadIndex) &&
+      this.ecgLeadDatasets &&
+      leadIndex >= 0 &&
+      leadIndex < this.ecgLeadDatasets.length
+    ) {
+      this.switchLead(leadIndex);
     }
   },
 
