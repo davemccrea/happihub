@@ -142,16 +142,36 @@ const ECGPlayback = {
       this.currentLead = 0;
       this.samplingRate = samplingRate;
 
-      // Convert raw signal data to D3 format directly
+      // Pre-calculate time array once for all leads
+      const timeArray = new Float32Array(data.signals.length);
+      for (let i = 0; i < data.signals.length; i++) {
+        timeArray[i] = i / samplingRate;
+      }
+
+      // Store as efficient typed arrays, convert to objects only when needed
       this.ecgLeadDatasets = leadNames.map((leadName, leadIndex) => {
-        const d3Data = [];
+        const values = new Float32Array(data.signals.length);
         for (let i = 0; i < data.signals.length; i++) {
-          d3Data.push({
-            time: i / samplingRate,
-            value: data.signals[i][leadIndex] || 0,
-          });
+          values[i] = data.signals[i][leadIndex] || 0;
         }
-        return { name: leadName, data: d3Data };
+        return { 
+          name: leadName, 
+          times: timeArray,
+          values: values,
+          get data() {
+            // Lazy conversion to D3 format only when accessed
+            if (!this._d3Data) {
+              this._d3Data = [];
+              for (let i = 0; i < this.times.length; i++) {
+                this._d3Data.push({
+                  time: this.times[i],
+                  value: this.values[i]
+                });
+              }
+            }
+            return this._d3Data;
+          }
+        };
       });
 
       const currentData = this.ecgLeadDatasets[this.currentLead].data;
