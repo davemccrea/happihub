@@ -66,4 +66,9 @@ defmodule AstrupWeb.ECGLive do
     socket = assign(socket, elapsed_time: elapsed_time)
     {:noreply, socket}
   end
+
+  def handle_event("playback_ended", _params, socket) do
+    socket = assign(socket, is_playing: false)
+    {:noreply, socket}
+  end
 end

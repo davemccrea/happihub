@@ -19,6 +19,13 @@ const ECGPlayback = {
       timer: null,
     };
 
+    // Streaming data state
+    this.streamingState = {
+      currentDataIndex: 0,
+      visibleDataPoints: [],
+      lastUpdateTime: 0,
+    };
+
     // Grid style options
     this.gridStyle = "notebook"; // 'medical' or 'notebook'
 
@@ -258,6 +265,12 @@ const ECGPlayback = {
     this.animationState.startTime = null;
     this.animationState.pausedTime = 0;
     this.animationState.currentCycle = 0;
+    
+    // Reset streaming state
+    this.streamingState.currentDataIndex = 0;
+    this.streamingState.visibleDataPoints = [];
+    this.streamingState.lastUpdateTime = 0;
+    
     if (this.sweepLine) this.sweepLine.attr("x1", 0).attr("x2", 0);
     if (this.waveformPath) this.waveformPath.datum([]).attr("d", this.line);
   },
@@ -288,6 +301,12 @@ const ECGPlayback = {
     this.animationState.pausedTime = 0;
     this.animationState.sweepLinePosition = 0;
     this.animationState.currentCycle = 0;
+    
+    // Reset streaming state for new animation
+    this.streamingState.currentDataIndex = 0;
+    this.streamingState.visibleDataPoints = [];
+    this.streamingState.lastUpdateTime = 0;
+    
     this.executeAnimationLoop();
   },
 
@@ -332,34 +351,70 @@ const ECGPlayback = {
         this.animationState.currentCycle = currentCycle;
       }
 
-      // Draw waveform progressively up to sweep position
-      this.updateProgressiveWaveform(sweepProgress, currentCycle);
+      // Stream data points up to sweep position
+      this.streamWaveformData(elapsedSeconds, sweepProgress, currentCycle);
     });
   },
 
-  // Update waveform progressively by drawing data up to sweep position
-  updateProgressiveWaveform(sweepProgress, currentCycle) {
+  // Stream data points one at a time for smooth performance
+  streamWaveformData(elapsedSeconds, sweepProgress, currentCycle) {
     const totalCycles = Math.ceil(this.totalDuration / WIDTH_SECONDS);
-    const cycleIndex = currentCycle % totalCycles;
+    
+    // Check if we've reached the end of the data first
+    if (currentCycle >= totalCycles) {
+      this.stopAnimation();
+      this.resetPlayback();
+      
+      // Notify LiveView that playback has ended
+      this.pushEvent("playback_ended", {});
+      return;
+    }
+    
+    const cycleIndex = currentCycle;
     const cycleStartTime = cycleIndex * WIDTH_SECONDS;
-    const cycleEndTime = Math.min(
-      (cycleIndex + 1) * WIDTH_SECONDS,
-      this.totalDuration
-    );
-    const sweepTime = sweepProgress * WIDTH_SECONDS;
+    const currentTimeInCycle = sweepProgress * WIDTH_SECONDS;
+    const absoluteTime = cycleStartTime + currentTimeInCycle;
 
-    // Build visible data array directly without intermediate filtering
-    const visibleData = [];
-    for (const d of this.currentLeadData) {
-      if (d.time >= cycleStartTime && d.time < cycleEndTime) {
-        const screenTime = d.time - cycleStartTime;
-        if (screenTime <= sweepTime) {
-          visibleData.push({ time: screenTime, value: d.value });
-        }
-      }
+    // Clear data when starting a new cycle
+    if (currentCycle !== this.animationState.currentCycle) {
+      this.streamingState.visibleDataPoints = [];
+      this.streamingState.currentDataIndex = 0;
     }
 
-    this.waveformPath.datum(visibleData).attr("d", this.line);
+    // Calculate target data index based on current time
+    const targetIndex = Math.floor(absoluteTime * this.samplingRate);
+
+    // Stream new data points up to current position
+    while (this.streamingState.currentDataIndex <= targetIndex && 
+           this.streamingState.currentDataIndex < this.currentLeadData.length) {
+      
+      const dataPoint = this.currentLeadData[this.streamingState.currentDataIndex];
+      if (dataPoint && dataPoint.time >= cycleStartTime && dataPoint.time < cycleStartTime + WIDTH_SECONDS) {
+        const screenTime = dataPoint.time - cycleStartTime;
+        if (screenTime <= currentTimeInCycle) {
+          this.streamingState.visibleDataPoints.push({
+            time: screenTime,
+            value: dataPoint.value
+          });
+        }
+      }
+      
+      this.streamingState.currentDataIndex++;
+    }
+
+    // Remove old points that are outside the visible window
+    this.streamingState.visibleDataPoints = this.streamingState.visibleDataPoints.filter(
+      point => point.time <= currentTimeInCycle
+    );
+
+    // Limit visible points to prevent memory bloat
+    const MAX_VISIBLE_POINTS = 1000;
+    if (this.streamingState.visibleDataPoints.length > MAX_VISIBLE_POINTS) {
+      this.streamingState.visibleDataPoints = this.streamingState.visibleDataPoints.slice(-MAX_VISIBLE_POINTS);
+    }
+
+    // Update the waveform path
+    this.waveformPath.datum(this.streamingState.visibleDataPoints).attr("d", this.line);
   },
 
   stopAnimation() {
