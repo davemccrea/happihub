@@ -7,6 +7,8 @@ defmodule AstrupWeb.ECGLive do
         is_playing: false,
         current_lead: 0,
         elapsed_time: 0,
+        display_mode: "single",
+        grid_type: "medical",
         lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
       )
 
@@ -19,17 +21,46 @@ defmodule AstrupWeb.ECGLive do
       <div class="space-y-12">
         <h1 class="text-2xl font-bold">ECG Test</h1>
 
-        <form phx-change="change_lead">
-          <.input
-            type="select"
-            name="lead"
-            value={@current_lead}
-            options={
-              Enum.with_index(@lead_names)
-              |> Enum.map(fn {name, index} -> {"Lead #{name}", index} end)
-            }
-          />
-        </form>
+        <div class="flex gap-4">
+          <form phx-change="change_lead">
+            <.input
+              type="select"
+              name="lead"
+              value={@current_lead}
+              label="Current Lead"
+              options={
+                Enum.with_index(@lead_names)
+                |> Enum.map(fn {name, index} -> {"Lead #{name}", index} end)
+              }
+            />
+          </form>
+
+          <form phx-change="change_display_mode">
+            <.input
+              type="select"
+              name="display_mode"
+              value={@display_mode}
+              label="Display Mode"
+              options={[
+                {"Single Lead", "single"},
+                {"All Leads", "multi"}
+              ]}
+            />
+          </form>
+
+          <form phx-change="change_grid_type">
+            <.input
+              type="select"
+              name="grid_type"
+              value={@grid_type}
+              label="Grid Type"
+              options={[
+                {"Medical Grid", "medical"},
+                {"Simple Grid", "simple"}
+              ]}
+            />
+          </form>
+        </div>
 
         <div id="ecg-playback" phx-hook="ECGPlayback" phx-update="ignore">
           <div data-ecg-chart></div>
@@ -70,5 +101,25 @@ defmodule AstrupWeb.ECGLive do
   def handle_event("playback_ended", _params, socket) do
     socket = assign(socket, is_playing: false)
     {:noreply, socket}
+  end
+
+  def handle_event("change_display_mode", %{"display_mode" => display_mode}, socket) do
+    if display_mode in ["single", "multi"] do
+      socket = assign(socket, display_mode: display_mode)
+      socket = push_event(socket, "display_mode_changed", %{display_mode: display_mode})
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("change_grid_type", %{"grid_type" => grid_type}, socket) do
+    if grid_type in ["medical", "simple"] do
+      socket = assign(socket, grid_type: grid_type)
+      socket = push_event(socket, "grid_changed", %{grid_type: grid_type})
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 end
