@@ -8,13 +8,47 @@ const HEIGHT_MILLIVOLTS = 4; // Chart height in millivolts
 
 const ECGPlayback = {
   async mounted() {
+    this.initializePerformanceCache();
     await this.initializeECGChart();
     this.setupEventListeners();
   },
 
   destroyed() {
-    if (this.timer) {
-      this.timer.stop();
+    this.cleanup();
+  },
+
+  initializePerformanceCache() {
+    this.dataCache = new Map();
+    this.animationState = {
+      isPlaying: false,
+      timer: null,
+      startTime: null,
+      pausedTime: 0,
+      currentCycle: 0,
+      sweepLinePosition: 0
+    };
+    // FPS monitoring
+    this.frameRateMetrics = {
+      frameCount: 0,
+      lastTime: 0,
+      fps: 0
+    };
+  },
+
+  cleanup() {
+    if (this.animationState.timer) {
+      this.animationState.timer.stop();
+      this.animationState.timer = null;
+    }
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    this.dataCache.clear();
+    
+    // Clean up SVG elements
+    if (this.svg) {
+      this.svg.selectAll('*').remove();
     }
   },
 
@@ -36,15 +70,15 @@ const ECGPlayback = {
       pixelsPerMm: PIXELS_PER_MM,
     };
 
-    this.ecgData = await this.loadECGData();
+    this.currentLeadData = await this.loadECGData();
     this.createLeadSelectorIfNeeded();
     this.createSVGChart(width, height, margin);
     this.createScales();
-    this.drawGrid();
+    this.renderGrid();
     this.setupLineGenerator();
     this.createClippingPath(height);
     this.drawECGPath();
-    this.isPlaying = false;
+    this.animationState.isPlaying = false;
   },
 
   createLeadSelectorIfNeeded() {
@@ -90,34 +124,51 @@ const ECGPlayback = {
     this.clipId = `clip-playback-${Math.random()
       .toString(36)
       .substring(2, 11)}`;
-    this.svg
-      .append("defs")
-      .append("clipPath")
-      .attr("id", this.clipId)
-      .append("rect")
+    
+    const defs = this.svg.append("defs");
+    
+    // Create static clipping paths for new and old data
+    const newClipId = `${this.clipId}-new`;
+    const oldClipId = `${this.clipId}-old`;
+    
+    const newClipPath = defs.append("clipPath").attr("id", newClipId);
+    this.newClipRect = newClipPath.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", 0)
+      .attr("height", height);
+    
+    const oldClipPath = defs.append("clipPath").attr("id", oldClipId);
+    this.oldClipRect = oldClipPath.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
       .attr("width", this.chartConfig.width)
       .attr("height", height);
+    
+    // Store clip IDs for later use
+    this.newClipId = newClipId;
+    this.oldClipId = oldClipId;
   },
 
   drawECGPath() {
     // Create a group for the ECG display
-    this.ecgGroup = this.svg
-      .append("g")
-      .attr("clip-path", `url(#${this.clipId})`);
+    this.ecgGroup = this.svg.append("g");
 
-    // Create the old waveform path (previous cycle)
+    // Create the old waveform path (previous cycle) with its own clipping
     this.oldPath = this.ecgGroup
       .append("path")
       .attr("fill", "none")
       .attr("stroke", "#000000")
-      .attr("stroke-width", 1.25);
+      .attr("stroke-width", 1.25)
+      .attr("clip-path", `url(#${this.oldClipId})`);
 
-    // Create the new waveform path (current cycle)
+    // Create the new waveform path (current cycle) with its own clipping
     this.newPath = this.ecgGroup
       .append("path")
       .attr("fill", "none")
       .attr("stroke", "#000000")
-      .attr("stroke-width", 1.25);
+      .attr("stroke-width", 1.25)
+      .attr("clip-path", `url(#${this.newClipId})`);
 
     // Create sweep line to show current position
     this.sweepLine = this.ecgGroup
@@ -130,50 +181,55 @@ const ECGPlayback = {
       .attr("x2", 0);
   },
 
-  // Draw ECG paper grid with minor (1mm) and major (5mm) lines
-  drawGrid() {
+  // Draw ECG paper grid with minor (1mm) and major (5mm) lines using batch operations
+  renderGrid() {
     const { width, height, pixelsPerMm } = this.chartConfig;
-    this.drawGridLines(width, height, pixelsPerMm, 1, 0.5, "#f9c4c4");
-    this.drawGridLines(width, height, pixelsPerMm, 5, 1, "#f4a8a8");
+    this.renderGridLines(width, height, pixelsPerMm);
   },
 
-  drawGridLines(
-    width,
-    height,
-    pixelsPerMm,
-    interval,
-    strokeWidth,
-    strokeColor
-  ) {
-    // Calculate spacing between grid lines in pixels
-    const spacing = pixelsPerMm * interval;
+  renderGridLines(width, height, pixelsPerMm) {
+    const minorSpacing = pixelsPerMm;
+    const majorSpacing = pixelsPerMm * 5;
+    
+    // Pre-generate grid paths
+    const minorGridPath = this.generateGridPath(width, height, minorSpacing);
+    const majorGridPath = this.generateGridPath(width, height, majorSpacing);
+    
+    // Append minor grid lines as single path
+    this.svg
+      .append("path")
+      .attr("d", minorGridPath)
+      .attr("stroke", "#f9c4c4")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none");
+    
+    // Append major grid lines as single path
+    this.svg
+      .append("path")
+      .attr("d", majorGridPath)
+      .attr("stroke", "#f4a8a8")
+      .attr("stroke-width", 1)
+      .attr("fill", "none");
+  },
 
-    // Draw vertical grid lines
+  generateGridPath(width, height, spacing) {
+    const verticalLines = [];
+    const horizontalLines = [];
+    
+    // Generate vertical lines
     for (let x = 0; x <= width; x += spacing) {
-      this.svg
-        .append("line")
-        .attr("stroke", strokeColor)
-        .attr("stroke-width", strokeWidth)
-        .attr("x1", x)
-        .attr("x2", x)
-        .attr("y1", 0)
-        .attr("y2", height);
+      verticalLines.push(`M${x},0L${x},${height}`);
     }
-
-    // Draw horizontal grid lines
+    
+    // Generate horizontal lines
     for (let y = 0; y <= height; y += spacing) {
-      this.svg
-        .append("line")
-        .attr("stroke", strokeColor)
-        .attr("stroke-width", strokeWidth)
-        .attr("x1", 0)
-        .attr("x2", width)
-        .attr("y1", y)
-        .attr("y2", y);
+      horizontalLines.push(`M0,${y}L${width},${y}`);
     }
+    
+    return verticalLines.join('') + horizontalLines.join('');
   },
 
-  // Load ECG data from JSON file and convert to chart format
+  // Load ECG data from JSON file and convert to optimized format with data windowing
   async loadECGData() {
     try {
       const response = await fetch("/assets/js/00020.json");
@@ -184,21 +240,111 @@ const ECGPlayback = {
 
       this.leadNames = leadNames;
       this.currentLead = 0;
+      this.samplingRate = samplingRate;
 
-      // Convert raw signal data to time-value pairs for each lead
-      this.allLeadsData = leadNames.map((leadName, leadIndex) => ({
-        name: leadName,
-        data: data.signals.map((sample, index) => ({
-          time: index / samplingRate, // Convert sample index to time in seconds
-          value: sample[leadIndex] || 0, // Get voltage value for this lead
-        })),
-      }));
+      // Convert raw signal data to optimized format with typed arrays
+      this.ecgLeadDatasets = leadNames.map((leadName, leadIndex) => {
+        const signalData = new Float32Array(data.signals.length);
+        const timeData = new Float32Array(data.signals.length);
+        
+        for (let i = 0; i < data.signals.length; i++) {
+          timeData[i] = i / samplingRate;
+          signalData[i] = data.signals[i][leadIndex] || 0;
+        }
+        
+        return {
+          name: leadName,
+          timeData,
+          signalData,
+          length: data.signals.length
+        };
+      });
 
-      return this.allLeadsData[this.currentLead].data;
+      // Pre-calculate screen windows and all screen data for efficient rendering
+      this.preCalculateScreenWindows();
+      this.preCalculateAllScreenData();
+      
+      return this.convertToD3Format(this.ecgLeadDatasets[this.currentLead]);
     } catch (error) {
       console.error("Failed to load ECG data:", error);
       return [];
     }
+  },
+
+  convertToD3Format(leadData) {
+    const result = [];
+    for (let i = 0; i < leadData.length; i++) {
+      result.push({
+        time: leadData.timeData[i],
+        value: leadData.signalData[i]
+      });
+    }
+    return result;
+  },
+
+  preCalculateScreenWindows() {
+    const { widthSeconds } = this.chartConfig;
+    
+    this.ecgLeadDatasets.forEach((leadData, leadIndex) => {
+      const totalDuration = leadData.timeData[leadData.length - 1];
+      const screenCount = Math.ceil(totalDuration / widthSeconds);
+      const screenWindows = [];
+      
+      for (let screenIndex = 0; screenIndex < screenCount; screenIndex++) {
+        const startTime = screenIndex * widthSeconds;
+        const endTime = Math.min((screenIndex + 1) * widthSeconds, totalDuration);
+        
+        // Find data indices for this screen window
+        let startIndex = 0;
+        let endIndex = leadData.length - 1;
+        
+        // Binary search for start index
+        while (startIndex < endIndex) {
+          const mid = Math.floor((startIndex + endIndex) / 2);
+          if (leadData.timeData[mid] < startTime) {
+            startIndex = mid + 1;
+          } else {
+            endIndex = mid;
+          }
+        }
+        
+        // Find end index
+        endIndex = startIndex;
+        while (endIndex < leadData.length && leadData.timeData[endIndex] < endTime) {
+          endIndex++;
+        }
+        
+        screenWindows.push({
+          startIndex,
+          endIndex,
+          startTime,
+          endTime
+        });
+      }
+      
+      this.dataCache.set(`screens_${leadIndex}`, screenWindows);
+    });
+  },
+
+  preCalculateAllScreenData() {
+    this.ecgLeadDatasets.forEach((leadData, leadIndex) => {
+      const screenWindows = this.dataCache.get(`screens_${leadIndex}`);
+      if (!screenWindows) return;
+      
+      screenWindows.forEach((screenWindow, screenIndex) => {
+        const cacheKey = `screen_${leadIndex}_${screenIndex}`;
+        const screenData = [];
+        
+        for (let i = screenWindow.startIndex; i < screenWindow.endIndex; i++) {
+          screenData.push({
+            time: leadData.timeData[i] - screenWindow.startTime,
+            value: leadData.signalData[i]
+          });
+        }
+        
+        this.dataCache.set(cacheKey, screenData);
+      });
+    });
   },
 
   setupEventListeners() {
@@ -246,35 +392,49 @@ const ECGPlayback = {
   switchLead(leadIndex) {
     if (!this.isValidLeadIndex(leadIndex)) return;
 
-    const wasPlaying = this.isPlaying;
-    this.currentLead = leadIndex;
-    this.ecgData = this.allLeadsData[leadIndex].data;
-    this.updateChart();
-
+    const wasPlaying = this.animationState.isPlaying;
+    const currentCycle = this.animationState.currentCycle;
+    
+    // Stop current animation if playing
     if (wasPlaying) {
-      this.startAnimation();
+      this.stopAnimation();
+    }
+    
+    this.currentLead = leadIndex;
+    this.currentLeadData = this.convertToD3Format(this.ecgLeadDatasets[leadIndex]);
+    
+    if (wasPlaying) {
+      // Update to current screen data for new lead
+      this.updateVisibleWaveforms(currentCycle);
+      // Resume animation
+      this.animationState.isPlaying = true;
+      this.executeAnimationLoop();
+    } else {
+      // Just update the chart for static display
+      this.updateChart();
     }
   },
 
   isValidLeadIndex(leadIndex) {
     return (
-      this.allLeadsData &&
+      this.ecgLeadDatasets &&
       leadIndex >= 0 &&
-      leadIndex < this.allLeadsData.length
+      leadIndex < this.ecgLeadDatasets.length
     );
   },
 
   updateChart() {
     // Update both paths when switching leads
-    this.newPath.datum(this.ecgData).attr("d", this.line);
+    this.newPath.datum(this.currentLeadData).attr("d", this.line);
     this.oldPath.datum([]).attr("d", this.line);
   },
 
   resetPlayback() {
     this.stopAnimation();
-    this.animationStartTime = null;
-    this.sweepPosition = 0;
-    this.currentDataIndex = 0;
+    this.animationState.startTime = null;
+    this.animationState.pausedTime = 0;
+    this.animationState.sweepLinePosition = 0;
+    this.animationState.currentCycle = 0;
     if (this.sweepLine) {
       this.sweepLine.attr("x1", 0).attr("x2", 0);
     }
@@ -285,7 +445,7 @@ const ECGPlayback = {
       this.oldPath.datum([]).attr("d", this.line);
     }
     this.updatePlayButton("Play");
-    this.isPlaying = false;
+    this.animationState.isPlaying = false;
   },
 
   updatePlayButton(text) {
@@ -296,160 +456,147 @@ const ECGPlayback = {
   },
 
   togglePlayback() {
-    this.isPlaying = !this.isPlaying;
+    this.animationState.isPlaying = !this.animationState.isPlaying;
 
-    if (this.isPlaying) {
+    if (this.animationState.isPlaying) {
       this.updatePlayButton("Pause");
-      this.startAnimation();
+      this.resumeAnimation();
     } else {
       this.updatePlayButton("Play");
-      this.stopAnimation();
+      this.pauseAnimation();
     }
   },
 
-  // Animate ECG waveform with GE-style sweep effect
+  // Animate ECG waveform with optimized GE-style sweep effect
   startAnimation() {
+    this.animationState.startTime = Date.now();
+    this.animationState.pausedTime = 0;
+    this.animationState.sweepLinePosition = 0;
+    this.animationState.currentCycle = 0;
+    // Initialize waveform display for first cycle
+    this.updateVisibleWaveforms(0);
+    this.executeAnimationLoop();
+  },
+
+  resumeAnimation() {
+    if (!this.animationState.startTime) {
+      this.startAnimation();
+    } else {
+      // Calculate how long we were paused and adjust start time
+      const pauseDuration = Date.now() - this.animationState.pausedTime;
+      this.animationState.startTime += pauseDuration;
+      this.animationState.pausedTime = 0;
+      this.executeAnimationLoop();
+    }
+  },
+
+  pauseAnimation() {
+    // Store when we paused
+    this.animationState.pausedTime = Date.now();
+    this.stopAnimation();
+  },
+
+  executeAnimationLoop() {
     const { width, widthSeconds } = this.chartConfig;
 
-    // Initialize animation state
-    if (!this.animationStartTime) {
-      this.animationStartTime = Date.now();
-      this.sweepPosition = 0;
-    }
-
-    // Calculate the total duration of ECG data
-    const totalDuration = this.ecgData[this.ecgData.length - 1].time;
-
-    // Start animation loop
-    const animate = () => {
-      if (!this.isPlaying) return;
+    // Use d3.timer for better performance control
+    this.animationState.timer = d3.timer(() => {
+      if (!this.animationState.isPlaying) {
+        this.animationState.timer.stop();
+        return;
+      }
 
       const currentTime = Date.now();
-      const elapsedSeconds = (currentTime - this.animationStartTime) / 1000;
+      
+      // Calculate FPS
+      this.updateFPS(currentTime);
+      
+      const elapsedSeconds = (currentTime - this.animationState.startTime) / 1000;
 
       // Calculate sweep position (0 to width, then reset)
       const sweepCycleTime = widthSeconds;
       const sweepProgress = (elapsedSeconds % sweepCycleTime) / sweepCycleTime;
-      this.sweepPosition = sweepProgress * width;
+      this.animationState.sweepLinePosition = sweepProgress * width;
+      const currentCycle = Math.floor(elapsedSeconds / sweepCycleTime);
 
       // Update sweep line position
       this.sweepLine
-        .attr("x1", this.sweepPosition)
-        .attr("x2", this.sweepPosition);
+        .attr("x1", this.animationState.sweepLinePosition)
+        .attr("x2", this.animationState.sweepLinePosition);
 
-      // Calculate current data time based on elapsed time
-      const currentDataTime = elapsedSeconds % totalDuration;
+      // Update waveform when cycle changes or on first run
+      if (currentCycle !== this.animationState.currentCycle) {
+        this.animationState.currentCycle = currentCycle;
+        this.updateVisibleWaveforms(currentCycle);
+      }
 
-      // Show only the waveform data up to the current sweep position
-      this.updateWaveformDisplay(currentDataTime, totalDuration);
-
-      // Continue animation
-      this.animationFrameId = requestAnimationFrame(animate);
-    };
-
-    animate();
+      // Always update clipping paths to reveal waveform as sweep progresses
+      this.updateClippingPaths(sweepProgress);
+    });
   },
 
-  // Update waveform display using efficient clipping approach
-  updateWaveformDisplay(currentDataTime, totalDuration) {
-    const { widthSeconds } = this.chartConfig;
-
-    // Calculate which screen cycle we're in and position within that cycle
-    const screenCycle = Math.floor(currentDataTime / widthSeconds);
-    const timeWithinScreen = currentDataTime - screenCycle * widthSeconds;
-
-    // Get current screen data
-    const currentScreenData = this.getScreenData(screenCycle, widthSeconds, totalDuration);
+  updateFPS(currentTime) {
+    this.frameRateMetrics.frameCount++;
     
-    // Get previous screen data
-    const previousScreenData = screenCycle > 0 ? 
-      this.getScreenData(screenCycle - 1, widthSeconds, totalDuration) : [];
-
-    // Update old path (previous cycle data) - clip to show only unwritten area
-    if (previousScreenData.length > 0) {
-      const normalizedOldData = previousScreenData.map(d => ({
-        time: d.time - (screenCycle - 1) * widthSeconds,
-        value: d.value
-      }));
-      this.oldPath.datum(normalizedOldData).attr("d", this.line);
+    if (currentTime - this.frameRateMetrics.lastTime >= 1000) {
+      this.frameRateMetrics.fps = this.frameRateMetrics.frameCount;
+      this.frameRateMetrics.frameCount = 0;
+      this.frameRateMetrics.lastTime = currentTime;
       
-      // Create clipping mask for old data (show only after sweep position)
-      const oldClipId = `${this.clipId}-old`;
-      this.createOldDataClip(oldClipId, timeWithinScreen);
-      this.oldPath.attr("clip-path", `url(#${oldClipId})`);
+      // Log FPS to console
+      console.log(`ECG Animation FPS: ${this.frameRateMetrics.fps}`);
+    }
+  },
+
+  // Update visible waveforms using pre-calculated screen data
+  updateVisibleWaveforms(screenCycle) {
+    const screenWindows = this.dataCache.get(`screens_${this.currentLead}`);
+    if (!screenWindows) return;
+
+    const totalScreens = screenWindows.length;
+    const currentScreenIndex = screenCycle % totalScreens;
+    const previousScreenIndex = (screenCycle - 1) % totalScreens;
+
+    // Get current screen data from cache
+    const currentScreenData = this.dataCache.get(`screen_${this.currentLead}_${currentScreenIndex}`) || [];
+
+    // Get previous screen data from cache
+    let previousScreenData = [];
+    if (screenCycle > 0) {
+      const prevIndex = previousScreenIndex >= 0 ? previousScreenIndex : totalScreens - 1;
+      previousScreenData = this.dataCache.get(`screen_${this.currentLead}_${prevIndex}`) || [];
+    }
+
+    // Update paths using cached data
+    if (previousScreenData.length > 0) {
+      this.oldPath.datum(previousScreenData).attr("d", this.line);
     } else {
       this.oldPath.datum([]).attr("d", this.line);
     }
 
-    // Update new path (current cycle data) - clip to show only written area
-    const normalizedNewData = currentScreenData.map(d => ({
-      time: d.time - screenCycle * widthSeconds,
-      value: d.value
-    }));
-    this.newPath.datum(normalizedNewData).attr("d", this.line);
-    
-    // Create clipping mask for new data (show only up to sweep position)
-    const newClipId = `${this.clipId}-new`;
-    this.createNewDataClip(newClipId, timeWithinScreen);
-    this.newPath.attr("clip-path", `url(#${newClipId})`);
+    this.newPath.datum(currentScreenData).attr("d", this.line);
   },
 
-  // Helper to get screen data for a given cycle
-  getScreenData(screenCycle, widthSeconds, totalDuration) {
-    const screenStartTime = screenCycle * widthSeconds;
-    const screenEndTime = screenStartTime + widthSeconds;
 
-    if (screenEndTime <= totalDuration) {
-      return this.ecgData.filter(d => d.time >= screenStartTime && d.time < screenEndTime);
-    } else {
-      const endData = this.ecgData.filter(d => d.time >= screenStartTime);
-      const wrapAmount = screenEndTime - totalDuration;
-      const startData = this.ecgData.filter(d => d.time < wrapAmount);
-      
-      const adjustedStartData = startData.map(d => ({
-        time: d.time + totalDuration,
-        value: d.value
-      }));
-      
-      return [...endData, ...adjustedStartData];
-    }
-  },
-
-  // Create clipping path for old data (show only after sweep)
-  createOldDataClip(clipId, sweepPosition) {
+  updateClippingPaths(sweepProgress) {
     const { width } = this.chartConfig;
-    const sweepX = (sweepPosition / this.chartConfig.widthSeconds) * width;
+    const sweepX = sweepProgress * width;
     
-    let clipPath = this.svg.select(`#${clipId}`);
-    if (clipPath.empty()) {
-      clipPath = this.svg.select("defs").append("clipPath").attr("id", clipId);
-      clipPath.append("rect").attr("height", this.chartConfig.height);
-    }
+    // Update new data clipping (show only up to sweep)
+    this.newClipRect.attr("width", sweepX);
     
-    clipPath.select("rect")
-      .attr("x", sweepX)
-      .attr("width", width - sweepX);
+    // Update old data clipping (show only after sweep)
+    this.oldClipRect.attr("x", sweepX).attr("width", width - sweepX);
   },
 
-  // Create clipping path for new data (show only up to sweep)
-  createNewDataClip(clipId, sweepPosition) {
-    const { width } = this.chartConfig;
-    const sweepX = (sweepPosition / this.chartConfig.widthSeconds) * width;
-    
-    let clipPath = this.svg.select(`#${clipId}`);
-    if (clipPath.empty()) {
-      clipPath = this.svg.select("defs").append("clipPath").attr("id", clipId);
-      clipPath.append("rect").attr("height", this.chartConfig.height);
-    }
-    
-    clipPath.select("rect")
-      .attr("x", 0)
-      .attr("width", sweepX);
-  },
 
   stopAnimation() {
     // Stop the animation loop
-    this.isPlaying = false;
+    this.animationState.isPlaying = false;
+    if (this.animationState.timer) {
+      this.animationState.timer.stop();
+      this.animationState.timer = null;
+    }
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
