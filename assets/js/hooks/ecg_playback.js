@@ -19,7 +19,6 @@ const ECGPlayback = {
       timer: null,
     };
 
-
     await this.initializeECGChart();
     this.setupEventListeners();
   },
@@ -56,7 +55,10 @@ const ECGPlayback = {
       .append("g");
 
     // Create scales
-    this.xScale = d3.scaleLinear().domain([0, WIDTH_SECONDS]).range([0, CHART_WIDTH]);
+    this.xScale = d3
+      .scaleLinear()
+      .domain([0, WIDTH_SECONDS])
+      .range([0, CHART_WIDTH]);
     this.yScale = d3.scaleLinear().domain([-2, 2]).range([CHART_HEIGHT, 0]);
 
     // Create line generator
@@ -104,12 +106,12 @@ const ECGPlayback = {
       .attr("y2", CHART_HEIGHT)
       .attr("x1", 0)
       .attr("x2", 0);
-
   },
 
   setupEventListeners() {
     this.playBtn = this.el.querySelector("[data-ecg-play]");
-    if (this.playBtn) this.playBtn.addEventListener("click", () => this.togglePlayback());
+    if (this.playBtn)
+      this.playBtn.addEventListener("click", () => this.togglePlayback());
 
     const leadSelector = this.el.querySelector("[data-lead-selector]");
     if (leadSelector) {
@@ -146,7 +148,7 @@ const ECGPlayback = {
         for (let i = 0; i < data.signals.length; i++) {
           d3Data.push({
             time: i / samplingRate,
-            value: data.signals[i][leadIndex] || 0
+            value: data.signals[i][leadIndex] || 0,
           });
         }
         return { name: leadName, data: d3Data };
@@ -160,7 +162,6 @@ const ECGPlayback = {
       return [];
     }
   },
-
 
   createLeadSelector() {
     const container = this.el.querySelector("[data-ecg-chart]");
@@ -253,13 +254,16 @@ const ECGPlayback = {
       }
 
       const currentTime = Date.now();
-      const elapsedSeconds = (currentTime - this.animationState.startTime) / 1000;
+      const elapsedSeconds =
+        (currentTime - this.animationState.startTime) / 1000;
       const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
       const sweepLinePosition = sweepProgress * CHART_WIDTH;
       const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
 
       // Update sweep line position
-      this.sweepLine.attr("x1", sweepLinePosition).attr("x2", sweepLinePosition);
+      this.sweepLine
+        .attr("x1", sweepLinePosition)
+        .attr("x2", sweepLinePosition);
 
       if (currentCycle !== this.animationState.currentCycle) {
         this.animationState.currentCycle = currentCycle;
@@ -275,7 +279,10 @@ const ECGPlayback = {
     const totalCycles = Math.ceil(this.totalDuration / WIDTH_SECONDS);
     const cycleIndex = currentCycle % totalCycles;
     const cycleStartTime = cycleIndex * WIDTH_SECONDS;
-    const cycleEndTime = Math.min((cycleIndex + 1) * WIDTH_SECONDS, this.totalDuration);
+    const cycleEndTime = Math.min(
+      (cycleIndex + 1) * WIDTH_SECONDS,
+      this.totalDuration
+    );
     const sweepTime = sweepProgress * WIDTH_SECONDS;
 
     // Build visible data array directly without intermediate filtering
