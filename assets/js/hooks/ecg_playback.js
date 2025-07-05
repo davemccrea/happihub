@@ -1,5 +1,3 @@
-import * as d3 from "d3";
-
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 4;
@@ -15,7 +13,7 @@ const ECGPlayback = {
     this.startTime = null;
     this.pausedTime = 0;
     this.currentCycle = 0;
-    this.timer = null;
+    this.animationId = null;
     this.visibleTimes = [];
     this.visibleValues = [];
 
@@ -35,9 +33,9 @@ const ECGPlayback = {
   },
 
   cleanup() {
-    if (this.timer) {
-      this.timer.stop();
-      this.timer = null;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
     if (this.canvas) {
       this.canvas.remove();
@@ -59,26 +57,21 @@ const ECGPlayback = {
   async initializeECGChart() {
     this.currentLeadData = await this.loadECGData();
 
-    this.canvas = d3
-      .select(this.el.querySelector("[data-ecg-chart]"))
-      .append("canvas")
-      .attr("width", CHART_WIDTH)
-      .attr("height", CHART_HEIGHT);
+    const canvas = document.createElement("canvas");
+    canvas.width = CHART_WIDTH;
+    canvas.height = CHART_HEIGHT;
+    this.el.querySelector("[data-ecg-chart]").appendChild(canvas);
+    this.canvas = canvas;
 
-    this.context = this.canvas.node().getContext("2d");
+    this.context = canvas.getContext("2d");
 
     const devicePixelRatio = window.devicePixelRatio || 1;
-    this.canvas
-      .attr("width", CHART_WIDTH * devicePixelRatio)
-      .attr("height", CHART_HEIGHT * devicePixelRatio)
-      .style("width", CHART_WIDTH + "px")
-      .style("height", CHART_HEIGHT + "px");
+    canvas.width = CHART_WIDTH * devicePixelRatio;
+    canvas.height = CHART_HEIGHT * devicePixelRatio;
+    canvas.style.width = CHART_WIDTH + "px";
+    canvas.style.height = CHART_HEIGHT + "px";
     this.context.scale(devicePixelRatio, devicePixelRatio);
 
-    this.xScale = d3
-      .scaleLinear()
-      .domain([0, WIDTH_SECONDS])
-      .range([0, CHART_WIDTH]);
     this.drawGrid();
   },
 
@@ -116,10 +109,8 @@ const ECGPlayback = {
     this.ecgLeadDatasets = data.leads;
     this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
     const globalRange = data.globalValueRange;
-    this.yScale = d3
-      .scaleLinear()
-      .domain([globalRange.min, globalRange.max])
-      .range([CHART_HEIGHT, 0]);
+    this.yMin = globalRange.min;
+    this.yMax = globalRange.max;
 
     return this.currentLeadData;
   },
@@ -199,12 +190,12 @@ const ECGPlayback = {
   },
 
   executeAnimationLoop() {
-    if (this.timer) {
-      this.timer.stop();
-      this.timer = null;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
 
-    this.timer = d3.timer(() => {
+    const animate = () => {
       if (!this.isPlaying) {
         this.stopAnimation();
         return;
@@ -222,7 +213,11 @@ const ECGPlayback = {
 
       this.updateWaveform(sweepProgress, currentCycle);
       this.drawSweepLine(sweepLinePosition);
-    });
+      
+      this.animationId = requestAnimationFrame(animate);
+    };
+    
+    this.animationId = requestAnimationFrame(animate);
   },
 
   updateWaveform(sweepProgress, currentCycle) {
@@ -253,9 +248,9 @@ const ECGPlayback = {
   },
 
   stopAnimation() {
-    if (this.timer) {
-      this.timer.stop();
-      this.timer = null;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
     this.isPlaying = false;
   },
@@ -273,8 +268,8 @@ const ECGPlayback = {
       this.context.beginPath();
 
       for (let i = 0; i < pointCount; i++) {
-        const x = this.xScale(this.visibleTimes[i]);
-        const y = this.yScale(this.visibleValues[i]);
+        const x = (this.visibleTimes[i] / WIDTH_SECONDS) * CHART_WIDTH;
+        const y = CHART_HEIGHT - ((this.visibleValues[i] - this.yMin) / (this.yMax - this.yMin)) * CHART_HEIGHT;
 
         if (i === 0) {
           this.context.moveTo(x, y);
