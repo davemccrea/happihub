@@ -16,21 +16,20 @@ defmodule AstrupWeb.ECGLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
-      <div class="p-4">
-        <h1 class="text-2xl font-bold mb-4">ECG Test</h1>
-        <div class="mb-4">
-          <form phx-change="change_lead">
-            <.input
-              type="select"
-              name="lead"
-              value={@current_lead}
-              options={
-                Enum.with_index(@lead_names)
-                |> Enum.map(fn {name, index} -> {"Lead #{name}", index} end)
-              }
-            />
-          </form>
-        </div>
+      <div class="space-y-12">
+        <h1 class="text-2xl font-bold">ECG Test</h1>
+
+        <form phx-change="change_lead">
+          <.input
+            type="select"
+            name="lead"
+            value={@current_lead}
+            options={
+              Enum.with_index(@lead_names)
+              |> Enum.map(fn {name, index} -> {"Lead #{name}", index} end)
+            }
+          />
+        </form>
 
         <div id="ecg-playback" phx-hook="ECGPlayback" phx-update="ignore">
           <div data-ecg-chart></div>

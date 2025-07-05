@@ -19,6 +19,9 @@ const ECGPlayback = {
       timer: null,
     };
 
+    // Grid style options
+    this.gridStyle = "notebook"; // 'medical' or 'notebook'
+
     await this.initializeECGChart();
 
     // Handle server-pushed events
@@ -28,6 +31,10 @@ const ECGPlayback = {
 
     this.handleEvent("lead_changed", (payload) => {
       this.handleLeadChange(payload.lead);
+    });
+
+    this.handleEvent("grid_style_changed", (payload) => {
+      this.handleGridStyleChange(payload.grid_style);
     });
   },
 
@@ -72,27 +79,7 @@ const ECGPlayback = {
       .curve(d3.curveLinear);
 
     // Draw grid
-    const generateGridPath = (spacing) => {
-      const lines = [];
-      for (let x = 0; x <= CHART_WIDTH; x += spacing)
-        lines.push(`M${x},0L${x},${CHART_HEIGHT}`);
-      for (let y = 0; y <= CHART_HEIGHT; y += spacing)
-        lines.push(`M0,${y}L${CHART_WIDTH},${y}`);
-      return lines.join("");
-    };
-
-    this.svg
-      .append("path")
-      .attr("d", generateGridPath(PIXELS_PER_MM))
-      .attr("stroke", "#f9c4c4")
-      .attr("stroke-width", 0.5)
-      .attr("fill", "none");
-    this.svg
-      .append("path")
-      .attr("d", generateGridPath(PIXELS_PER_MM * 5))
-      .attr("stroke", "#f4a8a8")
-      .attr("stroke-width", 1)
-      .attr("fill", "none");
+    this.drawGrid();
 
     // Create ECG display group and paths
     this.ecgGroup = this.svg.append("g");
@@ -109,6 +96,79 @@ const ECGPlayback = {
       .attr("y2", CHART_HEIGHT)
       .attr("x1", 0)
       .attr("x2", 0);
+  },
+
+  // Draw grid based on current style
+  drawGrid() {
+    // Remove existing grid
+    this.svg.selectAll(".grid-line").remove();
+
+    if (this.gridStyle === "medical") {
+      this.drawMedicalGrid();
+    } else if (this.gridStyle === "notebook") {
+      this.drawNotebookGrid();
+    }
+  },
+
+  // Draw medical-style ECG grid (current implementation)
+  drawMedicalGrid() {
+    const generateGridPath = (spacing) => {
+      const lines = [];
+      for (let x = 0; x <= CHART_WIDTH; x += spacing)
+        lines.push(`M${x},0L${x},${CHART_HEIGHT}`);
+      for (let y = 0; y <= CHART_HEIGHT; y += spacing)
+        lines.push(`M0,${y}L${CHART_WIDTH},${y}`);
+      return lines.join("");
+    };
+
+    this.svg
+      .append("path")
+      .attr("class", "grid-line")
+      .attr("d", generateGridPath(PIXELS_PER_MM))
+      .attr("stroke", "#f9c4c4")
+      .attr("stroke-width", 0.5)
+      .attr("fill", "none");
+    this.svg
+      .append("path")
+      .attr("class", "grid-line")
+      .attr("d", generateGridPath(PIXELS_PER_MM * 5))
+      .attr("stroke", "#f4a8a8")
+      .attr("stroke-width", 1)
+      .attr("fill", "none");
+  },
+
+  // Draw simple notebook-style grid
+  drawNotebookGrid() {
+    // Use 5mm spacing for dots
+    const dotSpacing = 5 * PIXELS_PER_MM; // 5mm (20px)
+
+    // Create dots at grid intersections only
+    const dotsGroup = this.svg.append("g").attr("class", "grid-line");
+
+    for (let x = 5; x < CHART_WIDTH - 5; x += dotSpacing) {
+      for (let y = 5; y < CHART_HEIGHT - 5; y += dotSpacing) {
+        dotsGroup
+          .append("circle")
+          .attr("cx", x)
+          .attr("cy", y)
+          .attr("r", 1.2)
+          .attr("fill", "#d0d0d0");
+      }
+    }
+  },
+
+  // Handle grid style change
+  handleGridStyleChange(gridStyle) {
+    if (gridStyle === "medical" || gridStyle === "notebook") {
+      this.gridStyle = gridStyle;
+      this.drawGrid();
+    }
+  },
+
+  // Switch grid style programmatically
+  switchGridStyle(style) {
+    this.gridStyle = style;
+    this.drawGrid();
   },
 
   // Load ECG data from JSON file and convert to optimized format with data windowing
@@ -164,7 +224,6 @@ const ECGPlayback = {
       return [];
     }
   },
-
 
   // Switch to different ECG lead while preserving playback state
   switchLead(leadIndex) {
