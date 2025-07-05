@@ -154,8 +154,8 @@ const ECGPlayback = {
         for (let i = 0; i < data.signals.length; i++) {
           values[i] = data.signals[i][leadIndex] || 0;
         }
-        return { 
-          name: leadName, 
+        return {
+          name: leadName,
           times: timeArray,
           values: values,
           get data() {
@@ -165,12 +165,12 @@ const ECGPlayback = {
               for (let i = 0; i < this.times.length; i++) {
                 this._d3Data.push({
                   time: this.times[i],
-                  value: this.values[i]
+                  value: this.values[i],
                 });
               }
             }
             return this._d3Data;
-          }
+          },
         };
       });
 
@@ -216,7 +216,9 @@ const ECGPlayback = {
     } else {
       // When paused, redraw the current visible waveform for the new lead
       if (this.animationState.startTime && this.animationState.pausedTime) {
-        const elapsedSeconds = (this.animationState.pausedTime - this.animationState.startTime) / 1000;
+        const elapsedSeconds =
+          (this.animationState.pausedTime - this.animationState.startTime) /
+          1000;
         const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
         const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
         this.updateProgressiveWaveform(sweepProgress, currentCycle);
