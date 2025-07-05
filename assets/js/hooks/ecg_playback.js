@@ -17,6 +17,7 @@ const ECGPlayback = {
     this.animationId = null;
     this.visibleTimes = [];
     this.visibleValues = [];
+    this.gridType = "medical"; // "medical" or "simple"
 
     await this.initializeECGChart();
 
@@ -26,6 +27,10 @@ const ECGPlayback = {
 
     this.handleEvent("lead_changed", (payload) => {
       this.handleLeadChange(payload.lead);
+    });
+
+    this.handleEvent("grid_changed", (payload) => {
+      this.handleGridChange(payload.grid_type);
     });
   },
 
@@ -116,6 +121,13 @@ const ECGPlayback = {
       leadIndex < this.ecgLeadDatasets.length
     ) {
       this.switchLead(leadIndex);
+    }
+  },
+
+  handleGridChange(gridType) {
+    if (gridType === "medical" || gridType === "simple") {
+      this.gridType = gridType;
+      this.drawGrid();
     }
   },
 
@@ -244,6 +256,54 @@ const ECGPlayback = {
   // === Rendering Methods ===
   drawGrid() {
     this.context.clearRect(0, 0, CHART_WIDTH, CHART_HEIGHT);
+    
+    if (this.gridType === "medical") {
+      this.drawMedicalGrid();
+    } else {
+      this.drawSimpleGrid();
+    }
+  },
+
+  drawMedicalGrid() {
+    const smallSquareSize = PIXELS_PER_MM;
+    const largeSquareSize = 5 * PIXELS_PER_MM;
+    
+    // Fine grid lines (1mm squares)
+    this.context.strokeStyle = "#ff9999";
+    this.context.lineWidth = 0.5;
+    this.context.beginPath();
+    
+    for (let x = smallSquareSize; x < CHART_WIDTH; x += smallSquareSize) {
+      this.context.moveTo(x, 0);
+      this.context.lineTo(x, CHART_HEIGHT);
+    }
+    
+    for (let y = smallSquareSize; y < CHART_HEIGHT; y += smallSquareSize) {
+      this.context.moveTo(0, y);
+      this.context.lineTo(CHART_WIDTH, y);
+    }
+    
+    this.context.stroke();
+    
+    // Bold grid lines (5mm squares)
+    this.context.strokeStyle = "#ff6666";
+    this.context.lineWidth = 1;
+    this.context.beginPath();
+    
+    for (let x = largeSquareSize; x < CHART_WIDTH; x += largeSquareSize) {
+      this.context.moveTo(x, 0);
+      this.context.lineTo(x, CHART_HEIGHT);
+    }
+    
+    for (let y = largeSquareSize; y < CHART_HEIGHT; y += largeSquareSize) {
+      this.context.moveTo(0, y);
+      this.context.lineTo(CHART_WIDTH, y);
+    }
+    
+    this.context.stroke();
+  },
+
+  drawSimpleGrid() {
     const dotSpacing = 5 * PIXELS_PER_MM;
     this.context.fillStyle = "#d0d0d0";
 
