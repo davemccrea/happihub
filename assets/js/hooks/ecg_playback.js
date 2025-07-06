@@ -78,11 +78,14 @@ const ECGPlayback = {
     // Pre-allocate arrays for better performance
     this.singleLeadPoints = [];
     this.multiLeadPoints = [];
+    // Sweep mode variables
+    this.sweepPosition = 0;
+    this.sweepWidth = 20; // Width of sweep erase area in pixels
+    this.sweepWaveformData = null;
+    this.multiLeadSweepData = null;
     // Read initial settings from data attributes
     this.gridType = this.el.dataset.gridType || "medical";
     this.displayMode = this.el.dataset.displayMode || "single";
-    this.cursorVisible = this.el.dataset.cursorVisible === "true";
-    this.loopEnabled = this.el.dataset.loopEnabled === "true";
     this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
     this.leadHeight = CHART_HEIGHT; // Will be recalculated for multi-lead
     this.calculateMedicallyAccurateDimensions();
@@ -170,13 +173,7 @@ const ECGPlayback = {
       this.handleDisplayModeChange(payload.display_mode);
     });
 
-    this.handleEvent("cursor_visibility_changed", (payload) => {
-      this.handleCursorVisibilityChange(payload.cursor_visible);
-    });
 
-    this.handleEvent("loop_changed", (payload) => {
-      this.handleLoopChange(payload.loop_enabled);
-    });
   },
 
   destroyed() {
@@ -230,6 +227,7 @@ const ECGPlayback = {
     // Clean up pre-allocated arrays
     this.singleLeadPoints = null;
     this.multiLeadPoints = null;
+    this.sweepBuffer = null;
     this.context = null;
   },
 
@@ -280,7 +278,6 @@ const ECGPlayback = {
     this.colors = {
       // Waveform colors
       waveform: isDark ? "#ffffff" : "#000000",
-      cursor: isDark ? "#00ff00" : "#00ff00",
 
       // Grid colors for medical grid
       gridFine: isDark ? "#660000" : "#ff9999",
@@ -491,23 +488,7 @@ const ECGPlayback = {
     }
   },
 
-  handleCursorVisibilityChange(cursorVisible) {
-    this.cursorVisible = cursorVisible;
 
-    // If paused, redraw current state to show/hide cursor immediately
-    if (!this.isPlaying && this.startTime && this.pausedTime) {
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.updateWaveform(cursorProgress, currentCycle);
-      this.drawCursor(cursorProgress);
-    }
-  },
-
-  handleLoopChange(loopEnabled) {
-    this.loopEnabled = loopEnabled;
-  },
 
   // === Data Management Methods ===
   findDataIndexByTime(targetTime) {
@@ -613,87 +594,76 @@ const ECGPlayback = {
       currentCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
 
     if (elapsedTime >= this.totalDuration) {
-      if (this.loopEnabled) {
-        // Reset timing variables for seamless restart
-        this.startTime = Date.now();
-        this.currentCycle = 0;
-        this.visibleTimes = [];
-        this.visibleValues = [];
-        this.multiLeadVisibleData = null;
-
-        // Continue with the first frame of the new loop
-        elapsedTime = cursorProgress * this.widthSeconds;
-        currentCycle = 0;
-      } else {
-        // Only send playback_ended event when not looping
-        this.pushEvent("playback_ended", {});
-        this.stopAnimation();
-        this.resetPlayback();
-        return;
-      }
+      // Send playback_ended event and stop
+      this.pushEvent("playback_ended", {});
+      this.stopAnimation();
+      this.resetPlayback();
+      return;
     }
 
-    const currentTime = cursorProgress * this.widthSeconds;
-    const cycleStartTime = currentCycle * this.widthSeconds;
-    const cycleEndTime = cycleStartTime + currentTime;
+    // Calculate sweep position based on elapsed time
+    this.sweepPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
+    
+    // Wrap sweep position when it exceeds chart width
+    this.sweepPosition = this.sweepPosition % this.chartWidth;
+    
+    // Calculate the time window to display (one screen width of data)
+    const currentScreenStartTime = Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
+    
+    // Get current data time
+    const currentDataTime = elapsedTime;
 
     if (this.displayMode === "single") {
-      // Use binary search to find exact data range - much more efficient!
-      const startIndex = this.findDataIndexByTime(cycleStartTime);
-      const endIndex = this.findDataIndexByTime(cycleEndTime);
-
-      // Extract only the data we need using slice (more efficient)
-      const startIdx = Math.max(0, startIndex);
-      const endIdx = Math.min(this.currentLeadData.times.length - 1, endIndex);
-
-      // Use slice for better performance than individual pushes
-      const slicedTimes = this.currentLeadData.times.slice(
-        startIdx,
-        endIdx + 1
-      );
-      const slicedValues = this.currentLeadData.values.slice(
-        startIdx,
-        endIdx + 1
-      );
-
-      this.visibleTimes = slicedTimes.map((time) => time - cycleStartTime);
-      this.visibleValues = slicedValues;
+      // Get data for the current sweep window
+      const startIndex = this.findDataIndexByTime(currentScreenStartTime);
+      const endIndex = this.findDataIndexByTime(currentDataTime);
+      
+      if (endIndex >= startIndex && startIndex < this.currentLeadData.times.length) {
+        const times = this.currentLeadData.times.slice(startIndex, endIndex + 1);
+        const values = this.currentLeadData.values.slice(startIndex, endIndex + 1);
+        
+        this.sweepWaveformData = {
+          times: times.map(t => (t - currentScreenStartTime)),
+          values: values
+        };
+      } else {
+        this.sweepWaveformData = {
+          times: [],
+          values: []
+        };
+      }
     } else {
-      // Multi-lead mode: prepare data for all leads (optimized)
-      this.multiLeadVisibleData = [];
-
-      // Since all leads have the same timing structure, calculate indices once
-      const firstLead = this.ecgLeadDatasets[0];
-      const startIndex = this.findDataIndexByTimeForLead(
-        firstLead,
-        cycleStartTime
-      );
-      const endIndex = this.findDataIndexByTimeForLead(firstLead, cycleEndTime);
-      const startIdx = Math.max(0, startIndex);
-      const endIdx = Math.min(firstLead.times.length - 1, endIndex);
-
-      // Pre-calculate times once (all leads share same timing)
-      const sharedTimes = firstLead.times
-        .slice(startIdx, endIdx + 1)
-        .map((time) => time - cycleStartTime);
-
-      for (
-        let leadIndex = 0;
-        leadIndex < this.ecgLeadDatasets.length;
-        leadIndex++
-      ) {
+      // Multi-lead mode: each column shows DEFAULT_WIDTH_SECONDS worth of data
+      // Calculate time window for multi-lead columns
+      const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
+      const columnDataTime = elapsedTime;
+      
+      this.multiLeadSweepData = [];
+      
+      for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
         const leadData = this.ecgLeadDatasets[leadIndex];
-        const leadVisibleValues = leadData.values.slice(startIdx, endIdx + 1);
-
-        this.multiLeadVisibleData.push({
-          times: sharedTimes,
-          values: leadVisibleValues,
-          name: this.leadNames[leadIndex],
-        });
+        
+        // Get data from start of current column cycle to current position
+        const columnCycleStart = Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
+        const startDataTime = columnCycleStart;
+        
+        const startIndex = this.findDataIndexByTimeForLead(leadData, startDataTime);
+        const endIndex = this.findDataIndexByTimeForLead(leadData, columnDataTime);
+        
+        if (endIndex >= startIndex && startIndex < leadData.times.length) {
+          const times = leadData.times.slice(startIndex, endIndex + 1);
+          const values = leadData.values.slice(startIndex, endIndex + 1);
+          
+          this.multiLeadSweepData.push({
+            leadIndex,
+            times: times.map(t => (t - startDataTime)),
+            values: values
+          });
+        }
       }
     }
 
-    this.drawWaveform();
+    this.drawSweepWaveform();
   },
 
   // === Animation Control Methods ===
@@ -701,6 +671,7 @@ const ECGPlayback = {
     this.startTime = Date.now();
     this.pausedTime = 0;
     this.currentCycle = 0;
+    this.sweepPosition = 0;
 
     this.visibleTimes = [];
     this.visibleValues = [];
@@ -738,6 +709,7 @@ const ECGPlayback = {
     this.startTime = null;
     this.pausedTime = 0;
     this.currentCycle = 0;
+    this.sweepPosition = 0;
 
     this.visibleTimes = [];
     this.visibleValues = [];
@@ -771,7 +743,6 @@ const ECGPlayback = {
       }
 
       this.updateWaveform(cursorProgress, currentCycle);
-      this.drawCursor(cursorProgress);
 
       this.animationId = requestAnimationFrame(animate);
     };
@@ -885,39 +856,153 @@ const ECGPlayback = {
   },
 
   clearWaveform() {
-    this.clearWaveformOnly();
+    // For sweep mode, clear entire canvas and redraw grid
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.canvas.height / devicePixelRatio;
+    this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
+    this.drawGridOnly();
   },
 
-  drawWaveform() {
-    // Only clear the waveform area, not the entire canvas
-    this.clearWaveformOnly();
-
+  drawSweepWaveform() {
     if (this.displayMode === "single") {
-      this.drawSingleLeadWaveform();
+      this.drawSingleLeadSweep();
     } else {
-      this.drawMultiLeadWaveform();
+      this.drawMultiLeadSweep();
+    }
+  },
+
+  calculateYPosition(value) {
+    const yScale = CHART_HEIGHT / (this.yMax - this.yMin);
+    return CHART_HEIGHT - (value - this.yMin) * yScale;
+  },
+
+  calculateYPositionForLead(value) {
+    const yScale = this.leadHeight / (this.yMax - this.yMin);
+    return this.leadHeight - (value - this.yMin) * yScale;
+  },
+
+  clearSweepArea(x, width) {
+    // Clear a vertical strip and redraw grid in that area
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.canvas.height / devicePixelRatio;
+    
+    // Clear the strip
+    this.context.clearRect(x, 0, width, canvasHeight);
+    
+    // Redraw grid in the cleared area
+    this.context.save();
+    this.context.beginPath();
+    this.context.rect(x, 0, width, canvasHeight);
+    this.context.clip();
+    
+    if (this.displayMode === "single") {
+      this.drawGridForLeadAtPosition(0, 0, this.chartWidth);
+      this.drawLeadLabel(this.currentLead, 0, 0);
+    } else {
+      for (let i = 0; i < this.leadNames.length; i++) {
+        const { xOffset, yOffset, columnWidth } = this.getLeadPosition(i);
+        this.drawGridForLeadAtPosition(xOffset, yOffset, columnWidth);
+        this.drawLeadLabel(i, xOffset, yOffset);
+      }
+    }
+    
+    this.context.restore();
+  },
+
+  drawSingleLeadSweep() {
+    if (!this.sweepWaveformData || this.sweepWaveformData.times.length === 0) return;
+    
+    // Clear sweep area ahead of current position
+    const sweepClearWidth = this.sweepWidth || 20;
+    const clearX = Math.max(0, this.sweepPosition - sweepClearWidth/2);
+    const clearWidth = Math.min(sweepClearWidth, this.chartWidth - clearX);
+    
+    this.clearSweepArea(clearX, clearWidth);
+    
+    // Draw the accumulated waveform data
+    this.context.strokeStyle = this.colors.waveform;
+    this.context.lineWidth = WAVEFORM_LINE_WIDTH;
+    this.context.beginPath();
+    
+    // Pre-calculate constants
+    const xScale = this.chartWidth / this.widthSeconds;
+    const yScale = CHART_HEIGHT / (this.yMax - this.yMin);
+    const yOffset = CHART_HEIGHT;
+    
+    // Draw the waveform up to the current sweep position
+    let hasMovedTo = false;
+    for (let i = 0; i < this.sweepWaveformData.times.length; i++) {
+      const x = this.sweepWaveformData.times[i] * xScale;
+      const y = yOffset - (this.sweepWaveformData.values[i] - this.yMin) * yScale;
+      
+      if (x <= this.sweepPosition) {
+        if (!hasMovedTo) {
+          this.context.moveTo(x, y);
+          hasMovedTo = true;
+        } else {
+          this.context.lineTo(x, y);
+        }
+      }
+    }
+    
+    if (hasMovedTo) {
+      this.context.stroke();
+    }
+  },
+
+  drawMultiLeadSweep() {
+    if (!this.multiLeadSweepData || this.multiLeadSweepData.length === 0) return;
+    
+    this.context.strokeStyle = this.colors.waveform;
+    this.context.lineWidth = WAVEFORM_LINE_WIDTH;
+    
+    for (const leadData of this.multiLeadSweepData) {
+      const { xOffset, yOffset, columnWidth } = this.getLeadPosition(leadData.leadIndex);
+      // Calculate local sweep position based on column time cycle
+      const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
+      const columnProgress = (this.sweepPosition / this.chartWidth) * (this.widthSeconds / columnTimeSpan);
+      const localSweepPosition = (columnProgress % 1) * columnWidth;
+      
+      // Clear sweep area for this lead - use thinner width for multi-lead mode
+      const sweepClearWidth = 8; // Thinner gap for multi-lead mode
+      const clearX = Math.max(xOffset, xOffset + localSweepPosition - sweepClearWidth/2);
+      const clearWidth = Math.min(sweepClearWidth, xOffset + columnWidth - clearX);
+      
+      if (clearWidth > 0) {
+        this.clearSweepArea(clearX, clearWidth);
+      }
+      
+      // Draw the accumulated waveform data for this lead
+      this.context.beginPath();
+      
+      const xScale = columnWidth / DEFAULT_WIDTH_SECONDS;
+      const yScale = this.leadHeight / (this.yMax - this.yMin);
+      
+      let hasMovedTo = false;
+      for (let i = 0; i < leadData.times.length; i++) {
+        const x = xOffset + leadData.times[i] * xScale;
+        const y = yOffset + this.leadHeight - (leadData.values[i] - this.yMin) * yScale;
+        
+        if (x <= xOffset + localSweepPosition) {
+          if (!hasMovedTo) {
+            this.context.moveTo(x, y);
+            hasMovedTo = true;
+          } else {
+            this.context.lineTo(x, y);
+          }
+        }
+      }
+      
+      if (hasMovedTo) {
+        this.context.stroke();
+      }
     }
   },
 
   clearWaveformOnly() {
-    // Create a temporary canvas to preserve the grid
-    if (!this.gridCanvas) {
-      this.cacheGrid();
-    }
-
-    // Clear entire canvas
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    const canvasHeight = this.canvas.height / devicePixelRatio;
-    this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
-
-    // Restore grid from cache at proper scale
-    this.context.drawImage(
-      this.gridCanvas,
-      0,
-      0,
-      this.chartWidth,
-      canvasHeight
-    );
+    // In sweep mode, we don't clear the entire waveform
+    // This method is kept for compatibility but does nothing
+    // All clearing is handled by clearSweepArea
   },
 
   cacheGrid() {
@@ -1024,7 +1109,7 @@ const ECGPlayback = {
     ) {
       const leadData = this.multiLeadVisibleData[leadIndex];
       const { xOffset, yOffset, columnWidth } = this.getLeadPosition(leadIndex);
-      const xScale = columnWidth / DEFAULT_WIDTH_SECONDS;
+      const xScale = columnWidth / this.widthSeconds;
       const pointCount = leadData.times.length;
 
       if (pointCount > 0) {
@@ -1062,37 +1147,6 @@ const ECGPlayback = {
     }
   },
 
-  drawCursor(cursorProgress) {
-    if (!this.cursorVisible) return;
-
-    this.context.strokeStyle = this.colors.cursor;
-    this.context.lineWidth = 2;
-    const canvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
-
-    if (this.displayMode === "single") {
-      // Single lead mode - draw one cursor across full width
-      const cursorPosition = cursorProgress * this.chartWidth;
-      this.context.beginPath();
-      this.context.moveTo(cursorPosition, 0);
-      this.context.lineTo(cursorPosition, canvasHeight);
-      this.context.stroke();
-    } else {
-      // Multi-lead mode - draw cursor for each column
-      const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
-      const columnWidth =
-        (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
-
-      // Draw cursor for each column
-      for (let col = 0; col < COLUMNS_PER_DISPLAY; col++) {
-        const cursorPosition =
-          col * (columnWidth + COLUMN_PADDING) + cursorProgress * columnWidth;
-        this.context.beginPath();
-        this.context.moveTo(cursorPosition, 0);
-        this.context.lineTo(cursorPosition, canvasHeight);
-        this.context.stroke();
-      }
-    }
-  },
 };
 
 export default ECGPlayback;

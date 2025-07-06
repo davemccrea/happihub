@@ -9,8 +9,6 @@ defmodule AstrupWeb.ECGLive do
        elapsed_time: 0,
        display_mode: "single",
        grid_type: "simple",
-       cursor_visible: false,
-       loop_enabled: true,
        lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
      )}
   end
@@ -61,23 +59,7 @@ defmodule AstrupWeb.ECGLive do
             />
           </form>
 
-          <form phx-change="change_cursor_visibility">
-            <.input
-              type="checkbox"
-              name="cursor_visible"
-              value={@cursor_visible}
-              label="Show Cursor"
-            />
-          </form>
 
-          <form phx-change="change_loop_enabled">
-            <.input
-              type="checkbox"
-              name="loop_enabled"
-              value={@loop_enabled}
-              label="Enable Loop"
-            />
-          </form>
         </div>
 
         <div class="space-y-4">
@@ -88,8 +70,6 @@ defmodule AstrupWeb.ECGLive do
             class="w-full"
             data-grid-type={@grid_type}
             data-display-mode={@display_mode}
-            data-cursor-visible={to_string(@cursor_visible)}
-            data-loop-enabled={to_string(@loop_enabled)}
             data-current-lead={@current_lead}
             data-is-playing={to_string(@is_playing)}
           >
@@ -186,39 +166,5 @@ defmodule AstrupWeb.ECGLive do
     end
   end
 
-  def handle_event("change_cursor_visibility", %{"cursor_visible" => "true"}, socket) do
-    socket = 
-      socket
-      |> assign(cursor_visible: true)
-      |> push_event("cursor_visibility_changed", %{cursor_visible: true})
-    
-    {:noreply, socket}
-  end
 
-  def handle_event("change_cursor_visibility", _params, socket) do
-    socket = 
-      socket
-      |> assign(cursor_visible: false)
-      |> push_event("cursor_visibility_changed", %{cursor_visible: false})
-    
-    {:noreply, socket}
-  end
-
-  def handle_event("change_loop_enabled", %{"loop_enabled" => "true"}, socket) do
-    socket = 
-      socket
-      |> assign(loop_enabled: true)
-      |> push_event("loop_changed", %{loop_enabled: true})
-    
-    {:noreply, socket}
-  end
-
-  def handle_event("change_loop_enabled", _params, socket) do
-    socket = 
-      socket
-      |> assign(loop_enabled: false)
-      |> push_event("loop_changed", %{loop_enabled: false})
-    
-    {:noreply, socket}
-  end
 end
