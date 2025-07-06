@@ -72,6 +72,9 @@ const ECGPlayback = {
     this.animationId = null;
     this.visibleTimes = [];
     this.visibleValues = [];
+    // Pre-allocate arrays for better performance
+    this.singleLeadPoints = [];
+    this.multiLeadPoints = [];
     // Read initial settings from data attributes
     this.gridType = this.el.dataset.gridType || "medical";
     this.displayMode = this.el.dataset.displayMode || "single";
@@ -154,12 +157,15 @@ const ECGPlayback = {
     }
     if (this.canvas) {
       this.canvas.remove();
+      this.canvas = null;
     }
     if (this.resizeHandler) {
       window.removeEventListener("resize", this.resizeHandler);
+      this.resizeHandler = null;
     }
     if (this.themeObserver) {
       this.themeObserver.disconnect();
+      this.themeObserver = null;
     }
 
     this.ecgLeadDatasets = null;
@@ -170,10 +176,16 @@ const ECGPlayback = {
     this.multiLeadVisibleData = null;
     this.eventHandlers = null;
 
-    // Clean up grid cache
+    // Clean up grid cache properly
     if (this.gridCanvas) {
+      this.gridCanvas.remove();
       this.gridCanvas = null;
     }
+
+    // Clean up pre-allocated arrays
+    this.singleLeadPoints = null;
+    this.multiLeadPoints = null;
+    this.context = null;
   },
 
   // === Layout Helper Methods ===
@@ -306,7 +318,7 @@ const ECGPlayback = {
   },
 
   async loadECGData() {
-    const response = await fetch("/assets/json/ptb-xl/14254_hr.json");
+    const response = await fetch("/assets/json/ptb-xl/03024_hr.json");
     if (!response.ok) {
       throw new Error(`Failed to load ECG data: ${response.status}`);
     }
@@ -631,13 +643,15 @@ const ECGPlayback = {
   },
 
   executeAnimationLoop() {
+    // Safety check to prevent multiple animation loops
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
 
     const animate = () => {
-      if (!this.isPlaying) {
+      // Additional safety check in case cleanup was called
+      if (!this.isPlaying || !this.canvas) {
         this.stopAnimation();
         return;
       }
@@ -861,20 +875,28 @@ const ECGPlayback = {
       const yScale = CHART_HEIGHT / (this.yMax - this.yMin);
       const yOffset = CHART_HEIGHT;
 
+      // Reuse pre-allocated array to reduce garbage collection
+      const requiredLength = pointCount * 2;
+      if (this.singleLeadPoints.length < requiredLength) {
+        this.singleLeadPoints.length = requiredLength;
+      }
+
       // Transform all coordinates at once
-      const points = [];
       for (let i = 0; i < pointCount; i++) {
-        points.push(
-          this.visibleTimes[i] * xScale,
-          yOffset - (this.visibleValues[i] - this.yMin) * yScale
-        );
+        const idx = i * 2;
+        this.singleLeadPoints[idx] = this.visibleTimes[i] * xScale;
+        this.singleLeadPoints[idx + 1] =
+          yOffset - (this.visibleValues[i] - this.yMin) * yScale;
       }
 
       // Single canvas operation with batched coordinates
-      if (points.length >= 2) {
-        this.context.moveTo(points[0], points[1]);
-        for (let i = 2; i < points.length; i += 2) {
-          this.context.lineTo(points[i], points[i + 1]);
+      if (this.singleLeadPoints.length >= 2) {
+        this.context.moveTo(this.singleLeadPoints[0], this.singleLeadPoints[1]);
+        for (let i = 2; i < requiredLength; i += 2) {
+          this.context.lineTo(
+            this.singleLeadPoints[i],
+            this.singleLeadPoints[i + 1]
+          );
         }
       }
 
@@ -904,22 +926,30 @@ const ECGPlayback = {
       if (pointCount > 0) {
         this.context.beginPath();
 
+        // Reuse pre-allocated array to reduce garbage collection
+        const requiredLength = pointCount * 2;
+        if (this.multiLeadPoints.length < requiredLength) {
+          this.multiLeadPoints.length = requiredLength;
+        }
+
         // Transform all coordinates at once for this lead
-        const points = [];
         for (let i = 0; i < pointCount; i++) {
-          points.push(
-            xOffset + leadData.times[i] * xScale,
+          const idx = i * 2;
+          this.multiLeadPoints[idx] = xOffset + leadData.times[i] * xScale;
+          this.multiLeadPoints[idx + 1] =
             yOffset +
-              this.leadHeight -
-              (leadData.values[i] - this.yMin) * yScale
-          );
+            this.leadHeight -
+            (leadData.values[i] - this.yMin) * yScale;
         }
 
         // Single canvas operation with batched coordinates
-        if (points.length >= 2) {
-          this.context.moveTo(points[0], points[1]);
-          for (let i = 2; i < points.length; i += 2) {
-            this.context.lineTo(points[i], points[i + 1]);
+        if (this.multiLeadPoints.length >= 2) {
+          this.context.moveTo(this.multiLeadPoints[0], this.multiLeadPoints[1]);
+          for (let i = 2; i < requiredLength; i += 2) {
+            this.context.lineTo(
+              this.multiLeadPoints[i],
+              this.multiLeadPoints[i + 1]
+            );
           }
         }
 
