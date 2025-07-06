@@ -439,12 +439,10 @@ const ECGPlayback = {
   },
 
   updateWaveform(cursorProgress, currentCycle) {
-    const elapsedTime =
+    let elapsedTime =
       currentCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
 
     if (elapsedTime >= this.totalDuration) {
-      this.pushEvent("playback_ended", {});
-
       if (this.loopEnabled) {
         // Reset timing variables for seamless restart
         this.startTime = Date.now();
@@ -452,12 +450,17 @@ const ECGPlayback = {
         this.visibleTimes = [];
         this.visibleValues = [];
         this.multiLeadVisibleData = null;
+        
+        // Continue with the first frame of the new loop
+        elapsedTime = cursorProgress * this.widthSeconds;
+        currentCycle = 0;
       } else {
-        // Stop playback when loop is disabled
+        // Only send playback_ended event when not looping
+        this.pushEvent("playback_ended", {});
         this.stopAnimation();
         this.resetPlayback();
+        return;
       }
-      return;
     }
 
     const currentTime = cursorProgress * this.widthSeconds;
