@@ -287,27 +287,53 @@ const ECGPlayback = {
   },
 
   async loadECGData() {
-    const response = await fetch("/assets/json/10160-optimized.json");
+    const response = await fetch("/assets/json/10160.json");
     if (!response.ok) {
       throw new Error(`Failed to load ECG data: ${response.status}`);
     }
 
     const data = await response.json();
 
-    if (!data.metadata || !data.leadNames || !data.leads) {
-      throw new Error("Invalid optimized ECG data format");
+    if (!data.fs || !data.sig_names || !data.signals) {
+      throw new Error("Invalid ECG data format");
     }
 
-    this.samplingRate = data.metadata.samplingRate;
-    this.leadNames = data.leadNames;
-    // Keep the currentLead from data attributes, don't reset to 0
-    this.totalDuration = data.metadata.totalDuration;
+    this.samplingRate = data.fs;
+    this.leadNames = data.sig_names;
+    this.totalDuration = data.signals.length / data.fs;
 
-    this.ecgLeadDatasets = data.leads;
+    // Convert original format to per-lead data structure
+    this.ecgLeadDatasets = [];
+
+    // Find min/max values across all leads for consistent scaling
+    let globalMin = Infinity;
+    let globalMax = -Infinity;
+
+    for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
+      const times = [];
+      const values = [];
+
+      for (
+        let sampleIndex = 0;
+        sampleIndex < data.signals.length;
+        sampleIndex++
+      ) {
+        const time = sampleIndex / this.samplingRate;
+        const value = data.signals[sampleIndex][leadIndex];
+
+        times.push(time);
+        values.push(value);
+
+        if (value < globalMin) globalMin = value;
+        if (value > globalMax) globalMax = value;
+      }
+
+      this.ecgLeadDatasets.push({ times, values });
+    }
+
+    this.yMin = globalMin;
+    this.yMax = globalMax;
     this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
-    const globalRange = data.globalValueRange;
-    this.yMin = globalRange.min;
-    this.yMax = globalRange.max;
 
     return this.currentLeadData;
   },
