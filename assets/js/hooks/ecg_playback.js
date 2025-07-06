@@ -1,17 +1,28 @@
+// ==================
+// RENDERING CONSTANTS
+// ==================
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 4;
-const DEFAULT_WIDTH_SECONDS = 2.5;
 const HEIGHT_MILLIVOLTS = 2.5;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
+const WAVEFORM_LINE_WIDTH = 1.25;
 const DOT_RADIUS = 1.2;
+
+// ================
+// LAYOUT CONSTANTS
+// ================
+const DEFAULT_WIDTH_SECONDS = 2.5;
 const CONTAINER_PADDING = 40;
-const MULTI_LEAD_HEIGHT_SCALE = 1;
 const COLUMNS_PER_DISPLAY = 4;
 const ROWS_PER_DISPLAY = 3;
 const COLUMN_PADDING = 0;
 const ROW_PADDING = 0;
-const WAVEFORM_LINE_WIDTH = 1.25;
+const MULTI_LEAD_HEIGHT_SCALE = 1;
+
+// ===================
+// ANIMATION CONSTANTS
+// ===================
 const SINGLE_LEAD_SWEEP_WIDTH = 20;
 const MULTI_LEAD_SWEEP_WIDTH = 8;
 
@@ -19,23 +30,9 @@ const ECGPlayback = {
   // ==========================
   // INITIALIZATION & LIFECYCLE
   // ==========================
-  
+
   async mounted() {
-    this.isPlaying = this.el.dataset.isPlaying === "true";
-    this.startTime = null;
-    this.pausedTime = 0;
-    this.currentCycle = 0;
-    this.animationId = null;
-    this.visibleTimes = [];
-    this.visibleValues = [];
-    this.sweepPosition = 0;
-    this.sweepWidth = SINGLE_LEAD_SWEEP_WIDTH;
-    this.sweepWaveformData = null;
-    this.multiLeadSweepData = null;
-    this.gridType = this.el.dataset.gridType || "medical";
-    this.displayMode = this.el.dataset.displayMode || "single";
-    this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
-    this.leadHeight = CHART_HEIGHT;
+    this.initializeState();
     this.calculateMedicallyAccurateDimensions();
 
     this.updateThemeColors();
@@ -53,13 +50,13 @@ const ECGPlayback = {
           mutation.attributeName === "data-theme"
         ) {
           this.updateThemeColors();
-          this.drawGridOnly();
+          this.renderGridBackground();
           if (!this.isPlaying && this.startTime && this.pausedTime) {
             const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
             const cursorProgress =
               (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-            const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-            this.updateWaveform(cursorProgress, currentCycle);
+            const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+            this.processWaveformUpdate(cursorProgress, animationCycle);
           }
         }
       });
@@ -152,9 +149,9 @@ const ECGPlayback = {
     this.ecgLeadDatasets = null;
     this.currentLeadData = null;
     this.leadNames = null;
-    this.visibleTimes = [];
-    this.visibleValues = [];
-    this.multiLeadVisibleData = null;
+    this.screenVisibleTimes = [];
+    this.screenVisibleValues = [];
+    this.allLeadsVisibleData = null;
     this.eventHandlers = null;
 
     if (this.gridCanvas) {
@@ -166,10 +163,32 @@ const ECGPlayback = {
     this.context = null;
   },
 
+  // =================
+  // STATE MANAGEMENT
+  // =================
+
+  initializeState() {
+    this.isPlaying = this.el.dataset.isPlaying === "true";
+    this.startTime = null;
+    this.pausedTime = 0;
+    this.animationCycle = 0;
+    this.animationId = null;
+    this.screenVisibleTimes = [];
+    this.screenVisibleValues = [];
+    this.sweepPosition = 0;
+    this.sweepWidth = SINGLE_LEAD_SWEEP_WIDTH;
+    this.activeSweepData = null;
+    this.allLeadsSweepData = null;
+    this.gridType = this.el.dataset.gridType || "medical";
+    this.displayMode = this.el.dataset.displayMode || "single";
+    this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
+    this.leadHeight = CHART_HEIGHT;
+  },
+
   // =========================
   // LEAD POSITIONING & LAYOUT
   // =========================
-  
+
   getLeadColumnAndRow(leadIndex) {
     const leadPositions = [
       { column: 0, row: 0 },
@@ -204,7 +223,7 @@ const ECGPlayback = {
   // =============================
   // THEME & VISUAL CONFIGURATION
   // =============================
-  
+
   updateThemeColors() {
     const theme =
       document.documentElement.getAttribute("data-theme") || "light";
@@ -219,95 +238,17 @@ const ECGPlayback = {
     };
   },
 
-  // ===================
-  // ECG DATA MANAGEMENT
-  // ===================
-  
+  // ========================
+  // DATA LOADING & SETUP
+  // ========================
+
   async initializeECGChart() {
     this.currentLeadData = await this.loadECGData();
     if (!this.widthSeconds) {
       this.calculateMedicallyAccurateDimensions();
     }
-    this.updateCanvasSize();
-    this.drawGridOnly();
-  },
-
-  // ===================
-  // CANVAS & DIMENSIONS
-  // ===================
-  
-  calculateMedicallyAccurateDimensions() {
-    const container = this.el.querySelector("[data-ecg-chart]");
-    if (!container) {
-      this.chartWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
-      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
-      return;
-    }
-
-    const containerWidth = container.offsetWidth - CONTAINER_PADDING;
-    const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
-
-    if (containerWidth < minWidth) {
-      this.chartWidth = minWidth;
-      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
-    } else {
-      this.widthSeconds = containerWidth / (MM_PER_SECOND * PIXELS_PER_MM);
-      this.chartWidth = this.widthSeconds * MM_PER_SECOND * PIXELS_PER_MM;
-    }
-  },
-
-  handleResize() {
-    const wasPlaying = this.isPlaying;
-    if (wasPlaying) this.stopAnimation();
-
-    this.gridCanvas = null;
-    this.updateCanvasSize();
-    this.drawGridOnly();
-
-    if (!wasPlaying && this.startTime && this.pausedTime) {
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.updateWaveform(cursorProgress, currentCycle);
-    }
-
-    if (wasPlaying) {
-      this.isPlaying = true;
-      this.executeAnimationLoop();
-    }
-  },
-
-  updateCanvasSize() {
-    if (this.canvas) {
-      this.canvas.remove();
-    }
-
-    const canvasHeight =
-      this.displayMode === "multi"
-        ? ROWS_PER_DISPLAY * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE) +
-          (ROWS_PER_DISPLAY - 1) * ROW_PADDING
-        : CHART_HEIGHT;
-
-    this.leadHeight =
-      this.displayMode === "multi"
-        ? CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE
-        : CHART_HEIGHT;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = this.chartWidth;
-    canvas.height = canvasHeight;
-    this.el.querySelector("[data-ecg-chart]").appendChild(canvas);
-    this.canvas = canvas;
-
-    this.context = canvas.getContext("2d");
-
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    canvas.width = this.chartWidth * devicePixelRatio;
-    canvas.height = canvasHeight * devicePixelRatio;
-    canvas.style.width = this.chartWidth + "px";
-    canvas.style.height = canvasHeight + "px";
-    this.context.scale(devicePixelRatio, devicePixelRatio);
+    this.recreateCanvas();
+    this.renderGridBackground();
   },
 
   async loadECGData() {
@@ -360,10 +301,88 @@ const ECGPlayback = {
     return this.currentLeadData;
   },
 
+  // ===================
+  // CANVAS & DIMENSIONS
+  // ===================
+
+  calculateMedicallyAccurateDimensions() {
+    const container = this.el.querySelector("[data-ecg-chart]");
+    if (!container) {
+      this.chartWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
+      return;
+    }
+
+    const containerWidth = container.offsetWidth - CONTAINER_PADDING;
+    const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
+
+    if (containerWidth < minWidth) {
+      this.chartWidth = minWidth;
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
+    } else {
+      this.widthSeconds = containerWidth / (MM_PER_SECOND * PIXELS_PER_MM);
+      this.chartWidth = this.widthSeconds * MM_PER_SECOND * PIXELS_PER_MM;
+    }
+  },
+
+  recreateCanvas() {
+    if (this.canvas) {
+      this.canvas.remove();
+    }
+
+    const canvasHeight =
+      this.displayMode === "multi"
+        ? ROWS_PER_DISPLAY * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE) +
+          (ROWS_PER_DISPLAY - 1) * ROW_PADDING
+        : CHART_HEIGHT;
+
+    this.leadHeight =
+      this.displayMode === "multi"
+        ? CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE
+        : CHART_HEIGHT;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = this.chartWidth;
+    canvas.height = canvasHeight;
+    this.el.querySelector("[data-ecg-chart]").appendChild(canvas);
+    this.canvas = canvas;
+
+    this.context = canvas.getContext("2d");
+
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    canvas.width = this.chartWidth * devicePixelRatio;
+    canvas.height = canvasHeight * devicePixelRatio;
+    canvas.style.width = this.chartWidth + "px";
+    canvas.style.height = canvasHeight + "px";
+    this.context.scale(devicePixelRatio, devicePixelRatio);
+  },
+
   // ==============
   // EVENT HANDLERS
   // ==============
-  
+
+  handleResize() {
+    const wasPlaying = this.isPlaying;
+    if (wasPlaying) this.stopAnimation();
+
+    this.gridCanvas = null;
+    this.recreateCanvas();
+    this.renderGridBackground();
+
+    if (!wasPlaying && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.processWaveformUpdate(cursorProgress, animationCycle);
+    }
+
+    if (wasPlaying) {
+      this.isPlaying = true;
+      this.startAnimationLoop();
+    }
+  },
+
   handlePlaybackChange(isPlaying) {
     this.isPlaying = isPlaying;
     if (isPlaying) {
@@ -387,7 +406,7 @@ const ECGPlayback = {
   handleGridChange(gridType) {
     if (gridType === "medical" || gridType === "simple") {
       this.gridType = gridType;
-      this.drawGridOnly();
+      this.renderGridBackground();
     }
   },
 
@@ -398,28 +417,28 @@ const ECGPlayback = {
 
       this.displayMode = displayMode;
       this.gridCanvas = null;
-      this.updateCanvasSize();
-      this.drawGridOnly();
+      this.recreateCanvas();
+      this.renderGridBackground();
 
       if (!wasPlaying && this.startTime && this.pausedTime) {
         const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
         const cursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-        const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.updateWaveform(cursorProgress, currentCycle);
+        const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+        this.processWaveformUpdate(cursorProgress, animationCycle);
       }
 
       if (wasPlaying) {
         this.isPlaying = true;
-        this.executeAnimationLoop();
+        this.startAnimationLoop();
       }
     }
   },
 
-  // ======================
-  // DATA INDEXING & SEARCH
-  // ======================
-  
+  // =================
+  // UTILITY FUNCTIONS
+  // =================
+
   findDataIndexByTime(targetTime) {
     return this.findDataIndexByTimeForLead(this.currentLeadData, targetTime);
   },
@@ -451,7 +470,7 @@ const ECGPlayback = {
   // ==============
   // LEAD SWITCHING
   // ==============
-  
+
   switchLead(leadIndex) {
     const wasPlaying = this.isPlaying;
     if (wasPlaying) this.stopAnimation();
@@ -460,19 +479,19 @@ const ECGPlayback = {
     this.currentLeadData = this.ecgLeadDatasets[leadIndex];
 
     if (this.displayMode === "single") {
-      this.drawGridOnly();
+      this.renderGridBackground();
     }
 
     if (wasPlaying) {
       this.isPlaying = true;
-      this.executeAnimationLoop();
+      this.startAnimationLoop();
     } else {
       if (this.startTime && this.pausedTime) {
         const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
         const cursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-        const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.updateWaveform(cursorProgress, currentCycle);
+        const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+        this.processWaveformUpdate(cursorProgress, animationCycle);
       } else {
         this.clearWaveform();
       }
@@ -504,7 +523,7 @@ const ECGPlayback = {
   // ================
   // PLAYBACK CONTROL
   // ================
-  
+
   togglePlayback() {
     const newPlayingState = !this.isPlaying;
     this.isPlaying = newPlayingState;
@@ -518,13 +537,13 @@ const ECGPlayback = {
     }
   },
 
-  // =================================
-  // WAVEFORM UPDATE & DATA PROCESSING
-  // =================================
-  
-  updateWaveform(cursorProgress, currentCycle) {
+  // =====================
+  // DATA TRANSFORMATION
+  // =====================
+
+  processWaveformUpdate(cursorProgress, animationCycle) {
     let elapsedTime =
-      currentCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
+      animationCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
 
     if (elapsedTime >= this.totalDuration) {
       this.pushEvent("playback_ended", {});
@@ -533,60 +552,57 @@ const ECGPlayback = {
       return;
     }
 
-    this.updateSweepPosition(elapsedTime);
-    
+    this.calculateSweepPosition(elapsedTime);
+
     if (this.displayMode === "single") {
-      this.updateSingleLeadWaveform(elapsedTime);
+      this.prepareSingleLeadData(elapsedTime);
     } else {
-      this.updateMultiLeadWaveform(elapsedTime);
+      this.prepareMultiLeadData(elapsedTime);
     }
 
     this.drawSweepWaveform();
   },
 
-  updateSweepPosition(elapsedTime) {
+  calculateSweepPosition(elapsedTime) {
     this.sweepPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
     this.sweepPosition = this.sweepPosition % this.chartWidth;
   },
 
-  updateSingleLeadWaveform(elapsedTime) {
+  prepareSingleLeadData(elapsedTime) {
     const currentScreenStartTime =
       Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
     const currentDataTime = elapsedTime;
-    
+
     const startIndex = this.findDataIndexByTime(currentScreenStartTime);
     const endIndex = this.findDataIndexByTime(currentDataTime);
-    
+
     if (
       endIndex >= startIndex &&
       startIndex < this.currentLeadData.times.length
     ) {
-      const times = this.currentLeadData.times.slice(
-        startIndex,
-        endIndex + 1
-      );
+      const times = this.currentLeadData.times.slice(startIndex, endIndex + 1);
       const values = this.currentLeadData.values.slice(
         startIndex,
         endIndex + 1
       );
 
-      this.sweepWaveformData = {
+      this.activeSweepData = {
         times: times.map((t) => t - currentScreenStartTime),
         values: values,
       };
     } else {
-      this.sweepWaveformData = {
+      this.activeSweepData = {
         times: [],
         values: [],
       };
     }
   },
 
-  updateMultiLeadWaveform(elapsedTime) {
+  prepareMultiLeadData(elapsedTime) {
     const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
     const columnDataTime = elapsedTime;
 
-    this.multiLeadSweepData = [];
+    this.allLeadsSweepData = [];
 
     for (
       let leadIndex = 0;
@@ -612,7 +628,7 @@ const ECGPlayback = {
         const times = leadData.times.slice(startIndex, endIndex + 1);
         const values = leadData.values.slice(startIndex, endIndex + 1);
 
-        this.multiLeadSweepData.push({
+        this.allLeadsSweepData.push({
           leadIndex,
           times: times.map((t) => t - startDataTime),
           values: values,
@@ -624,18 +640,18 @@ const ECGPlayback = {
   // =================
   // ANIMATION CONTROL
   // =================
-  
+
   startAnimation() {
     this.startTime = Date.now();
     this.pausedTime = 0;
-    this.currentCycle = 0;
+    this.animationCycle = 0;
     this.sweepPosition = 0;
 
-    this.visibleTimes = [];
-    this.visibleValues = [];
-    this.multiLeadVisibleData = null;
+    this.screenVisibleTimes = [];
+    this.screenVisibleValues = [];
+    this.allLeadsVisibleData = null;
 
-    this.executeAnimationLoop();
+    this.startAnimationLoop();
   },
 
   resumeAnimation() {
@@ -645,7 +661,7 @@ const ECGPlayback = {
       const pauseDuration = Date.now() - this.pausedTime;
       this.startTime += pauseDuration;
       this.pausedTime = 0;
-      this.executeAnimationLoop();
+      this.startAnimationLoop();
     }
   },
 
@@ -666,17 +682,17 @@ const ECGPlayback = {
     this.stopAnimation();
     this.startTime = null;
     this.pausedTime = 0;
-    this.currentCycle = 0;
+    this.animationCycle = 0;
     this.sweepPosition = 0;
 
-    this.visibleTimes = [];
-    this.visibleValues = [];
-    this.multiLeadVisibleData = null;
+    this.screenVisibleTimes = [];
+    this.screenVisibleValues = [];
+    this.allLeadsVisibleData = null;
 
     this.clearWaveform();
   },
 
-  executeAnimationLoop() {
+  startAnimationLoop() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
@@ -692,13 +708,13 @@ const ECGPlayback = {
       const elapsedSeconds = (currentTime - this.startTime) / 1000;
       const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
 
-      if (currentCycle !== this.currentCycle) {
-        this.currentCycle = currentCycle;
+      if (animationCycle !== this.animationCycle) {
+        this.animationCycle = animationCycle;
       }
 
-      this.updateWaveform(cursorProgress, currentCycle);
+      this.processWaveformUpdate(cursorProgress, animationCycle);
 
       this.animationId = requestAnimationFrame(animate);
     };
@@ -709,7 +725,7 @@ const ECGPlayback = {
   // =================
   // RENDERING - GRID
   // =================
-  
+
   drawLeadGrid(xOffset, yOffset, width, height) {
     if (this.gridType === "medical") {
       this.drawMedicalGrid(xOffset, yOffset, width, height);
@@ -786,17 +802,39 @@ const ECGPlayback = {
     }
   },
 
-  clearWaveform() {
+  cacheGrid() {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.canvas.height / devicePixelRatio;
-    this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
-    this.drawGridOnly();
+
+    this.gridCanvas = document.createElement("canvas");
+    this.gridCanvas.width = this.chartWidth;
+    this.gridCanvas.height = canvasHeight;
+
+    this.gridCanvas.width = this.chartWidth * devicePixelRatio;
+    this.gridCanvas.height = canvasHeight * devicePixelRatio;
+    this.gridCanvas.style.width = this.chartWidth + "px";
+    this.gridCanvas.style.height = canvasHeight + "px";
+
+    const gridContext = this.gridCanvas.getContext("2d");
+    gridContext.scale(devicePixelRatio, devicePixelRatio);
+
+    const originalContext = this.context;
+    this.context = gridContext;
+    this.renderGridBackground();
+    this.context = originalContext;
   },
 
   // =====================
   // RENDERING - WAVEFORM
   // =====================
-  
+
+  clearWaveform() {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.canvas.height / devicePixelRatio;
+    this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
+    this.renderGridBackground();
+  },
+
   drawSweepWaveform() {
     if (this.displayMode === "single") {
       this.drawSingleLeadSweep();
@@ -808,7 +846,7 @@ const ECGPlayback = {
   // ==============================
   // RENDERING - CANVAS OPERATIONS
   // ==============================
-  
+
   clearSweepArea(x, width) {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.canvas.height / devicePixelRatio;
@@ -892,13 +930,13 @@ const ECGPlayback = {
   },
 
   drawSingleLeadSweep() {
-    if (!this.sweepWaveformData || this.sweepWaveformData.times.length === 0)
+    if (!this.activeSweepData || this.activeSweepData.times.length === 0)
       return;
 
     const sweepClearWidth = SINGLE_LEAD_SWEEP_WIDTH;
     const sweepData = {
-      times: this.sweepWaveformData.times,
-      values: this.sweepWaveformData.values,
+      times: this.activeSweepData.times,
+      values: this.activeSweepData.values,
       sweepPosition: this.sweepPosition,
       sweepWidth: sweepClearWidth,
     };
@@ -916,10 +954,10 @@ const ECGPlayback = {
   },
 
   drawMultiLeadSweep() {
-    if (!this.multiLeadSweepData || this.multiLeadSweepData.length === 0)
+    if (!this.allLeadsSweepData || this.allLeadsSweepData.length === 0)
       return;
 
-    for (const leadData of this.multiLeadSweepData) {
+    for (const leadData of this.allLeadsSweepData) {
       const { xOffset, yOffset, columnWidth } = this.getLeadPosition(
         leadData.leadIndex
       );
@@ -951,32 +989,11 @@ const ECGPlayback = {
     }
   },
 
-  cacheGrid() {
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    const canvasHeight = this.canvas.height / devicePixelRatio;
-
-    this.gridCanvas = document.createElement("canvas");
-    this.gridCanvas.width = this.chartWidth;
-    this.gridCanvas.height = canvasHeight;
-
-    this.gridCanvas.width = this.chartWidth * devicePixelRatio;
-    this.gridCanvas.height = canvasHeight * devicePixelRatio;
-    this.gridCanvas.style.width = this.chartWidth + "px";
-    this.gridCanvas.style.height = canvasHeight + "px";
-
-    const gridContext = this.gridCanvas.getContext("2d");
-    gridContext.scale(devicePixelRatio, devicePixelRatio);
-
-    const originalContext = this.context;
-    this.context = gridContext;
-    this.drawGridOnly();
-    this.context = originalContext;
-  },
 
   // ============================
   // RENDERING - LEAD COMPONENTS
   // ============================
-  
+
   renderLeadBackground(leadIndex, xOffset, yOffset, width, height) {
     this.drawLeadGrid(xOffset, yOffset, width, height);
     this.drawLeadLabel(leadIndex, xOffset, yOffset);
@@ -1019,7 +1036,7 @@ const ECGPlayback = {
     }
   },
 
-  drawGridOnly() {
+  renderGridBackground() {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.canvas
       ? this.canvas.height / devicePixelRatio
