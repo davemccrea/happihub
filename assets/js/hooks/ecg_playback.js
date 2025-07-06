@@ -1,28 +1,28 @@
 /*
  * HOW ECG WAVEFORM RENDERING WORKS - Simple Explanation
- * 
+ *
  * Think of it like drawing on paper:
- * 
+ *
  * 1. The Canvas is Like a Piece of Paper
  *    - The browser creates a rectangular drawing area (canvas)
  *    - It has X (left-right) and Y (up-down) coordinates
  *    - Like graph paper with invisible grid lines
- * 
+ *
  * 2. The ECG Data is Like a List of Dots
  *    times:  [0.0, 0.1, 0.2, 0.3, 0.4, ...]
  *    values: [0.5, 0.8, 1.2, 0.9, 0.3, ...]
- * 
+ *
  * 3. Converting Data to Screen Positions
  *    For each data point, the code asks: "Where should I put this dot on the canvas?"
- *    
+ *
  *    Time 0.2 seconds → X position on canvas
  *    const x = (0.2 / 5.0) * 500; // If 5 seconds fits in 500 pixels
  *    Result: x = 20 pixels from left edge
- *    
- *    Voltage 0.8 millivolts → Y position on canvas  
+ *
+ *    Voltage 0.8 millivolts → Y position on canvas
  *    const y = 160 - ((0.8 - 0) / 2.0) * 160; // If 2mV fits in 160 pixels
  *    Result: y = 96 pixels from top
- * 
+ *
  * 4. Drawing the Lines
  *    Imagine holding a pen:
  *    context.beginPath();           // Put pen on paper
@@ -31,22 +31,22 @@
  *    context.lineTo(x3, y3);        // Draw line to third dot
  *    context.lineTo(x4, y4);        // Draw line to fourth dot
  *    context.stroke();              // Actually make the ink appear
- * 
+ *
  * 5. The Animation
  *    - Every 1/60th of a second, the code says "show me the next slice of data"
  *    - It erases the old waveform and draws the new one
  *    - Like flipping pages in a flipbook to create motion
- * 
+ *
  * Visual Example:
  * If you have these 4 data points:
  *   Time: 0.0, 0.1, 0.2, 0.3
  *   Voltage: 0.5, 1.0, 0.8, 0.2
- * 
+ *
  * The code:
  * 1. Calculates where each dot goes on the canvas
  * 2. Draws a line connecting: dot1 → dot2 → dot3 → dot4
  * 3. The connected lines form the familiar ECG wave shape
- * 
+ *
  * That's it! It's just connecting dots with lines, but doing it very fast to create smooth animation.
  */
 
@@ -78,7 +78,7 @@ const ECGPlayback = {
     this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
     this.leadHeight = CHART_HEIGHT; // Will be recalculated for multi-lead
     this.calculateMedicallyAccurateDimensions();
-    
+
     // Initialize theme colors
     this.updateThemeColors();
 
@@ -88,24 +88,31 @@ const ECGPlayback = {
       this.handleResize();
     };
     window.addEventListener("resize", this.resizeHandler);
-    
+
     // Listen for theme changes
     this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+        if (
+          mutation.type === "attributes" &&
+          mutation.attributeName === "data-theme"
+        ) {
           this.updateThemeColors();
           this.drawGrid(); // Redraw grid with new colors
           // Redraw waveform if paused
           if (!this.isPlaying && this.startTime && this.pausedTime) {
             const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-            const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+            const cursorProgress =
+              (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
             const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
             this.updateWaveform(cursorProgress, currentCycle);
           }
         }
       });
     });
-    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
 
     await this.initializeECGChart();
 
@@ -169,24 +176,25 @@ const ECGPlayback = {
 
   // === Theme Methods ===
   updateThemeColors() {
-    const theme = document.documentElement.getAttribute('data-theme') || 'light';
-    const isDark = theme === 'dark';
-    
+    const theme =
+      document.documentElement.getAttribute("data-theme") || "light";
+    const isDark = theme === "dark";
+
     // Set theme-aware colors
     this.colors = {
       // Waveform colors
-      waveform: isDark ? '#ffffff' : '#000000',
-      cursor: isDark ? '#00ff00' : '#00ff00',
-      
+      waveform: isDark ? "#ffffff" : "#000000",
+      cursor: isDark ? "#00ff00" : "#00ff00",
+
       // Grid colors for medical grid
-      gridFine: isDark ? '#660000' : '#ff9999',
-      gridBold: isDark ? '#990000' : '#ff6666',
-      
+      gridFine: isDark ? "#660000" : "#ff9999",
+      gridBold: isDark ? "#990000" : "#ff6666",
+
       // Grid colors for simple grid (dots)
-      gridDots: isDark ? '#666666' : '#999999',
-      
+      gridDots: isDark ? "#666666" : "#999999",
+
       // Text colors
-      labels: isDark ? '#ffffff' : '#333333'
+      labels: isDark ? "#ffffff" : "#333333",
     };
   },
 
@@ -360,14 +368,15 @@ const ECGPlayback = {
 
   handleCursorVisibilityChange(cursorVisible) {
     this.cursorVisible = cursorVisible;
-    
+
     // If paused, redraw current state to show/hide cursor immediately
     if (!this.isPlaying && this.startTime && this.pausedTime) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       const cursorPosition = cursorProgress * this.chartWidth;
-      
+
       this.updateWaveform(cursorProgress, currentCycle);
       this.drawCursor(cursorPosition);
     }
@@ -450,7 +459,7 @@ const ECGPlayback = {
         this.visibleTimes = [];
         this.visibleValues = [];
         this.multiLeadVisibleData = null;
-        
+
         // Continue with the first frame of the new loop
         elapsedTime = cursorProgress * this.widthSeconds;
         currentCycle = 0;
@@ -494,7 +503,10 @@ const ECGPlayback = {
 
       // Since all leads have the same timing structure, calculate indices once
       const firstLead = this.ecgLeadDatasets[0];
-      const startIndex = this.findDataIndexByTimeForLead(firstLead, cycleStartTime);
+      const startIndex = this.findDataIndexByTimeForLead(
+        firstLead,
+        cycleStartTime
+      );
       const endIndex = this.findDataIndexByTimeForLead(firstLead, cycleEndTime);
       const startIdx = Math.max(0, startIndex);
       const endIdx = Math.min(firstLead.times.length - 1, endIndex);
@@ -832,7 +844,9 @@ const ECGPlayback = {
         for (let i = 0; i < pointCount; i++) {
           points.push(
             leadData.times[i] * xScale,
-            leadYOffset + this.leadHeight - (leadData.values[i] - this.yMin) * yScale
+            leadYOffset +
+              this.leadHeight -
+              (leadData.values[i] - this.yMin) * yScale
           );
         }
 
