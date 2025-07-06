@@ -59,7 +59,7 @@ const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const DOT_RADIUS = 1.2;
 const CONTAINER_PADDING = 40; // Padding to account for in container width calculation
 const MULTI_LEAD_HEIGHT_SCALE = 1; // Scale factor for multi-lead display height
-const LEADS_PER_ROW = 4; // Number of leads per row in multi-lead mode (traditional ECG layout)
+const COLUMNS_PER_DISPLAY = 4; // Number of columns in multi-lead mode (traditional ECG layout)
 const ROWS_PER_DISPLAY = 3; // Number of rows in multi-lead mode
 const COLUMN_PADDING = 0; // Padding between columns
 const ROW_PADDING = 0; // Padding between rows
@@ -234,15 +234,34 @@ const ECGPlayback = {
 
   // === Layout Helper Methods ===
   getLeadColumnAndRow(leadIndex) {
-    const row = Math.floor(leadIndex / LEADS_PER_ROW);
-    const column = leadIndex % LEADS_PER_ROW;
-    return { column, row };
+    // Custom lead ordering for traditional ECG layout:
+    // Column 0: I(0), II(1), III(2)
+    // Column 1: aVR(3), aVL(4), aVF(5)
+    // Column 2: V1(6), V2(7), V3(8)
+    // Column 3: V4(9), V5(10), V6(11)
+    const leadPositions = [
+      { column: 0, row: 0 }, // I
+      { column: 0, row: 1 }, // II
+      { column: 0, row: 2 }, // III
+      { column: 1, row: 0 }, // aVR
+      { column: 1, row: 1 }, // aVL
+      { column: 1, row: 2 }, // aVF
+      { column: 2, row: 0 }, // V1
+      { column: 2, row: 1 }, // V2
+      { column: 2, row: 2 }, // V3
+      { column: 3, row: 0 }, // V4
+      { column: 3, row: 1 }, // V5
+      { column: 3, row: 2 }, // V6
+    ];
+
+    return leadPositions[leadIndex] || { column: 0, row: 0 };
   },
 
   getLeadPosition(leadIndex) {
     const { column, row } = this.getLeadColumnAndRow(leadIndex);
-    const totalColumnPadding = (LEADS_PER_ROW - 1) * COLUMN_PADDING;
-    const columnWidth = (this.chartWidth - totalColumnPadding) / LEADS_PER_ROW;
+    const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
+    const columnWidth =
+      (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
 
     const xOffset = column * (columnWidth + COLUMN_PADDING);
     const yOffset = row * (this.leadHeight + ROW_PADDING);
@@ -1056,12 +1075,12 @@ const ECGPlayback = {
       this.context.stroke();
     } else {
       // Multi-lead mode - draw cursor for each column
-      const totalColumnPadding = (LEADS_PER_ROW - 1) * COLUMN_PADDING;
+      const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
       const columnWidth =
-        (this.chartWidth - totalColumnPadding) / LEADS_PER_ROW;
+        (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
 
       // Draw cursor for each column
-      for (let col = 0; col < LEADS_PER_ROW; col++) {
+      for (let col = 0; col < COLUMNS_PER_DISPLAY; col++) {
         const cursorPosition =
           col * (columnWidth + COLUMN_PADDING) + cursorProgress * columnWidth;
         this.context.beginPath();
