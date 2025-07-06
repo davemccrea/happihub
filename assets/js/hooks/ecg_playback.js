@@ -1,3 +1,55 @@
+/*
+ * HOW ECG WAVEFORM RENDERING WORKS - Simple Explanation
+ * 
+ * Think of it like drawing on paper:
+ * 
+ * 1. The Canvas is Like a Piece of Paper
+ *    - The browser creates a rectangular drawing area (canvas)
+ *    - It has X (left-right) and Y (up-down) coordinates
+ *    - Like graph paper with invisible grid lines
+ * 
+ * 2. The ECG Data is Like a List of Dots
+ *    times:  [0.0, 0.1, 0.2, 0.3, 0.4, ...]
+ *    values: [0.5, 0.8, 1.2, 0.9, 0.3, ...]
+ * 
+ * 3. Converting Data to Screen Positions
+ *    For each data point, the code asks: "Where should I put this dot on the canvas?"
+ *    
+ *    Time 0.2 seconds → X position on canvas
+ *    const x = (0.2 / 5.0) * 500; // If 5 seconds fits in 500 pixels
+ *    Result: x = 20 pixels from left edge
+ *    
+ *    Voltage 0.8 millivolts → Y position on canvas  
+ *    const y = 160 - ((0.8 - 0) / 2.0) * 160; // If 2mV fits in 160 pixels
+ *    Result: y = 96 pixels from top
+ * 
+ * 4. Drawing the Lines
+ *    Imagine holding a pen:
+ *    context.beginPath();           // Put pen on paper
+ *    context.moveTo(x1, y1);        // Move to first dot (don't draw yet)
+ *    context.lineTo(x2, y2);        // Draw line to second dot
+ *    context.lineTo(x3, y3);        // Draw line to third dot
+ *    context.lineTo(x4, y4);        // Draw line to fourth dot
+ *    context.stroke();              // Actually make the ink appear
+ * 
+ * 5. The Animation
+ *    - Every 1/60th of a second, the code says "show me the next slice of data"
+ *    - It erases the old waveform and draws the new one
+ *    - Like flipping pages in a flipbook to create motion
+ * 
+ * Visual Example:
+ * If you have these 4 data points:
+ *   Time: 0.0, 0.1, 0.2, 0.3
+ *   Voltage: 0.5, 1.0, 0.8, 0.2
+ * 
+ * The code:
+ * 1. Calculates where each dot goes on the canvas
+ * 2. Draws a line connecting: dot1 → dot2 → dot3 → dot4
+ * 3. The connected lines form the familiar ECG wave shape
+ * 
+ * That's it! It's just connecting dots with lines, but doing it very fast to create smooth animation.
+ */
+
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 4;
@@ -724,17 +776,25 @@ const ECGPlayback = {
       this.context.lineWidth = 1.25;
       this.context.beginPath();
 
-      for (let i = 0; i < pointCount; i++) {
-        const x = (this.visibleTimes[i] / this.widthSeconds) * this.chartWidth;
-        const y =
-          CHART_HEIGHT -
-          ((this.visibleValues[i] - this.yMin) / (this.yMax - this.yMin)) *
-            CHART_HEIGHT;
+      // Pre-calculate constants once per frame
+      const xScale = this.chartWidth / this.widthSeconds;
+      const yScale = CHART_HEIGHT / (this.yMax - this.yMin);
+      const yOffset = CHART_HEIGHT;
 
-        if (i === 0) {
-          this.context.moveTo(x, y);
-        } else {
-          this.context.lineTo(x, y);
+      // Transform all coordinates at once
+      const points = [];
+      for (let i = 0; i < pointCount; i++) {
+        points.push(
+          this.visibleTimes[i] * xScale,
+          yOffset - (this.visibleValues[i] - this.yMin) * yScale
+        );
+      }
+
+      // Single canvas operation with batched coordinates
+      if (points.length >= 2) {
+        this.context.moveTo(points[0], points[1]);
+        for (let i = 2; i < points.length; i += 2) {
+          this.context.lineTo(points[i], points[i + 1]);
         }
       }
 
@@ -748,30 +808,36 @@ const ECGPlayback = {
     this.context.strokeStyle = this.colors.waveform;
     this.context.lineWidth = 1;
 
+    // Pre-calculate constants once for all leads
+    const xScale = this.chartWidth / this.widthSeconds;
+    const yScale = this.leadHeight / (this.yMax - this.yMin);
+
     for (
       let leadIndex = 0;
       leadIndex < this.multiLeadVisibleData.length;
       leadIndex++
     ) {
       const leadData = this.multiLeadVisibleData[leadIndex];
-      const yOffset = leadIndex * this.leadHeight;
+      const leadYOffset = leadIndex * this.leadHeight;
       const pointCount = leadData.times.length;
 
       if (pointCount > 0) {
         this.context.beginPath();
 
+        // Transform all coordinates at once for this lead
+        const points = [];
         for (let i = 0; i < pointCount; i++) {
-          const x = (leadData.times[i] / this.widthSeconds) * this.chartWidth;
-          const y =
-            yOffset +
-            this.leadHeight -
-            ((leadData.values[i] - this.yMin) / (this.yMax - this.yMin)) *
-              this.leadHeight;
+          points.push(
+            leadData.times[i] * xScale,
+            leadYOffset + this.leadHeight - (leadData.values[i] - this.yMin) * yScale
+          );
+        }
 
-          if (i === 0) {
-            this.context.moveTo(x, y);
-          } else {
-            this.context.lineTo(x, y);
+        // Single canvas operation with batched coordinates
+        if (points.length >= 2) {
+          this.context.moveTo(points[0], points[1]);
+          for (let i = 2; i < points.length; i += 2) {
+            this.context.lineTo(points[i], points[i + 1]);
           }
         }
 
