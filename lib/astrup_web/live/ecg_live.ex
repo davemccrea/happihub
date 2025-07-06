@@ -9,6 +9,7 @@ defmodule AstrupWeb.ECGLive do
         elapsed_time: 0,
         display_mode: "single",
         grid_type: "medical",
+        cursor_visible: true,
         lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
       )
 
@@ -57,6 +58,19 @@ defmodule AstrupWeb.ECGLive do
               options={[
                 {"Medical Grid", "medical"},
                 {"Simple Grid", "simple"}
+              ]}
+            />
+          </form>
+
+          <form phx-change="change_cursor_visibility">
+            <.input
+              type="select"
+              name="cursor_visible"
+              value={@cursor_visible}
+              label="Cursor"
+              options={[
+                {"Visible", true},
+                {"Hidden", false}
               ]}
             />
           </form>
@@ -121,5 +135,12 @@ defmodule AstrupWeb.ECGLive do
     else
       {:noreply, socket}
     end
+  end
+
+  def handle_event("change_cursor_visibility", %{"cursor_visible" => cursor_visible_str}, socket) do
+    cursor_visible = cursor_visible_str == "true"
+    socket = assign(socket, cursor_visible: cursor_visible)
+    socket = push_event(socket, "cursor_visibility_changed", %{cursor_visible: cursor_visible})
+    {:noreply, socket}
   end
 end

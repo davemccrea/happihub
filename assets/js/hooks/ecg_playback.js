@@ -18,6 +18,7 @@ const ECGPlayback = {
     this.visibleValues = [];
     this.gridType = "medical"; // "medical" or "simple"
     this.displayMode = "single"; // "single" or "multi"
+    this.cursorVisible = true; // cursor visibility state
     this.leadHeight = CHART_HEIGHT; // Will be recalculated for multi-lead
     this.calculateMedicallyAccurateDimensions();
 
@@ -44,6 +45,10 @@ const ECGPlayback = {
 
     this.handleEvent("display_mode_changed", (payload) => {
       this.handleDisplayModeChange(payload.display_mode);
+    });
+
+    this.handleEvent("cursor_visibility_changed", (payload) => {
+      this.handleCursorVisibilityChange(payload.cursor_visible);
     });
   },
 
@@ -121,10 +126,10 @@ const ECGPlayback = {
     // Redraw current waveform if paused
     if (!wasPlaying && this.startTime && this.pausedTime) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const sweepProgress =
+      const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.updateWaveform(sweepProgress, currentCycle);
+      this.updateWaveform(cursorProgress, currentCycle);
     }
 
     if (wasPlaying) {
@@ -235,6 +240,12 @@ const ECGPlayback = {
     }
   },
 
+  handleCursorVisibilityChange(cursorVisible) {
+    this.cursorVisible = cursorVisible;
+    // No need to restart animation, just update the visibility flag
+    // The cursor will be drawn or not based on this flag in the next animation frame
+  },
+
   // === Data Management Methods ===
   switchLead(leadIndex) {
     const wasPlaying = this.isPlaying;
@@ -251,17 +262,17 @@ const ECGPlayback = {
       // by redrawing with the current progress
       if (this.startTime && this.pausedTime) {
         const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-        const sweepProgress =
+        const cursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
         const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.updateWaveform(sweepProgress, currentCycle);
+        this.updateWaveform(cursorProgress, currentCycle);
       } else {
         this.clearWaveform();
       }
     }
   },
 
-  updateWaveform(sweepProgress, currentCycle) {
+  updateWaveform(cursorProgress, currentCycle) {
     if (currentCycle * this.widthSeconds >= this.totalDuration) {
       this.stopAnimation();
       this.resetPlayback();
@@ -269,7 +280,7 @@ const ECGPlayback = {
       return;
     }
 
-    const currentTime = sweepProgress * this.widthSeconds;
+    const currentTime = cursorProgress * this.widthSeconds;
     const cycleStartTime = currentCycle * this.widthSeconds;
     const cycleEndTime = cycleStartTime + currentTime;
 
@@ -380,17 +391,17 @@ const ECGPlayback = {
 
       const currentTime = Date.now();
       const elapsedSeconds = (currentTime - this.startTime) / 1000;
-      const sweepProgress =
+      const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const sweepLinePosition = sweepProgress * this.chartWidth;
+      const cursorPosition = cursorProgress * this.chartWidth;
       const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
 
       if (currentCycle !== this.currentCycle) {
         this.currentCycle = currentCycle;
       }
 
-      this.updateWaveform(sweepProgress, currentCycle);
-      this.drawSweepLine(sweepLinePosition);
+      this.updateWaveform(cursorProgress, currentCycle);
+      this.drawCursor(cursorPosition);
 
       this.animationId = requestAnimationFrame(animate);
     };
@@ -627,13 +638,15 @@ const ECGPlayback = {
     }
   },
 
-  drawSweepLine(sweepLinePosition) {
+  drawCursor(cursorPosition) {
+    if (!this.cursorVisible) return;
+    
     this.context.strokeStyle = "#00ff00";
     this.context.lineWidth = 2;
     this.context.beginPath();
-    this.context.moveTo(sweepLinePosition, 0);
+    this.context.moveTo(cursorPosition, 0);
     const canvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
-    this.context.lineTo(sweepLinePosition, canvasHeight);
+    this.context.lineTo(cursorPosition, canvasHeight);
     this.context.stroke();
   },
 };
