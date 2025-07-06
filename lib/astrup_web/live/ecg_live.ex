@@ -62,8 +62,8 @@ defmodule AstrupWeb.ECGLive do
           </form>
         </div>
 
-        <div id="ecg-playback" phx-hook="ECGPlayback" phx-update="ignore">
-          <div data-ecg-chart></div>
+        <div id="ecg-playback" phx-hook="ECGPlayback" phx-update="ignore" class="w-full">
+          <div data-ecg-chart class="w-full"></div>
         </div>
 
         <.button phx-click="toggle_playback" variant="primary">

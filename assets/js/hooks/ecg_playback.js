@@ -1,9 +1,8 @@
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 4;
-const WIDTH_SECONDS = 5;
+const DEFAULT_WIDTH_SECONDS = 5;
 const HEIGHT_MILLIVOLTS = 4;
-const CHART_WIDTH = WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const DOT_RADIUS = 1.2;
 
@@ -20,6 +19,14 @@ const ECGPlayback = {
     this.gridType = "medical"; // "medical" or "simple"
     this.displayMode = "single"; // "single" or "multi"
     this.leadHeight = CHART_HEIGHT; // Will be recalculated for multi-lead
+    this.calculateMedicallyAccurateDimensions();
+
+    // Listen for window resize events
+    this.resizeHandler = () => {
+      this.calculateMedicallyAccurateDimensions();
+      this.handleResize();
+    };
+    window.addEventListener("resize", this.resizeHandler);
 
     await this.initializeECGChart();
 
@@ -52,6 +59,9 @@ const ECGPlayback = {
     if (this.canvas) {
       this.canvas.remove();
     }
+    if (this.resizeHandler) {
+      window.removeEventListener("resize", this.resizeHandler);
+    }
 
     this.ecgLeadDatasets = null;
     this.currentLeadData = null;
@@ -59,7 +69,7 @@ const ECGPlayback = {
     this.visibleTimes = [];
     this.visibleValues = [];
     this.eventHandlers = null;
-    
+
     // Clean up grid cache
     if (this.gridCanvas) {
       this.gridCanvas = null;
@@ -69,8 +79,58 @@ const ECGPlayback = {
   // === Initialization Methods ===
   async initializeECGChart() {
     this.currentLeadData = await this.loadECGData();
+    // Ensure dimensions are calculated before canvas setup
+    if (!this.widthSeconds) {
+      this.calculateMedicallyAccurateDimensions();
+    }
     this.updateCanvasSize();
     this.drawGrid();
+  },
+
+  calculateMedicallyAccurateDimensions() {
+    const container = this.el.querySelector("[data-ecg-chart]");
+    if (!container) {
+      this.chartWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
+      return;
+    }
+
+    const containerWidth = container.offsetWidth - 40; // Account for padding
+    const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
+
+    if (containerWidth < minWidth) {
+      // If container is too small, use minimum width
+      this.chartWidth = minWidth;
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
+    } else {
+      // Calculate how many seconds we can display while maintaining medical accuracy
+      // Must maintain exactly 25mm/second (100 pixels/second at 4 pixels/mm)
+      this.widthSeconds = containerWidth / (MM_PER_SECOND * PIXELS_PER_MM);
+      this.chartWidth = this.widthSeconds * MM_PER_SECOND * PIXELS_PER_MM;
+    }
+  },
+
+  handleResize() {
+    const wasPlaying = this.isPlaying;
+    if (wasPlaying) this.stopAnimation();
+
+    this.gridCanvas = null; // Invalidate grid cache
+    this.updateCanvasSize();
+    this.drawGrid();
+
+    // Redraw current waveform if paused
+    if (!wasPlaying && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const sweepProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.updateWaveform(sweepProgress, currentCycle);
+    }
+
+    if (wasPlaying) {
+      this.isPlaying = true;
+      this.executeAnimationLoop();
+    }
   },
 
   updateCanvasSize() {
@@ -89,7 +149,7 @@ const ECGPlayback = {
         : CHART_HEIGHT;
 
     const canvas = document.createElement("canvas");
-    canvas.width = CHART_WIDTH;
+    canvas.width = this.chartWidth;
     canvas.height = canvasHeight;
     this.el.querySelector("[data-ecg-chart]").appendChild(canvas);
     this.canvas = canvas;
@@ -97,15 +157,15 @@ const ECGPlayback = {
     this.context = canvas.getContext("2d");
 
     const devicePixelRatio = window.devicePixelRatio || 1;
-    canvas.width = CHART_WIDTH * devicePixelRatio;
+    canvas.width = this.chartWidth * devicePixelRatio;
     canvas.height = canvasHeight * devicePixelRatio;
-    canvas.style.width = CHART_WIDTH + "px";
+    canvas.style.width = this.chartWidth + "px";
     canvas.style.height = canvasHeight + "px";
     this.context.scale(devicePixelRatio, devicePixelRatio);
   },
 
   async loadECGData() {
-    const response = await fetch("/assets/js/00020-optimized.json");
+    const response = await fetch("/assets/json/10160-optimized.json");
     if (!response.ok) {
       throw new Error(`Failed to load ECG data: ${response.status}`);
     }
@@ -187,20 +247,30 @@ const ECGPlayback = {
       this.isPlaying = true;
       this.executeAnimationLoop();
     } else {
-      this.clearWaveform();
+      // When paused, maintain the current waveform display for the new lead
+      // by redrawing with the current progress
+      if (this.startTime && this.pausedTime) {
+        const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+        const sweepProgress =
+          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+        const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+        this.updateWaveform(sweepProgress, currentCycle);
+      } else {
+        this.clearWaveform();
+      }
     }
   },
 
   updateWaveform(sweepProgress, currentCycle) {
-    if (currentCycle * WIDTH_SECONDS >= this.totalDuration) {
+    if (currentCycle * this.widthSeconds >= this.totalDuration) {
       this.stopAnimation();
       this.resetPlayback();
       this.pushEvent("playback_ended", {});
       return;
     }
 
-    const currentTime = sweepProgress * WIDTH_SECONDS;
-    const cycleStartTime = currentCycle * WIDTH_SECONDS;
+    const currentTime = sweepProgress * this.widthSeconds;
+    const cycleStartTime = currentCycle * this.widthSeconds;
     const cycleEndTime = cycleStartTime + currentTime;
 
     if (this.displayMode === "single") {
@@ -310,9 +380,10 @@ const ECGPlayback = {
 
       const currentTime = Date.now();
       const elapsedSeconds = (currentTime - this.startTime) / 1000;
-      const sweepProgress = (elapsedSeconds % WIDTH_SECONDS) / WIDTH_SECONDS;
-      const sweepLinePosition = sweepProgress * CHART_WIDTH;
-      const currentCycle = Math.floor(elapsedSeconds / WIDTH_SECONDS);
+      const sweepProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const sweepLinePosition = sweepProgress * this.chartWidth;
+      const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
 
       if (currentCycle !== this.currentCycle) {
         this.currentCycle = currentCycle;
@@ -360,7 +431,7 @@ const ECGPlayback = {
     this.context.beginPath();
 
     // Vertical lines - always use proper 1mm spacing
-    for (let x = smallSquareSize; x < CHART_WIDTH; x += smallSquareSize) {
+    for (let x = smallSquareSize; x < this.chartWidth; x += smallSquareSize) {
       this.context.moveTo(x, yOffset);
       this.context.lineTo(x, yOffset + gridHeight);
     }
@@ -369,7 +440,7 @@ const ECGPlayback = {
     for (let y = smallSquareSize; y <= gridHeight; y += smallSquareSize) {
       if (yOffset + y <= yOffset + gridHeight) {
         this.context.moveTo(0, yOffset + y);
-        this.context.lineTo(CHART_WIDTH, yOffset + y);
+        this.context.lineTo(this.chartWidth, yOffset + y);
       }
     }
 
@@ -381,7 +452,7 @@ const ECGPlayback = {
     this.context.beginPath();
 
     // Vertical bold lines - always use proper 5mm spacing
-    for (let x = largeSquareSize; x < CHART_WIDTH; x += largeSquareSize) {
+    for (let x = largeSquareSize; x < this.chartWidth; x += largeSquareSize) {
       this.context.moveTo(x, yOffset);
       this.context.lineTo(x, yOffset + gridHeight);
     }
@@ -390,7 +461,7 @@ const ECGPlayback = {
     for (let y = largeSquareSize; y <= gridHeight; y += largeSquareSize) {
       if (yOffset + y <= yOffset + gridHeight) {
         this.context.moveTo(0, yOffset + y);
-        this.context.lineTo(CHART_WIDTH, yOffset + y);
+        this.context.lineTo(this.chartWidth, yOffset + y);
       }
     }
 
@@ -403,7 +474,7 @@ const ECGPlayback = {
       this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
     this.context.fillStyle = "#d0d0d0";
 
-    for (let x = 5; x < CHART_WIDTH - 5; x += dotSpacing) {
+    for (let x = 5; x < this.chartWidth - 5; x += dotSpacing) {
       for (let y = 5; y < gridHeight - 5; y += dotSpacing) {
         this.context.beginPath();
         this.context.arc(x, yOffset + y, DOT_RADIUS, 0, 2 * Math.PI);
@@ -432,33 +503,39 @@ const ECGPlayback = {
     if (!this.gridCanvas) {
       this.cacheGrid();
     }
-    
+
     // Clear entire canvas
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.canvas.height / devicePixelRatio;
-    this.context.clearRect(0, 0, CHART_WIDTH, canvasHeight);
-    
+    this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
+
     // Restore grid from cache at proper scale
-    this.context.drawImage(this.gridCanvas, 0, 0, CHART_WIDTH, canvasHeight);
+    this.context.drawImage(
+      this.gridCanvas,
+      0,
+      0,
+      this.chartWidth,
+      canvasHeight
+    );
   },
 
   cacheGrid() {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.canvas.height / devicePixelRatio;
-    
-    this.gridCanvas = document.createElement('canvas');
-    this.gridCanvas.width = CHART_WIDTH;
+
+    this.gridCanvas = document.createElement("canvas");
+    this.gridCanvas.width = this.chartWidth;
     this.gridCanvas.height = canvasHeight;
-    
+
     // Set actual canvas size for high-DPI displays
-    this.gridCanvas.width = CHART_WIDTH * devicePixelRatio;
+    this.gridCanvas.width = this.chartWidth * devicePixelRatio;
     this.gridCanvas.height = canvasHeight * devicePixelRatio;
-    this.gridCanvas.style.width = CHART_WIDTH + "px";
+    this.gridCanvas.style.width = this.chartWidth + "px";
     this.gridCanvas.style.height = canvasHeight + "px";
-    
-    const gridContext = this.gridCanvas.getContext('2d');
+
+    const gridContext = this.gridCanvas.getContext("2d");
     gridContext.scale(devicePixelRatio, devicePixelRatio);
-    
+
     // Draw grid to cache
     const originalContext = this.context;
     this.context = gridContext;
@@ -468,11 +545,13 @@ const ECGPlayback = {
 
   drawGridOnly() {
     const devicePixelRatio = window.devicePixelRatio || 1;
-    const canvasHeight = this.canvas ? 
-      this.canvas.height / devicePixelRatio : 
-      (this.displayMode === "multi" ? this.leadNames.length * (CHART_HEIGHT / 4) : CHART_HEIGHT);
-    
-    this.context.clearRect(0, 0, CHART_WIDTH, canvasHeight);
+    const canvasHeight = this.canvas
+      ? this.canvas.height / devicePixelRatio
+      : this.displayMode === "multi"
+      ? this.leadNames.length * (CHART_HEIGHT / 4)
+      : CHART_HEIGHT;
+
+    this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
 
     if (this.displayMode === "multi") {
       for (let i = 0; i < this.leadNames.length; i++) {
@@ -493,7 +572,7 @@ const ECGPlayback = {
       this.context.beginPath();
 
       for (let i = 0; i < pointCount; i++) {
-        const x = (this.visibleTimes[i] / WIDTH_SECONDS) * CHART_WIDTH;
+        const x = (this.visibleTimes[i] / this.widthSeconds) * this.chartWidth;
         const y =
           CHART_HEIGHT -
           ((this.visibleValues[i] - this.yMin) / (this.yMax - this.yMin)) *
@@ -529,7 +608,7 @@ const ECGPlayback = {
         this.context.beginPath();
 
         for (let i = 0; i < pointCount; i++) {
-          const x = (leadData.times[i] / WIDTH_SECONDS) * CHART_WIDTH;
+          const x = (leadData.times[i] / this.widthSeconds) * this.chartWidth;
           const y =
             yOffset +
             this.leadHeight -
