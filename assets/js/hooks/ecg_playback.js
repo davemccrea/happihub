@@ -53,8 +53,8 @@
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 4;
-const DEFAULT_WIDTH_SECONDS = 5;
-const HEIGHT_MILLIVOLTS = 4;
+const DEFAULT_WIDTH_SECONDS = 2.5;
+const HEIGHT_MILLIVOLTS = 2.5;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const DOT_RADIUS = 1.2;
 const CONTAINER_PADDING = 40; // Padding to account for in container width calculation
@@ -63,6 +63,7 @@ const COLUMNS_PER_DISPLAY = 4; // Number of columns in multi-lead mode (traditio
 const ROWS_PER_DISPLAY = 3; // Number of rows in multi-lead mode
 const COLUMN_PADDING = 0; // Padding between columns
 const ROW_PADDING = 0; // Padding between rows
+const WAVEFORM_LINE_WIDTH = 1.25;
 
 const ECGPlayback = {
   // === Lifecycle Methods ===
@@ -427,8 +428,10 @@ const ECGPlayback = {
       this.ecgLeadDatasets.push({ times, values });
     }
 
-    this.yMin = globalMin;
-    this.yMax = globalMax;
+    // Use fixed medical voltage scale instead of auto-scaling
+    // Center the waveform in the available height range
+    this.yMin = -HEIGHT_MILLIVOLTS / 2; // e.g., -1.25mV for 2.5mV total range
+    this.yMax = HEIGHT_MILLIVOLTS / 2; // e.g., +1.25mV for 2.5mV total range
     this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
 
     return this.currentLeadData;
@@ -968,7 +971,7 @@ const ECGPlayback = {
     const pointCount = this.visibleTimes.length;
     if (pointCount > 0) {
       this.context.strokeStyle = this.colors.waveform;
-      this.context.lineWidth = 1.25;
+      this.context.lineWidth = WAVEFORM_LINE_WIDTH;
       this.context.beginPath();
 
       // Pre-calculate constants once per frame
@@ -1009,7 +1012,7 @@ const ECGPlayback = {
     if (!this.multiLeadVisibleData) return;
 
     this.context.strokeStyle = this.colors.waveform;
-    this.context.lineWidth = 0.5;
+    this.context.lineWidth = WAVEFORM_LINE_WIDTH;
 
     // Pre-calculate constants once for all leads
     const yScale = this.leadHeight / (this.yMax - this.yMin);
@@ -1021,7 +1024,7 @@ const ECGPlayback = {
     ) {
       const leadData = this.multiLeadVisibleData[leadIndex];
       const { xOffset, yOffset, columnWidth } = this.getLeadPosition(leadIndex);
-      const xScale = columnWidth / this.widthSeconds;
+      const xScale = columnWidth / DEFAULT_WIDTH_SECONDS;
       const pointCount = leadData.times.length;
 
       if (pointCount > 0) {
