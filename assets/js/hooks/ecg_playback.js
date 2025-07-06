@@ -432,10 +432,8 @@ const ECGPlayback = {
       const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      const cursorPosition = cursorProgress * this.chartWidth;
-
       this.updateWaveform(cursorProgress, currentCycle);
-      this.drawCursor(cursorPosition);
+      this.drawCursor(cursorProgress);
     }
   },
 
@@ -660,7 +658,6 @@ const ECGPlayback = {
       const elapsedSeconds = (currentTime - this.startTime) / 1000;
       const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const cursorPosition = cursorProgress * this.chartWidth;
       const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
 
       if (currentCycle !== this.currentCycle) {
@@ -668,7 +665,7 @@ const ECGPlayback = {
       }
 
       this.updateWaveform(cursorProgress, currentCycle);
-      this.drawCursor(cursorPosition);
+      this.drawCursor(cursorProgress);
 
       this.animationId = requestAnimationFrame(animate);
     };
@@ -958,16 +955,38 @@ const ECGPlayback = {
     }
   },
 
-  drawCursor(cursorPosition) {
+  drawCursor(cursorProgress) {
     if (!this.cursorVisible) return;
 
     this.context.strokeStyle = this.colors.cursor;
     this.context.lineWidth = 2;
-    this.context.beginPath();
-    this.context.moveTo(cursorPosition, 0);
     const canvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
-    this.context.lineTo(cursorPosition, canvasHeight);
-    this.context.stroke();
+
+    if (this.displayMode === "single") {
+      // Single lead mode - draw one cursor across full width
+      const cursorPosition = cursorProgress * this.chartWidth;
+      this.context.beginPath();
+      this.context.moveTo(cursorPosition, 0);
+      this.context.lineTo(cursorPosition, canvasHeight);
+      this.context.stroke();
+    } else {
+      // Multi-lead mode - draw cursor for each column
+      const columnWidth = (this.chartWidth - COLUMN_PADDING) / 2;
+      
+      // Draw cursor for first column
+      const cursorPosition1 = cursorProgress * columnWidth;
+      this.context.beginPath();
+      this.context.moveTo(cursorPosition1, 0);
+      this.context.lineTo(cursorPosition1, canvasHeight);
+      this.context.stroke();
+      
+      // Draw cursor for second column
+      const cursorPosition2 = columnWidth + COLUMN_PADDING + cursorProgress * columnWidth;
+      this.context.beginPath();
+      this.context.moveTo(cursorPosition2, 0);
+      this.context.lineTo(cursorPosition2, canvasHeight);
+      this.context.stroke();
+    }
   },
 };
 
