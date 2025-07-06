@@ -10,6 +10,7 @@ defmodule AstrupWeb.ECGLive do
         display_mode: "single",
         grid_type: "medical",
         cursor_visible: true,
+        loop_enabled: true,
         lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
       )
 
@@ -71,6 +72,19 @@ defmodule AstrupWeb.ECGLive do
               options={[
                 {"Visible", true},
                 {"Hidden", false}
+              ]}
+            />
+          </form>
+
+          <form phx-change="change_loop_enabled">
+            <.input
+              type="select"
+              name="loop_enabled"
+              value={@loop_enabled}
+              label="Loop"
+              options={[
+                {"Enabled", true},
+                {"Disabled", false}
               ]}
             />
           </form>
@@ -141,6 +155,13 @@ defmodule AstrupWeb.ECGLive do
     cursor_visible = cursor_visible_str == "true"
     socket = assign(socket, cursor_visible: cursor_visible)
     socket = push_event(socket, "cursor_visibility_changed", %{cursor_visible: cursor_visible})
+    {:noreply, socket}
+  end
+
+  def handle_event("change_loop_enabled", %{"loop_enabled" => loop_enabled_str}, socket) do
+    loop_enabled = loop_enabled_str == "true"
+    socket = assign(socket, loop_enabled: loop_enabled)
+    socket = push_event(socket, "loop_changed", %{loop_enabled: loop_enabled})
     {:noreply, socket}
   end
 end

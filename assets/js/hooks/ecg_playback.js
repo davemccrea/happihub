@@ -19,6 +19,7 @@ const ECGPlayback = {
     this.gridType = "medical"; // "medical" or "simple"
     this.displayMode = "single"; // "single" or "multi"
     this.cursorVisible = true; // cursor visibility state
+    this.loopEnabled = true; // loop playback when recording ends
     this.leadHeight = CHART_HEIGHT; // Will be recalculated for multi-lead
     this.calculateMedicallyAccurateDimensions();
 
@@ -49,6 +50,10 @@ const ECGPlayback = {
 
     this.handleEvent("cursor_visibility_changed", (payload) => {
       this.handleCursorVisibilityChange(payload.cursor_visible);
+    });
+
+    this.handleEvent("loop_changed", (payload) => {
+      this.handleLoopChange(payload.loop_enabled);
     });
   },
 
@@ -246,6 +251,10 @@ const ECGPlayback = {
     // The cursor will be drawn or not based on this flag in the next animation frame
   },
 
+  handleLoopChange(loopEnabled) {
+    this.loopEnabled = loopEnabled;
+  },
+
   // === Data Management Methods ===
   switchLead(leadIndex) {
     const wasPlaying = this.isPlaying;
@@ -273,10 +282,23 @@ const ECGPlayback = {
   },
 
   updateWaveform(cursorProgress, currentCycle) {
-    if (currentCycle * this.widthSeconds >= this.totalDuration) {
-      this.stopAnimation();
-      this.resetPlayback();
+    const elapsedTime =
+      currentCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
+
+    if (elapsedTime >= this.totalDuration) {
       this.pushEvent("playback_ended", {});
+
+      if (this.loopEnabled) {
+        // Reset timing variables for seamless restart
+        this.startTime = Date.now();
+        this.currentCycle = 0;
+        this.visibleTimes = [];
+        this.visibleValues = [];
+      } else {
+        // Stop playback when loop is disabled
+        this.stopAnimation();
+        this.resetPlayback();
+      }
       return;
     }
 
@@ -640,9 +662,9 @@ const ECGPlayback = {
 
   drawCursor(cursorPosition) {
     if (!this.cursorVisible) return;
-    
-    this.context.strokeStyle = "#00ff00";
-    this.context.lineWidth = 2;
+
+    this.context.strokeStyle = "#00000";
+    this.context.lineWidth = 1;
     this.context.beginPath();
     this.context.moveTo(cursorPosition, 0);
     const canvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
