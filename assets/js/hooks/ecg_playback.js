@@ -5,6 +5,8 @@ const DEFAULT_WIDTH_SECONDS = 5;
 const HEIGHT_MILLIVOLTS = 4;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const DOT_RADIUS = 1.2;
+const CONTAINER_PADDING = 40; // Padding to account for in container width calculation
+const MULTI_LEAD_HEIGHT_SCALE = 1.5; // Scale factor for multi-lead display height
 
 const ECGPlayback = {
   // === Lifecycle Methods ===
@@ -80,6 +82,7 @@ const ECGPlayback = {
     this.leadNames = null;
     this.visibleTimes = [];
     this.visibleValues = [];
+    this.multiLeadVisibleData = null;
     this.eventHandlers = null;
 
     // Clean up grid cache
@@ -107,7 +110,7 @@ const ECGPlayback = {
       return;
     }
 
-    const containerWidth = container.offsetWidth - 40; // Account for padding
+    const containerWidth = container.offsetWidth - CONTAINER_PADDING;
     const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM;
 
     if (containerWidth < minWidth) {
@@ -152,7 +155,7 @@ const ECGPlayback = {
 
     const canvasHeight =
       this.displayMode === "multi"
-        ? this.leadNames.length * (CHART_HEIGHT / 1.5)
+        ? this.leadNames.length * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
         : CHART_HEIGHT;
 
     this.leadHeight =
@@ -277,17 +280,21 @@ const ECGPlayback = {
 
   // === Data Management Methods ===
   findDataIndexByTime(targetTime) {
+    return this.findDataIndexByTimeForLead(this.currentLeadData, targetTime);
+  },
+
+  findDataIndexByTimeForLead(leadData, targetTime) {
     // Use binary search since times are sorted
-    if (!this.currentLeadData || !this.currentLeadData.times.length) {
+    if (!leadData || !leadData.times.length) {
       return 0;
     }
 
     let left = 0;
-    let right = this.currentLeadData.times.length - 1;
+    let right = leadData.times.length - 1;
 
     while (left <= right) {
       const mid = Math.floor((left + right) / 2);
-      const midTime = this.currentLeadData.times[mid];
+      const midTime = leadData.times[mid];
 
       if (midTime === targetTime) {
         return mid;
@@ -299,7 +306,7 @@ const ECGPlayback = {
     }
 
     // Return the closest index (left is the insertion point)
-    return Math.min(left, this.currentLeadData.times.length - 1);
+    return Math.min(left, leadData.times.length - 1);
   },
 
   switchLead(leadIndex) {
@@ -345,6 +352,7 @@ const ECGPlayback = {
         this.currentCycle = 0;
         this.visibleTimes = [];
         this.visibleValues = [];
+        this.multiLeadVisibleData = null;
       } else {
         // Stop playback when loop is disabled
         this.stopAnimation();
@@ -384,12 +392,8 @@ const ECGPlayback = {
 
       // Since all leads have the same timing structure, calculate indices once
       const firstLead = this.ecgLeadDatasets[0];
-      // Temporarily set currentLeadData to use the helper method
-      const originalLeadData = this.currentLeadData;
-      this.currentLeadData = firstLead;
-      const startIndex = this.findDataIndexByTime(cycleStartTime);
-      const endIndex = this.findDataIndexByTime(cycleEndTime);
-      this.currentLeadData = originalLeadData;
+      const startIndex = this.findDataIndexByTimeForLead(firstLead, cycleStartTime);
+      const endIndex = this.findDataIndexByTimeForLead(firstLead, cycleEndTime);
       const startIdx = Math.max(0, startIndex);
       const endIdx = Math.min(firstLead.times.length - 1, endIndex);
 
@@ -425,6 +429,7 @@ const ECGPlayback = {
 
     this.visibleTimes = [];
     this.visibleValues = [];
+    this.multiLeadVisibleData = null;
 
     this.executeAnimationLoop();
   },
@@ -461,6 +466,7 @@ const ECGPlayback = {
 
     this.visibleTimes = [];
     this.visibleValues = [];
+    this.multiLeadVisibleData = null;
 
     this.clearWaveform();
   },
@@ -647,7 +653,7 @@ const ECGPlayback = {
     const canvasHeight = this.canvas
       ? this.canvas.height / devicePixelRatio
       : this.displayMode === "multi"
-      ? this.leadNames.length * (CHART_HEIGHT / 4)
+      ? this.leadNames.length * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
       : CHART_HEIGHT;
 
     this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
