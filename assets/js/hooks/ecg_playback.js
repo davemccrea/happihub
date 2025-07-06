@@ -58,7 +58,9 @@ const HEIGHT_MILLIVOLTS = 4;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const DOT_RADIUS = 1.2;
 const CONTAINER_PADDING = 40; // Padding to account for in container width calculation
-const MULTI_LEAD_HEIGHT_SCALE = 1.5; // Scale factor for multi-lead display height
+const MULTI_LEAD_HEIGHT_SCALE = 2; // Scale factor for multi-lead display height
+const LEADS_PER_COLUMN = 6; // Number of leads per column in multi-lead mode
+const COLUMN_PADDING = 0; // Padding between columns
 
 const ECGPlayback = {
   // === Lifecycle Methods ===
@@ -174,6 +176,23 @@ const ECGPlayback = {
     }
   },
 
+  // === Layout Helper Methods ===
+  getLeadColumnAndRow(leadIndex) {
+    const column = Math.floor(leadIndex / LEADS_PER_COLUMN);
+    const row = leadIndex % LEADS_PER_COLUMN;
+    return { column, row };
+  },
+
+  getLeadPosition(leadIndex) {
+    const { column, row } = this.getLeadColumnAndRow(leadIndex);
+    const columnWidth = (this.chartWidth - COLUMN_PADDING) / 2;
+
+    const xOffset = column * (columnWidth + COLUMN_PADDING);
+    const yOffset = row * this.leadHeight;
+
+    return { xOffset, yOffset, columnWidth };
+  },
+
   // === Theme Methods ===
   updateThemeColors() {
     const theme =
@@ -262,12 +281,12 @@ const ECGPlayback = {
 
     const canvasHeight =
       this.displayMode === "multi"
-        ? this.leadNames.length * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
+        ? LEADS_PER_COLUMN * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
         : CHART_HEIGHT;
 
     this.leadHeight =
       this.displayMode === "multi"
-        ? canvasHeight / this.leadNames.length
+        ? canvasHeight / LEADS_PER_COLUMN
         : CHART_HEIGHT;
 
     const canvas = document.createElement("canvas");
@@ -651,20 +670,28 @@ const ECGPlayback = {
   },
 
   drawGridForLead(yOffset) {
+    this.drawGridForLeadAtPosition(0, yOffset, this.chartWidth);
+  },
+
+  drawGridForLeadAtPosition(xOffset, yOffset, width) {
     if (this.gridType === "medical") {
-      this.drawMedicalGridAtOffset(yOffset);
+      this.drawMedicalGridAtPosition(xOffset, yOffset, width);
     } else {
-      this.drawSimpleGridAtOffset(yOffset);
+      this.drawSimpleGridAtPosition(xOffset, yOffset, width);
     }
   },
 
-  drawLeadLabel(leadIndex, yOffset) {
+  drawLeadLabel(leadIndex, xOffset, yOffset) {
     this.context.fillStyle = this.colors.labels;
     this.context.font = "12px Arial";
-    this.context.fillText(this.leadNames[leadIndex], 5, yOffset + 15);
+    this.context.fillText(this.leadNames[leadIndex], xOffset + 5, yOffset + 15);
   },
 
   drawMedicalGridAtOffset(yOffset) {
+    this.drawMedicalGridAtPosition(0, yOffset, this.chartWidth);
+  },
+
+  drawMedicalGridAtPosition(xOffset, yOffset, width) {
     const smallSquareSize = PIXELS_PER_MM;
     const largeSquareSize = 5 * PIXELS_PER_MM;
     const gridHeight =
@@ -676,7 +703,11 @@ const ECGPlayback = {
     this.context.beginPath();
 
     // Vertical lines - always use proper 1mm spacing
-    for (let x = smallSquareSize; x < this.chartWidth; x += smallSquareSize) {
+    for (
+      let x = xOffset + smallSquareSize;
+      x < xOffset + width;
+      x += smallSquareSize
+    ) {
       this.context.moveTo(x, yOffset);
       this.context.lineTo(x, yOffset + gridHeight);
     }
@@ -684,8 +715,8 @@ const ECGPlayback = {
     // Horizontal lines - only draw within the lead strip bounds and maintain 1mm spacing
     for (let y = smallSquareSize; y <= gridHeight; y += smallSquareSize) {
       if (yOffset + y <= yOffset + gridHeight) {
-        this.context.moveTo(0, yOffset + y);
-        this.context.lineTo(this.chartWidth, yOffset + y);
+        this.context.moveTo(xOffset, yOffset + y);
+        this.context.lineTo(xOffset + width, yOffset + y);
       }
     }
 
@@ -697,7 +728,11 @@ const ECGPlayback = {
     this.context.beginPath();
 
     // Vertical bold lines - always use proper 5mm spacing
-    for (let x = largeSquareSize; x < this.chartWidth; x += largeSquareSize) {
+    for (
+      let x = xOffset + largeSquareSize;
+      x < xOffset + width;
+      x += largeSquareSize
+    ) {
       this.context.moveTo(x, yOffset);
       this.context.lineTo(x, yOffset + gridHeight);
     }
@@ -705,8 +740,8 @@ const ECGPlayback = {
     // Horizontal bold lines - only draw within bounds and maintain 5mm spacing
     for (let y = largeSquareSize; y <= gridHeight; y += largeSquareSize) {
       if (yOffset + y <= yOffset + gridHeight) {
-        this.context.moveTo(0, yOffset + y);
-        this.context.lineTo(this.chartWidth, yOffset + y);
+        this.context.moveTo(xOffset, yOffset + y);
+        this.context.lineTo(xOffset + width, yOffset + y);
       }
     }
 
@@ -714,12 +749,16 @@ const ECGPlayback = {
   },
 
   drawSimpleGridAtOffset(yOffset) {
+    this.drawSimpleGridAtPosition(0, yOffset, this.chartWidth);
+  },
+
+  drawSimpleGridAtPosition(xOffset, yOffset, width) {
     const dotSpacing = 5 * PIXELS_PER_MM;
     const gridHeight =
       this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
     this.context.fillStyle = this.colors.gridDots;
 
-    for (let x = 5; x < this.chartWidth - 5; x += dotSpacing) {
+    for (let x = xOffset + 5; x < xOffset + width - 5; x += dotSpacing) {
       for (let y = 5; y < gridHeight - 5; y += dotSpacing) {
         this.context.beginPath();
         this.context.arc(x, yOffset + y, DOT_RADIUS, 0, 2 * Math.PI);
@@ -793,20 +832,20 @@ const ECGPlayback = {
     const canvasHeight = this.canvas
       ? this.canvas.height / devicePixelRatio
       : this.displayMode === "multi"
-      ? this.leadNames.length * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
+      ? LEADS_PER_COLUMN * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
       : CHART_HEIGHT;
 
     this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
 
     if (this.displayMode === "multi") {
       for (let i = 0; i < this.leadNames.length; i++) {
-        const yOffset = i * this.leadHeight;
-        this.drawGridForLead(yOffset);
-        this.drawLeadLabel(i, yOffset);
+        const { xOffset, yOffset, columnWidth } = this.getLeadPosition(i);
+        this.drawGridForLeadAtPosition(xOffset, yOffset, columnWidth);
+        this.drawLeadLabel(i, xOffset, yOffset);
       }
     } else {
-      this.drawGridForLead(0);
-      this.drawLeadLabel(this.currentLead, 0);
+      this.drawGridForLeadAtPosition(0, 0, this.chartWidth);
+      this.drawLeadLabel(this.currentLead, 0, 0);
     }
   },
 
@@ -850,7 +889,6 @@ const ECGPlayback = {
     this.context.lineWidth = 1;
 
     // Pre-calculate constants once for all leads
-    const xScale = this.chartWidth / this.widthSeconds;
     const yScale = this.leadHeight / (this.yMax - this.yMin);
 
     for (
@@ -859,7 +897,8 @@ const ECGPlayback = {
       leadIndex++
     ) {
       const leadData = this.multiLeadVisibleData[leadIndex];
-      const leadYOffset = leadIndex * this.leadHeight;
+      const { xOffset, yOffset, columnWidth } = this.getLeadPosition(leadIndex);
+      const xScale = columnWidth / this.widthSeconds;
       const pointCount = leadData.times.length;
 
       if (pointCount > 0) {
@@ -869,8 +908,8 @@ const ECGPlayback = {
         const points = [];
         for (let i = 0; i < pointCount; i++) {
           points.push(
-            leadData.times[i] * xScale,
-            leadYOffset +
+            xOffset + leadData.times[i] * xScale,
+            yOffset +
               this.leadHeight -
               (leadData.values[i] - this.yMin) * yScale
           );
