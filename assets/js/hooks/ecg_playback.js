@@ -720,7 +720,7 @@ const ECGPlayback = {
   },
 
   prepareMultiLeadData(elapsedTime) {
-    const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
+    const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
     const columnCycleStart =
       Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
 
@@ -1055,7 +1055,7 @@ const ECGPlayback = {
         leadData.leadIndex
       );
 
-      const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
+      const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
       const columnProgress =
         (this.cursorPosition / this.chartWidth) *
         (this.widthSeconds / columnTimeSpan);
@@ -1076,7 +1076,7 @@ const ECGPlayback = {
         yOffset,
         columnWidth,
         this.leadHeight,
-        DEFAULT_WIDTH_SECONDS,
+        columnTimeSpan,
         cursorData
       );
     }
