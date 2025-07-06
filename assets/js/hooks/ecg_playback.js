@@ -23,8 +23,8 @@ const MULTI_LEAD_HEIGHT_SCALE = 1;
 // ===================
 // ANIMATION CONSTANTS
 // ===================
-const SINGLE_LEAD_SWEEP_WIDTH = 20;
-const MULTI_LEAD_SWEEP_WIDTH = 8;
+const SINGLE_LEAD_CURSOR_WIDTH = 20;
+const MULTI_LEAD_CURSOR_WIDTH = 8;
 
 const ECGPlayback = {
   // ==========================
@@ -55,7 +55,9 @@ const ECGPlayback = {
             const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
             const cursorProgress =
               (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-            const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+            const animationCycle = Math.floor(
+              elapsedSeconds / this.widthSeconds
+            );
             this.processWaveformUpdate(cursorProgress, animationCycle);
           }
         }
@@ -159,7 +161,7 @@ const ECGPlayback = {
       this.gridCanvas = null;
     }
 
-    this.sweepBuffer = null;
+    this.cursorBuffer = null;
     this.context = null;
   },
 
@@ -175,10 +177,10 @@ const ECGPlayback = {
     this.animationId = null;
     this.screenVisibleTimes = [];
     this.screenVisibleValues = [];
-    this.sweepPosition = 0;
-    this.sweepWidth = SINGLE_LEAD_SWEEP_WIDTH;
-    this.activeSweepData = null;
-    this.allLeadsSweepData = null;
+    this.cursorPosition = 0;
+    this.cursorWidth = SINGLE_LEAD_CURSOR_WIDTH;
+    this.activeCursorData = null;
+    this.allLeadsCursorData = null;
     this.gridType = this.el.dataset.gridType || "medical";
     this.displayMode = this.el.dataset.displayMode || "single";
     this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
@@ -552,7 +554,7 @@ const ECGPlayback = {
       return;
     }
 
-    this.calculateSweepPosition(elapsedTime);
+    this.calculateCursorPosition(elapsedTime);
 
     if (this.displayMode === "single") {
       this.prepareSingleLeadData(elapsedTime);
@@ -560,12 +562,12 @@ const ECGPlayback = {
       this.prepareMultiLeadData(elapsedTime);
     }
 
-    this.drawSweepWaveform();
+    this.drawCursorWaveform();
   },
 
-  calculateSweepPosition(elapsedTime) {
-    this.sweepPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
-    this.sweepPosition = this.sweepPosition % this.chartWidth;
+  calculateCursorPosition(elapsedTime) {
+    this.cursorPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
+    this.cursorPosition = this.cursorPosition % this.chartWidth;
   },
 
   prepareSingleLeadData(elapsedTime) {
@@ -586,12 +588,12 @@ const ECGPlayback = {
         endIndex + 1
       );
 
-      this.activeSweepData = {
+      this.activeCursorData = {
         times: times.map((t) => t - currentScreenStartTime),
         values: values,
       };
     } else {
-      this.activeSweepData = {
+      this.activeCursorData = {
         times: [],
         values: [],
       };
@@ -602,7 +604,7 @@ const ECGPlayback = {
     const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
     const columnDataTime = elapsedTime;
 
-    this.allLeadsSweepData = [];
+    this.allLeadsCursorData = [];
 
     for (
       let leadIndex = 0;
@@ -628,7 +630,7 @@ const ECGPlayback = {
         const times = leadData.times.slice(startIndex, endIndex + 1);
         const values = leadData.values.slice(startIndex, endIndex + 1);
 
-        this.allLeadsSweepData.push({
+        this.allLeadsCursorData.push({
           leadIndex,
           times: times.map((t) => t - startDataTime),
           values: values,
@@ -645,7 +647,7 @@ const ECGPlayback = {
     this.startTime = Date.now();
     this.pausedTime = 0;
     this.animationCycle = 0;
-    this.sweepPosition = 0;
+    this.cursorPosition = 0;
 
     this.screenVisibleTimes = [];
     this.screenVisibleValues = [];
@@ -683,7 +685,7 @@ const ECGPlayback = {
     this.startTime = null;
     this.pausedTime = 0;
     this.animationCycle = 0;
-    this.sweepPosition = 0;
+    this.cursorPosition = 0;
 
     this.screenVisibleTimes = [];
     this.screenVisibleValues = [];
@@ -835,11 +837,11 @@ const ECGPlayback = {
     this.renderGridBackground();
   },
 
-  drawSweepWaveform() {
+  drawCursorWaveform() {
     if (this.displayMode === "single") {
-      this.drawSingleLeadSweep();
+      this.drawSingleLeadCursor();
     } else {
-      this.drawMultiLeadSweep();
+      this.drawMultiLeadCursor();
     }
   },
 
@@ -847,7 +849,7 @@ const ECGPlayback = {
   // RENDERING - CANVAS OPERATIONS
   // ==============================
 
-  clearSweepArea(x, width) {
+  clearCursorArea(x, width) {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.canvas.height / devicePixelRatio;
 
@@ -882,7 +884,7 @@ const ECGPlayback = {
     this.context.restore();
   },
 
-  drawLeadSweep(
+  drawLeadCursor(
     times,
     values,
     xOffset,
@@ -890,16 +892,16 @@ const ECGPlayback = {
     width,
     height,
     timeSpan,
-    sweepPosition,
-    sweepWidth
+    cursorPosition,
+    cursorWidth
   ) {
     if (!times || times.length === 0) return;
 
-    const clearX = Math.max(xOffset, sweepPosition - sweepWidth / 2);
-    const clearWidth = Math.min(sweepWidth, xOffset + width - clearX);
+    const clearX = Math.max(xOffset, cursorPosition - cursorWidth / 2);
+    const clearWidth = Math.min(cursorWidth, xOffset + width - clearX);
 
     if (clearWidth > 0) {
-      this.clearSweepArea(clearX, clearWidth);
+      this.clearCursorArea(clearX, clearWidth);
     }
 
     this.context.strokeStyle = this.colors.waveform;
@@ -914,7 +916,7 @@ const ECGPlayback = {
       const x = xOffset + times[i] * xScale;
       const y = yOffset + height - (values[i] - this.yMin) * yScale;
 
-      if (x <= sweepPosition) {
+      if (x <= cursorPosition) {
         if (!hasMovedTo) {
           this.context.moveTo(x, y);
           hasMovedTo = true;
@@ -929,16 +931,16 @@ const ECGPlayback = {
     }
   },
 
-  drawSingleLeadSweep() {
-    if (!this.activeSweepData || this.activeSweepData.times.length === 0)
+  drawSingleLeadCursor() {
+    if (!this.activeCursorData || this.activeCursorData.times.length === 0)
       return;
 
-    const sweepClearWidth = SINGLE_LEAD_SWEEP_WIDTH;
-    const sweepData = {
-      times: this.activeSweepData.times,
-      values: this.activeSweepData.values,
-      sweepPosition: this.sweepPosition,
-      sweepWidth: sweepClearWidth,
+    const cursorClearWidth = SINGLE_LEAD_CURSOR_WIDTH;
+    const cursorData = {
+      times: this.activeCursorData.times,
+      values: this.activeCursorData.values,
+      cursorPosition: this.cursorPosition,
+      cursorWidth: cursorClearWidth,
     };
 
     this.renderLead(
@@ -949,31 +951,31 @@ const ECGPlayback = {
       this.chartWidth,
       CHART_HEIGHT,
       this.widthSeconds,
-      sweepData
+      cursorData
     );
   },
 
-  drawMultiLeadSweep() {
-    if (!this.allLeadsSweepData || this.allLeadsSweepData.length === 0)
+  drawMultiLeadCursor() {
+    if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0)
       return;
 
-    for (const leadData of this.allLeadsSweepData) {
+    for (const leadData of this.allLeadsCursorData) {
       const { xOffset, yOffset, columnWidth } = this.getLeadPosition(
         leadData.leadIndex
       );
 
       const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
       const columnProgress =
-        (this.sweepPosition / this.chartWidth) *
+        (this.cursorPosition / this.chartWidth) *
         (this.widthSeconds / columnTimeSpan);
-      const localSweepPosition = xOffset + (columnProgress % 1) * columnWidth;
+      const localCursorPosition = xOffset + (columnProgress % 1) * columnWidth;
 
-      const sweepClearWidth = MULTI_LEAD_SWEEP_WIDTH;
-      const sweepData = {
+      const cursorClearWidth = MULTI_LEAD_CURSOR_WIDTH;
+      const cursorData = {
         times: leadData.times,
         values: leadData.values,
-        sweepPosition: localSweepPosition,
-        sweepWidth: sweepClearWidth,
+        cursorPosition: localCursorPosition,
+        cursorWidth: cursorClearWidth,
       };
 
       this.renderLead(
@@ -984,11 +986,10 @@ const ECGPlayback = {
         columnWidth,
         this.leadHeight,
         DEFAULT_WIDTH_SECONDS,
-        sweepData
+        cursorData
       );
     }
   },
-
 
   // ============================
   // RENDERING - LEAD COMPONENTS
@@ -1007,21 +1008,21 @@ const ECGPlayback = {
     width,
     height,
     timeSpan,
-    sweepData = null
+    cursorData = null
   ) {
     this.renderLeadBackground(leadIndex, xOffset, yOffset, width, height);
 
-    if (sweepData) {
-      this.drawLeadSweep(
-        sweepData.times,
-        sweepData.values,
+    if (cursorData) {
+      this.drawLeadCursor(
+        cursorData.times,
+        cursorData.values,
         xOffset,
         yOffset,
         width,
         height,
         timeSpan,
-        sweepData.sweepPosition,
-        sweepData.sweepWidth
+        cursorData.cursorPosition,
+        cursorData.cursorWidth
       );
     } else if (leadData && leadData.times && leadData.values) {
       this.drawLeadWaveform(
