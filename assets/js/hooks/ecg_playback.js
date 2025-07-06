@@ -149,6 +149,8 @@ const ECGPlayback = {
     }
 
     this.ecgLeadDatasets = null;
+    this.precomputedSegments = null;
+    this.dataIndexCache = null;
     this.currentLeadData = null;
     this.leadNames = null;
     this.screenVisibleTimes = [];
@@ -185,6 +187,11 @@ const ECGPlayback = {
     this.displayMode = this.el.dataset.displayMode || "single";
     this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
     this.leadHeight = CHART_HEIGHT;
+    
+    // Pre-computed data segments for performance
+    this.precomputedSegments = new Map();
+    this.segmentDuration = 0.1; // 100ms segments
+    this.dataIndexCache = new Map();
   },
 
   // =========================
@@ -299,6 +306,9 @@ const ECGPlayback = {
     this.yMin = -HEIGHT_MILLIVOLTS / 2;
     this.yMax = HEIGHT_MILLIVOLTS / 2;
     this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
+
+    // Pre-compute data segments for all leads
+    this.precomputeDataSegments();
 
     return this.currentLeadData;
   },
@@ -469,6 +479,74 @@ const ECGPlayback = {
     return Math.min(left, leadData.times.length - 1);
   },
 
+  // ====================
+  // DATA PRE-COMPUTATION
+  // ====================
+
+  precomputeDataSegments() {
+    this.precomputedSegments.clear();
+    this.dataIndexCache.clear();
+    
+    if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) {
+      return;
+    }
+
+    // Pre-compute segments for each lead
+    for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
+      const leadData = this.ecgLeadDatasets[leadIndex];
+      const leadSegments = new Map();
+      
+      // Create segments every 100ms
+      for (let time = 0; time < this.totalDuration; time += this.segmentDuration) {
+        const segmentKey = Math.floor(time / this.segmentDuration);
+        const startTime = segmentKey * this.segmentDuration;
+        const endTime = Math.min(startTime + this.segmentDuration, this.totalDuration);
+        
+        const startIndex = this.findDataIndexByTimeForLead(leadData, startTime);
+        const endIndex = this.findDataIndexByTimeForLead(leadData, endTime);
+        
+        if (endIndex >= startIndex && startIndex < leadData.times.length) {
+          const times = leadData.times.slice(startIndex, endIndex + 1);
+          const values = leadData.values.slice(startIndex, endIndex + 1);
+          
+          leadSegments.set(segmentKey, {
+            times: times.map(t => t - startTime),
+            values: values,
+            originalStartTime: startTime
+          });
+        }
+      }
+      
+      this.precomputedSegments.set(leadIndex, leadSegments);
+    }
+  },
+
+  getPrecomputedSegment(leadIndex, time) {
+    const leadSegments = this.precomputedSegments.get(leadIndex);
+    if (!leadSegments) return null;
+    
+    const segmentKey = Math.floor(time / this.segmentDuration);
+    return leadSegments.get(segmentKey) || null;
+  },
+
+  getSegmentsForTimeRange(leadIndex, startTime, endTime) {
+    const leadSegments = this.precomputedSegments.get(leadIndex);
+    if (!leadSegments) return [];
+    
+    const startSegment = Math.floor(startTime / this.segmentDuration);
+    const endSegment = Math.floor(endTime / this.segmentDuration);
+    
+    const segments = [];
+    for (let segmentKey = startSegment; segmentKey <= endSegment; segmentKey++) {
+      const segment = leadSegments.get(segmentKey);
+      if (segment) {
+        segments.push(segment);
+      }
+    }
+    
+    return segments;
+  },
+
   // ==============
   // LEAD SWITCHING
   // ==============
@@ -573,67 +651,69 @@ const ECGPlayback = {
   prepareSingleLeadData(elapsedTime) {
     const currentScreenStartTime =
       Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
-    const currentDataTime = elapsedTime;
-
-    const startIndex = this.findDataIndexByTime(currentScreenStartTime);
-    const endIndex = this.findDataIndexByTime(currentDataTime);
-
-    if (
-      endIndex >= startIndex &&
-      startIndex < this.currentLeadData.times.length
-    ) {
-      const times = this.currentLeadData.times.slice(startIndex, endIndex + 1);
-      const values = this.currentLeadData.values.slice(
-        startIndex,
-        endIndex + 1
-      );
-
-      this.activeCursorData = {
-        times: times.map((t) => t - currentScreenStartTime),
-        values: values,
-      };
+    
+    // Use pre-computed segments instead of real-time slicing
+    const segments = this.getSegmentsForTimeRange(
+      this.currentLead,
+      currentScreenStartTime,
+      elapsedTime
+    );
+    
+    if (segments.length > 0) {
+      // Combine segments into cursor data
+      const times = [];
+      const values = [];
+      
+      for (const segment of segments) {
+        for (let i = 0; i < segment.times.length; i++) {
+          const absoluteTime = segment.originalStartTime + segment.times[i];
+          if (absoluteTime >= currentScreenStartTime && absoluteTime <= elapsedTime) {
+            times.push(absoluteTime - currentScreenStartTime);
+            values.push(segment.values[i]);
+          }
+        }
+      }
+      
+      this.activeCursorData = { times, values };
     } else {
-      this.activeCursorData = {
-        times: [],
-        values: [],
-      };
+      this.activeCursorData = { times: [], values: [] };
     }
   },
 
   prepareMultiLeadData(elapsedTime) {
     const columnTimeSpan = DEFAULT_WIDTH_SECONDS;
-    const columnDataTime = elapsedTime;
-
+    const columnCycleStart =
+      Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
+    
     this.allLeadsCursorData = [];
 
-    for (
-      let leadIndex = 0;
-      leadIndex < this.ecgLeadDatasets.length;
-      leadIndex++
-    ) {
-      const leadData = this.ecgLeadDatasets[leadIndex];
-
-      const columnCycleStart =
-        Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
-      const startDataTime = columnCycleStart;
-
-      const startIndex = this.findDataIndexByTimeForLead(
-        leadData,
-        startDataTime
+    for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
+      // Use pre-computed segments instead of real-time slicing
+      const segments = this.getSegmentsForTimeRange(
+        leadIndex,
+        columnCycleStart,
+        elapsedTime
       );
-      const endIndex = this.findDataIndexByTimeForLead(
-        leadData,
-        columnDataTime
-      );
-
-      if (endIndex >= startIndex && startIndex < leadData.times.length) {
-        const times = leadData.times.slice(startIndex, endIndex + 1);
-        const values = leadData.values.slice(startIndex, endIndex + 1);
-
+      
+      if (segments.length > 0) {
+        // Combine segments into cursor data
+        const times = [];
+        const values = [];
+        
+        for (const segment of segments) {
+          for (let i = 0; i < segment.times.length; i++) {
+            const absoluteTime = segment.originalStartTime + segment.times[i];
+            if (absoluteTime >= columnCycleStart && absoluteTime <= elapsedTime) {
+              times.push(absoluteTime - columnCycleStart);
+              values.push(segment.values[i]);
+            }
+          }
+        }
+        
         this.allLeadsCursorData.push({
           leadIndex,
-          times: times.map((t) => t - startDataTime),
-          values: values,
+          times,
+          values,
         });
       }
     }
