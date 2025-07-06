@@ -119,15 +119,32 @@ const ECGPlayback = {
       attributeFilter: ["data-theme"],
     });
 
-    // Add keyboard event listeners for lead switching
+    // Add keyboard event listeners for lead switching (only when focused)
     this.keydownHandler = (event) => {
-      if (event.key === 'j') {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
         this.switchToNextLead();
-      } else if (event.key === 'k') {
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
         this.switchToPrevLead();
       }
     };
-    document.addEventListener('keydown', this.keydownHandler);
+    
+    // Make the element focusable and add focus styling
+    this.el.setAttribute('tabindex', '0');
+    this.el.style.outline = 'none';
+    
+    // Add focus/blur event listeners
+    this.focusHandler = () => {
+      this.el.addEventListener('keydown', this.keydownHandler);
+    };
+    
+    this.blurHandler = () => {
+      this.el.removeEventListener('keydown', this.keydownHandler);
+    };
+    
+    this.el.addEventListener('focus', this.focusHandler);
+    this.el.addEventListener('blur', this.blurHandler);
 
     await this.initializeECGChart();
 
@@ -177,8 +194,16 @@ const ECGPlayback = {
       this.themeObserver.disconnect();
       this.themeObserver = null;
     }
+    if (this.focusHandler) {
+      this.el.removeEventListener('focus', this.focusHandler);
+      this.focusHandler = null;
+    }
+    if (this.blurHandler) {
+      this.el.removeEventListener('blur', this.blurHandler);
+      this.blurHandler = null;
+    }
     if (this.keydownHandler) {
-      document.removeEventListener('keydown', this.keydownHandler);
+      this.el.removeEventListener('keydown', this.keydownHandler);
       this.keydownHandler = null;
     }
 
