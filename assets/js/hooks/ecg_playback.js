@@ -59,8 +59,10 @@ const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const DOT_RADIUS = 1.2;
 const CONTAINER_PADDING = 40; // Padding to account for in container width calculation
 const MULTI_LEAD_HEIGHT_SCALE = 1; // Scale factor for multi-lead display height
-const LEADS_PER_COLUMN = 6; // Number of leads per column in multi-lead mode
+const LEADS_PER_ROW = 4; // Number of leads per row in multi-lead mode (traditional ECG layout)
+const ROWS_PER_DISPLAY = 3; // Number of rows in multi-lead mode
 const COLUMN_PADDING = 0; // Padding between columns
+const ROW_PADDING = 0; // Padding between rows
 
 const ECGPlayback = {
   // === Lifecycle Methods ===
@@ -119,32 +121,35 @@ const ECGPlayback = {
       attributeFilter: ["data-theme"],
     });
 
-    // Add keyboard event listeners for lead switching (only when focused)
+    // Add keyboard event listeners for lead switching and playback control (only when focused)
     this.keydownHandler = (event) => {
-      if (event.key === 'ArrowDown') {
+      if (event.key === "ArrowDown") {
         event.preventDefault();
         this.switchToNextLead();
-      } else if (event.key === 'ArrowUp') {
+      } else if (event.key === "ArrowUp") {
         event.preventDefault();
         this.switchToPrevLead();
+      } else if (event.key === " ") {
+        event.preventDefault();
+        this.togglePlayback();
       }
     };
-    
+
     // Make the element focusable and add focus styling
-    this.el.setAttribute('tabindex', '0');
-    this.el.style.outline = 'none';
-    
+    this.el.setAttribute("tabindex", "0");
+    this.el.style.outline = "none";
+
     // Add focus/blur event listeners
     this.focusHandler = () => {
-      this.el.addEventListener('keydown', this.keydownHandler);
+      this.el.addEventListener("keydown", this.keydownHandler);
     };
-    
+
     this.blurHandler = () => {
-      this.el.removeEventListener('keydown', this.keydownHandler);
+      this.el.removeEventListener("keydown", this.keydownHandler);
     };
-    
-    this.el.addEventListener('focus', this.focusHandler);
-    this.el.addEventListener('blur', this.blurHandler);
+
+    this.el.addEventListener("focus", this.focusHandler);
+    this.el.addEventListener("blur", this.blurHandler);
 
     await this.initializeECGChart();
 
@@ -195,15 +200,15 @@ const ECGPlayback = {
       this.themeObserver = null;
     }
     if (this.focusHandler) {
-      this.el.removeEventListener('focus', this.focusHandler);
+      this.el.removeEventListener("focus", this.focusHandler);
       this.focusHandler = null;
     }
     if (this.blurHandler) {
-      this.el.removeEventListener('blur', this.blurHandler);
+      this.el.removeEventListener("blur", this.blurHandler);
       this.blurHandler = null;
     }
     if (this.keydownHandler) {
-      this.el.removeEventListener('keydown', this.keydownHandler);
+      this.el.removeEventListener("keydown", this.keydownHandler);
       this.keydownHandler = null;
     }
 
@@ -229,17 +234,18 @@ const ECGPlayback = {
 
   // === Layout Helper Methods ===
   getLeadColumnAndRow(leadIndex) {
-    const column = Math.floor(leadIndex / LEADS_PER_COLUMN);
-    const row = leadIndex % LEADS_PER_COLUMN;
+    const row = Math.floor(leadIndex / LEADS_PER_ROW);
+    const column = leadIndex % LEADS_PER_ROW;
     return { column, row };
   },
 
   getLeadPosition(leadIndex) {
     const { column, row } = this.getLeadColumnAndRow(leadIndex);
-    const columnWidth = (this.chartWidth - COLUMN_PADDING) / 2;
+    const totalColumnPadding = (LEADS_PER_ROW - 1) * COLUMN_PADDING;
+    const columnWidth = (this.chartWidth - totalColumnPadding) / LEADS_PER_ROW;
 
     const xOffset = column * (columnWidth + COLUMN_PADDING);
-    const yOffset = row * this.leadHeight;
+    const yOffset = row * (this.leadHeight + ROW_PADDING);
 
     return { xOffset, yOffset, columnWidth };
   },
@@ -332,12 +338,13 @@ const ECGPlayback = {
 
     const canvasHeight =
       this.displayMode === "multi"
-        ? LEADS_PER_COLUMN * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
+        ? ROWS_PER_DISPLAY * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE) +
+          (ROWS_PER_DISPLAY - 1) * ROW_PADDING
         : CHART_HEIGHT;
 
     this.leadHeight =
       this.displayMode === "multi"
-        ? canvasHeight / LEADS_PER_COLUMN
+        ? CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE
         : CHART_HEIGHT;
 
     const canvas = document.createElement("canvas");
@@ -357,7 +364,7 @@ const ECGPlayback = {
   },
 
   async loadECGData() {
-    const response = await fetch("/assets/json/ptb-xl/03024_hr.json");
+    const response = await fetch("/assets/json/ptb-xl/09436_hr.json");
     if (!response.ok) {
       throw new Error(`Failed to load ECG data: ${response.status}`);
     }
@@ -543,11 +550,11 @@ const ECGPlayback = {
 
   switchToNextLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
-    
+
     if (this.currentLead < this.ecgLeadDatasets.length - 1) {
       const nextLead = this.currentLead + 1;
       this.switchLead(nextLead);
-      
+
       // Notify the LiveView of the lead change
       this.pushEvent("lead_changed", { lead: nextLead });
     }
@@ -555,13 +562,27 @@ const ECGPlayback = {
 
   switchToPrevLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
-    
+
     if (this.currentLead > 0) {
       const prevLead = this.currentLead - 1;
       this.switchLead(prevLead);
-      
+
       // Notify the LiveView of the lead change
       this.pushEvent("lead_changed", { lead: prevLead });
+    }
+  },
+
+  togglePlayback() {
+    const newPlayingState = !this.isPlaying;
+    this.isPlaying = newPlayingState;
+
+    // Notify the LiveView of the playback change
+    this.pushEvent("playback_changed", { is_playing: newPlayingState });
+
+    if (newPlayingState) {
+      this.resumeAnimation();
+    } else {
+      this.pauseAnimation();
     }
   },
 
@@ -906,7 +927,8 @@ const ECGPlayback = {
     const canvasHeight = this.canvas
       ? this.canvas.height / devicePixelRatio
       : this.displayMode === "multi"
-      ? LEADS_PER_COLUMN * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE)
+      ? ROWS_PER_DISPLAY * (CHART_HEIGHT / MULTI_LEAD_HEIGHT_SCALE) +
+        (ROWS_PER_DISPLAY - 1) * ROW_PADDING
       : CHART_HEIGHT;
 
     this.context.clearRect(0, 0, this.chartWidth, canvasHeight);
@@ -968,7 +990,7 @@ const ECGPlayback = {
     if (!this.multiLeadVisibleData) return;
 
     this.context.strokeStyle = this.colors.waveform;
-    this.context.lineWidth = 1;
+    this.context.lineWidth = 0.5;
 
     // Pre-calculate constants once for all leads
     const yScale = this.leadHeight / (this.yMax - this.yMin);
@@ -1034,21 +1056,19 @@ const ECGPlayback = {
       this.context.stroke();
     } else {
       // Multi-lead mode - draw cursor for each column
-      const columnWidth = (this.chartWidth - COLUMN_PADDING) / 2;
-      
-      // Draw cursor for first column
-      const cursorPosition1 = cursorProgress * columnWidth;
-      this.context.beginPath();
-      this.context.moveTo(cursorPosition1, 0);
-      this.context.lineTo(cursorPosition1, canvasHeight);
-      this.context.stroke();
-      
-      // Draw cursor for second column
-      const cursorPosition2 = columnWidth + COLUMN_PADDING + cursorProgress * columnWidth;
-      this.context.beginPath();
-      this.context.moveTo(cursorPosition2, 0);
-      this.context.lineTo(cursorPosition2, canvasHeight);
-      this.context.stroke();
+      const totalColumnPadding = (LEADS_PER_ROW - 1) * COLUMN_PADDING;
+      const columnWidth =
+        (this.chartWidth - totalColumnPadding) / LEADS_PER_ROW;
+
+      // Draw cursor for each column
+      for (let col = 0; col < LEADS_PER_ROW; col++) {
+        const cursorPosition =
+          col * (columnWidth + COLUMN_PADDING) + cursorProgress * columnWidth;
+        this.context.beginPath();
+        this.context.moveTo(cursorPosition, 0);
+        this.context.lineTo(cursorPosition, canvasHeight);
+        this.context.stroke();
+      }
     }
   },
 };

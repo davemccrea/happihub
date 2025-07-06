@@ -100,7 +100,9 @@ defmodule AstrupWeb.ECGLive do
             <span>Click on the ECG chart and use</span>
             <kbd class="kbd kbd-sm">↑</kbd>
             <kbd class="kbd kbd-sm">↓</kbd>
-            <span>to switch leads</span>
+            <span>to switch leads,</span>
+            <kbd class="kbd kbd-sm">Space</kbd>
+            <span>to play/pause</span>
           </div>
         </div>
 
@@ -144,6 +146,10 @@ defmodule AstrupWeb.ECGLive do
     else
       {:noreply, socket}
     end
+  end
+
+  def handle_event("playback_changed", %{"is_playing" => is_playing}, socket) when is_boolean(is_playing) do
+    {:noreply, assign(socket, is_playing: is_playing)}
   end
 
   def handle_event("time_update", %{"elapsed_time" => elapsed_time}, socket) do
