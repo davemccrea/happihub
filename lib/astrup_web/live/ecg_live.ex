@@ -2,19 +2,17 @@ defmodule AstrupWeb.ECGLive do
   use AstrupWeb, :live_view
 
   def mount(_params, _session, socket) do
-    socket =
-      assign(socket,
-        is_playing: false,
-        current_lead: 0,
-        elapsed_time: 0,
-        display_mode: "single",
-        grid_type: "simple",
-        cursor_visible: false,
-        loop_enabled: true,
-        lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
-      )
-
-    {:ok, socket}
+    {:ok,
+     assign(socket,
+       is_playing: false,
+       current_lead: 0,
+       elapsed_time: 0,
+       display_mode: "single",
+       grid_type: "simple",
+       cursor_visible: false,
+       loop_enabled: true,
+       lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
+     )}
   end
 
   def render(assigns) do
@@ -65,27 +63,19 @@ defmodule AstrupWeb.ECGLive do
 
           <form phx-change="change_cursor_visibility">
             <.input
-              type="select"
+              type="checkbox"
               name="cursor_visible"
               value={@cursor_visible}
-              label="Cursor"
-              options={[
-                {"Visible", true},
-                {"Hidden", false}
-              ]}
+              label="Show Cursor"
             />
           </form>
 
           <form phx-change="change_loop_enabled">
             <.input
-              type="select"
+              type="checkbox"
               name="loop_enabled"
               value={@loop_enabled}
-              label="Loop"
-              options={[
-                {"Enabled", true},
-                {"Disabled", false}
-              ]}
+              label="Enable Loop"
             />
           </form>
         </div>
@@ -115,16 +105,23 @@ defmodule AstrupWeb.ECGLive do
 
   def handle_event("toggle_playback", _params, socket) do
     new_playing = !socket.assigns.is_playing
-    socket = assign(socket, is_playing: new_playing)
-    socket = push_event(socket, "playback_changed", %{is_playing: new_playing})
+    
+    socket = 
+      socket
+      |> assign(is_playing: new_playing)
+      |> push_event("playback_changed", %{is_playing: new_playing})
+    
     {:noreply, socket}
   end
 
   def handle_event("change_lead", %{"lead" => lead_index_str}, socket) do
     case Integer.parse(lead_index_str) do
       {lead_index, ""} when lead_index >= 0 and lead_index < length(socket.assigns.lead_names) ->
-        socket = assign(socket, current_lead: lead_index)
-        socket = push_event(socket, "lead_changed", %{lead: lead_index})
+        socket = 
+          socket
+          |> assign(current_lead: lead_index)
+          |> push_event("lead_changed", %{lead: lead_index})
+        
         {:noreply, socket}
 
       _ ->
@@ -133,19 +130,20 @@ defmodule AstrupWeb.ECGLive do
   end
 
   def handle_event("time_update", %{"elapsed_time" => elapsed_time}, socket) do
-    socket = assign(socket, elapsed_time: elapsed_time)
-    {:noreply, socket}
+    {:noreply, assign(socket, elapsed_time: elapsed_time)}
   end
 
   def handle_event("playback_ended", _params, socket) do
-    socket = assign(socket, is_playing: false)
-    {:noreply, socket}
+    {:noreply, assign(socket, is_playing: false)}
   end
 
   def handle_event("change_display_mode", %{"display_mode" => display_mode}, socket) do
     if display_mode in ["single", "multi"] do
-      socket = assign(socket, display_mode: display_mode)
-      socket = push_event(socket, "display_mode_changed", %{display_mode: display_mode})
+      socket = 
+        socket
+        |> assign(display_mode: display_mode)
+        |> push_event("display_mode_changed", %{display_mode: display_mode})
+      
       {:noreply, socket}
     else
       {:noreply, socket}
@@ -154,25 +152,50 @@ defmodule AstrupWeb.ECGLive do
 
   def handle_event("change_grid_type", %{"grid_type" => grid_type}, socket) do
     if grid_type in ["medical", "simple"] do
-      socket = assign(socket, grid_type: grid_type)
-      socket = push_event(socket, "grid_changed", %{grid_type: grid_type})
+      socket = 
+        socket
+        |> assign(grid_type: grid_type)
+        |> push_event("grid_changed", %{grid_type: grid_type})
+      
       {:noreply, socket}
     else
       {:noreply, socket}
     end
   end
 
-  def handle_event("change_cursor_visibility", %{"cursor_visible" => cursor_visible_str}, socket) do
-    cursor_visible = cursor_visible_str == "true"
-    socket = assign(socket, cursor_visible: cursor_visible)
-    socket = push_event(socket, "cursor_visibility_changed", %{cursor_visible: cursor_visible})
+  def handle_event("change_cursor_visibility", %{"cursor_visible" => "true"}, socket) do
+    socket = 
+      socket
+      |> assign(cursor_visible: true)
+      |> push_event("cursor_visibility_changed", %{cursor_visible: true})
+    
     {:noreply, socket}
   end
 
-  def handle_event("change_loop_enabled", %{"loop_enabled" => loop_enabled_str}, socket) do
-    loop_enabled = loop_enabled_str == "true"
-    socket = assign(socket, loop_enabled: loop_enabled)
-    socket = push_event(socket, "loop_changed", %{loop_enabled: loop_enabled})
+  def handle_event("change_cursor_visibility", _params, socket) do
+    socket = 
+      socket
+      |> assign(cursor_visible: false)
+      |> push_event("cursor_visibility_changed", %{cursor_visible: false})
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("change_loop_enabled", %{"loop_enabled" => "true"}, socket) do
+    socket = 
+      socket
+      |> assign(loop_enabled: true)
+      |> push_event("loop_changed", %{loop_enabled: true})
+    
+    {:noreply, socket}
+  end
+
+  def handle_event("change_loop_enabled", _params, socket) do
+    socket = 
+      socket
+      |> assign(loop_enabled: false)
+      |> push_event("loop_changed", %{loop_enabled: false})
+    
     {:noreply, socket}
   end
 end
