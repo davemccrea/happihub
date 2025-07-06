@@ -150,7 +150,7 @@ const ECGPlayback = {
 
     const canvasHeight =
       this.displayMode === "multi"
-        ? this.leadNames.length * (CHART_HEIGHT / 4)
+        ? this.leadNames.length * (CHART_HEIGHT / 1.5)
         : CHART_HEIGHT;
 
     this.leadHeight =
@@ -238,6 +238,15 @@ const ECGPlayback = {
       this.updateCanvasSize();
       this.drawGrid();
 
+      // Redraw current waveform if paused
+      if (!wasPlaying && this.startTime && this.pausedTime) {
+        const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+        const cursorProgress =
+          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+        const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+        this.updateWaveform(cursorProgress, currentCycle);
+      }
+
       if (wasPlaying) {
         this.isPlaying = true;
         this.executeAnimationLoop();
@@ -289,6 +298,11 @@ const ECGPlayback = {
     this.currentLead = leadIndex;
     this.currentLeadData = this.ecgLeadDatasets[leadIndex];
 
+    // Redraw grid to update lead label in single-lead mode
+    if (this.displayMode === "single") {
+      this.drawGrid();
+    }
+
     if (wasPlaying) {
       this.isPlaying = true;
       this.executeAnimationLoop();
@@ -336,16 +350,22 @@ const ECGPlayback = {
       // Use binary search to find exact data range - much more efficient!
       const startIndex = this.findDataIndexByTime(cycleStartTime);
       const endIndex = this.findDataIndexByTime(cycleEndTime);
-      
+
       // Extract only the data we need using slice (more efficient)
       const startIdx = Math.max(0, startIndex);
       const endIdx = Math.min(this.currentLeadData.times.length - 1, endIndex);
-      
+
       // Use slice for better performance than individual pushes
-      const slicedTimes = this.currentLeadData.times.slice(startIdx, endIdx + 1);
-      const slicedValues = this.currentLeadData.values.slice(startIdx, endIdx + 1);
-      
-      this.visibleTimes = slicedTimes.map(time => time - cycleStartTime);
+      const slicedTimes = this.currentLeadData.times.slice(
+        startIdx,
+        endIdx + 1
+      );
+      const slicedValues = this.currentLeadData.values.slice(
+        startIdx,
+        endIdx + 1
+      );
+
+      this.visibleTimes = slicedTimes.map((time) => time - cycleStartTime);
       this.visibleValues = slicedValues;
     } else {
       // Multi-lead mode: prepare data for all leads (optimized)
@@ -363,9 +383,15 @@ const ECGPlayback = {
       const endIdx = Math.min(firstLead.times.length - 1, endIndex);
 
       // Pre-calculate times once (all leads share same timing)
-      const sharedTimes = firstLead.times.slice(startIdx, endIdx + 1).map(time => time - cycleStartTime);
+      const sharedTimes = firstLead.times
+        .slice(startIdx, endIdx + 1)
+        .map((time) => time - cycleStartTime);
 
-      for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
+      for (
+        let leadIndex = 0;
+        leadIndex < this.ecgLeadDatasets.length;
+        leadIndex++
+      ) {
         const leadData = this.ecgLeadDatasets[leadIndex];
         const leadVisibleValues = leadData.values.slice(startIdx, endIdx + 1);
 
@@ -623,6 +649,7 @@ const ECGPlayback = {
       }
     } else {
       this.drawGridForLead(0);
+      this.drawLeadLabel(this.currentLead, 0);
     }
   },
 
