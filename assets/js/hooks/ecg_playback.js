@@ -58,7 +58,7 @@ const HEIGHT_MILLIVOLTS = 4;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const DOT_RADIUS = 1.2;
 const CONTAINER_PADDING = 40; // Padding to account for in container width calculation
-const MULTI_LEAD_HEIGHT_SCALE = 2; // Scale factor for multi-lead display height
+const MULTI_LEAD_HEIGHT_SCALE = 1; // Scale factor for multi-lead display height
 const LEADS_PER_COLUMN = 6; // Number of leads per column in multi-lead mode
 const COLUMN_PADDING = 0; // Padding between columns
 
@@ -306,20 +306,20 @@ const ECGPlayback = {
   },
 
   async loadECGData() {
-    const response = await fetch("/assets/json/10160.json");
+    const response = await fetch("/assets/json/ptb-xl/14254_hr.json");
     if (!response.ok) {
       throw new Error(`Failed to load ECG data: ${response.status}`);
     }
 
     const data = await response.json();
 
-    if (!data.fs || !data.sig_names || !data.signals) {
+    if (!data.fs || !data.sig_name || !data.p_signal) {
       throw new Error("Invalid ECG data format");
     }
 
     this.samplingRate = data.fs;
-    this.leadNames = data.sig_names;
-    this.totalDuration = data.signals.length / data.fs;
+    this.leadNames = data.sig_name;
+    this.totalDuration = data.p_signal.length / data.fs;
 
     // Convert original format to per-lead data structure
     this.ecgLeadDatasets = [];
@@ -334,11 +334,11 @@ const ECGPlayback = {
 
       for (
         let sampleIndex = 0;
-        sampleIndex < data.signals.length;
+        sampleIndex < data.p_signal.length;
         sampleIndex++
       ) {
         const time = sampleIndex / this.samplingRate;
-        const value = data.signals[sampleIndex][leadIndex];
+        const value = data.p_signal[sampleIndex][leadIndex];
 
         times.push(time);
         values.push(value);
