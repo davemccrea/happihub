@@ -26,6 +26,9 @@ const ECGPlayback = {
     this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
     this.leadHeight = CHART_HEIGHT; // Will be recalculated for multi-lead
     this.calculateMedicallyAccurateDimensions();
+    
+    // Initialize theme colors
+    this.updateThemeColors();
 
     // Listen for window resize events
     this.resizeHandler = () => {
@@ -33,6 +36,24 @@ const ECGPlayback = {
       this.handleResize();
     };
     window.addEventListener("resize", this.resizeHandler);
+    
+    // Listen for theme changes
+    this.themeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          this.updateThemeColors();
+          this.drawGrid(); // Redraw grid with new colors
+          // Redraw waveform if paused
+          if (!this.isPlaying && this.startTime && this.pausedTime) {
+            const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+            const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+            const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+            this.updateWaveform(cursorProgress, currentCycle);
+          }
+        }
+      });
+    });
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     await this.initializeECGChart();
 
@@ -76,6 +97,9 @@ const ECGPlayback = {
     if (this.resizeHandler) {
       window.removeEventListener("resize", this.resizeHandler);
     }
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
 
     this.ecgLeadDatasets = null;
     this.currentLeadData = null;
@@ -89,6 +113,29 @@ const ECGPlayback = {
     if (this.gridCanvas) {
       this.gridCanvas = null;
     }
+  },
+
+  // === Theme Methods ===
+  updateThemeColors() {
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const isDark = theme === 'dark';
+    
+    // Set theme-aware colors
+    this.colors = {
+      // Waveform colors
+      waveform: isDark ? '#ffffff' : '#000000',
+      cursor: isDark ? '#00ff00' : '#00ff00',
+      
+      // Grid colors for medical grid
+      gridFine: isDark ? '#660000' : '#ff9999',
+      gridBold: isDark ? '#990000' : '#ff6666',
+      
+      // Grid colors for simple grid (dots)
+      gridDots: isDark ? '#666666' : '#999999',
+      
+      // Text colors
+      labels: isDark ? '#ffffff' : '#333333'
+    };
   },
 
   // === Initialization Methods ===
@@ -519,7 +566,7 @@ const ECGPlayback = {
   },
 
   drawLeadLabel(leadIndex, yOffset) {
-    this.context.fillStyle = "#333";
+    this.context.fillStyle = this.colors.labels;
     this.context.font = "12px Arial";
     this.context.fillText(this.leadNames[leadIndex], 5, yOffset + 15);
   },
@@ -531,7 +578,7 @@ const ECGPlayback = {
       this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
 
     // Fine grid lines (1mm squares)
-    this.context.strokeStyle = "#ff9999";
+    this.context.strokeStyle = this.colors.gridFine;
     this.context.lineWidth = 0.5;
     this.context.beginPath();
 
@@ -552,7 +599,7 @@ const ECGPlayback = {
     this.context.stroke();
 
     // Bold grid lines (5mm squares)
-    this.context.strokeStyle = "#ff6666";
+    this.context.strokeStyle = this.colors.gridBold;
     this.context.lineWidth = 1;
     this.context.beginPath();
 
@@ -577,7 +624,7 @@ const ECGPlayback = {
     const dotSpacing = 5 * PIXELS_PER_MM;
     const gridHeight =
       this.displayMode === "multi" ? this.leadHeight : CHART_HEIGHT;
-    this.context.fillStyle = "#d0d0d0";
+    this.context.fillStyle = this.colors.gridDots;
 
     for (let x = 5; x < this.chartWidth - 5; x += dotSpacing) {
       for (let y = 5; y < gridHeight - 5; y += dotSpacing) {
@@ -673,7 +720,7 @@ const ECGPlayback = {
   drawSingleLeadWaveform() {
     const pointCount = this.visibleTimes.length;
     if (pointCount > 0) {
-      this.context.strokeStyle = "#000000";
+      this.context.strokeStyle = this.colors.waveform;
       this.context.lineWidth = 1.25;
       this.context.beginPath();
 
@@ -698,7 +745,7 @@ const ECGPlayback = {
   drawMultiLeadWaveform() {
     if (!this.multiLeadVisibleData) return;
 
-    this.context.strokeStyle = "#000000";
+    this.context.strokeStyle = this.colors.waveform;
     this.context.lineWidth = 1;
 
     for (
@@ -736,7 +783,7 @@ const ECGPlayback = {
   drawCursor(cursorPosition) {
     if (!this.cursorVisible) return;
 
-    this.context.strokeStyle = "#00ff00";
+    this.context.strokeStyle = this.colors.cursor;
     this.context.lineWidth = 2;
     this.context.beginPath();
     this.context.moveTo(cursorPosition, 0);
