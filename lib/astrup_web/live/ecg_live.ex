@@ -80,19 +80,28 @@ defmodule AstrupWeb.ECGLive do
           </form>
         </div>
 
-        <div
-          id="ecg-playback"
-          phx-hook="ECGPlayback"
-          phx-update="ignore"
-          class="w-full"
-          data-grid-type={@grid_type}
-          data-display-mode={@display_mode}
-          data-cursor-visible={to_string(@cursor_visible)}
-          data-loop-enabled={to_string(@loop_enabled)}
-          data-current-lead={@current_lead}
-          data-is-playing={to_string(@is_playing)}
-        >
-          <div data-ecg-chart class="w-full"></div>
+        <div class="space-y-4">
+          <div
+            id="ecg-playback"
+            phx-hook="ECGPlayback"
+            phx-update="ignore"
+            class="w-full"
+            data-grid-type={@grid_type}
+            data-display-mode={@display_mode}
+            data-cursor-visible={to_string(@cursor_visible)}
+            data-loop-enabled={to_string(@loop_enabled)}
+            data-current-lead={@current_lead}
+            data-is-playing={to_string(@is_playing)}
+          >
+            <div data-ecg-chart class="w-full"></div>
+          </div>
+          
+          <div class="text-sm text-gray-500 flex items-center gap-2">
+            <span>Click on the ECG chart and use</span>
+            <kbd class="kbd kbd-sm">↑</kbd>
+            <kbd class="kbd kbd-sm">↓</kbd>
+            <span>to switch leads</span>
+          </div>
         </div>
 
         <.button phx-click="toggle_playback" variant="primary">
