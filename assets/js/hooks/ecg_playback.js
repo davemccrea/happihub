@@ -16,7 +16,7 @@ const ECGPlayback = {
     this.animationId = null;
     this.visibleTimes = [];
     this.visibleValues = [];
-    this.gridType = "medical"; // "medical" or "simple"
+    this.gridType = "simple"; // "medical" or "simple"
     this.displayMode = "single"; // "single" or "multi"
     this.cursorVisible = true; // cursor visibility state
     this.loopEnabled = true; // loop playback when recording ends
@@ -256,6 +256,32 @@ const ECGPlayback = {
   },
 
   // === Data Management Methods ===
+  findDataIndexByTime(targetTime) {
+    // Use binary search since times are sorted
+    if (!this.currentLeadData || !this.currentLeadData.times.length) {
+      return 0;
+    }
+
+    let left = 0;
+    let right = this.currentLeadData.times.length - 1;
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const midTime = this.currentLeadData.times[mid];
+
+      if (midTime === targetTime) {
+        return mid;
+      } else if (midTime < targetTime) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+
+    // Return the closest index (left is the insertion point)
+    return Math.min(left, this.currentLeadData.times.length - 1);
+  },
+
   switchLead(leadIndex) {
     const wasPlaying = this.isPlaying;
     if (wasPlaying) this.stopAnimation();
@@ -307,41 +333,44 @@ const ECGPlayback = {
     const cycleEndTime = cycleStartTime + currentTime;
 
     if (this.displayMode === "single") {
-      this.visibleTimes = [];
-      this.visibleValues = [];
-
-      for (let i = 0; i < this.currentLeadData.times.length; i++) {
-        const dataTime = this.currentLeadData.times[i];
-
-        if (dataTime >= cycleStartTime && dataTime <= cycleEndTime) {
-          this.visibleTimes.push(dataTime - cycleStartTime);
-          this.visibleValues.push(this.currentLeadData.values[i]);
-        }
-      }
+      // Use binary search to find exact data range - much more efficient!
+      const startIndex = this.findDataIndexByTime(cycleStartTime);
+      const endIndex = this.findDataIndexByTime(cycleEndTime);
+      
+      // Extract only the data we need using slice (more efficient)
+      const startIdx = Math.max(0, startIndex);
+      const endIdx = Math.min(this.currentLeadData.times.length - 1, endIndex);
+      
+      // Use slice for better performance than individual pushes
+      const slicedTimes = this.currentLeadData.times.slice(startIdx, endIdx + 1);
+      const slicedValues = this.currentLeadData.values.slice(startIdx, endIdx + 1);
+      
+      this.visibleTimes = slicedTimes.map(time => time - cycleStartTime);
+      this.visibleValues = slicedValues;
     } else {
-      // Multi-lead mode: prepare data for all leads
+      // Multi-lead mode: prepare data for all leads (optimized)
       this.multiLeadVisibleData = [];
 
-      for (
-        let leadIndex = 0;
-        leadIndex < this.ecgLeadDatasets.length;
-        leadIndex++
-      ) {
+      // Since all leads have the same timing structure, calculate indices once
+      const firstLead = this.ecgLeadDatasets[0];
+      // Temporarily set currentLeadData to use the helper method
+      const originalLeadData = this.currentLeadData;
+      this.currentLeadData = firstLead;
+      const startIndex = this.findDataIndexByTime(cycleStartTime);
+      const endIndex = this.findDataIndexByTime(cycleEndTime);
+      this.currentLeadData = originalLeadData;
+      const startIdx = Math.max(0, startIndex);
+      const endIdx = Math.min(firstLead.times.length - 1, endIndex);
+
+      // Pre-calculate times once (all leads share same timing)
+      const sharedTimes = firstLead.times.slice(startIdx, endIdx + 1).map(time => time - cycleStartTime);
+
+      for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
         const leadData = this.ecgLeadDatasets[leadIndex];
-        const leadVisibleTimes = [];
-        const leadVisibleValues = [];
-
-        for (let i = 0; i < leadData.times.length; i++) {
-          const dataTime = leadData.times[i];
-
-          if (dataTime >= cycleStartTime && dataTime <= cycleEndTime) {
-            leadVisibleTimes.push(dataTime - cycleStartTime);
-            leadVisibleValues.push(leadData.values[i]);
-          }
-        }
+        const leadVisibleValues = leadData.values.slice(startIdx, endIdx + 1);
 
         this.multiLeadVisibleData.push({
-          times: leadVisibleTimes,
+          times: sharedTimes,
           values: leadVisibleValues,
           name: this.leadNames[leadIndex],
         });
