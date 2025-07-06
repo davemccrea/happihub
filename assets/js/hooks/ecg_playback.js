@@ -9,17 +9,19 @@ const DOT_RADIUS = 1.2;
 const ECGPlayback = {
   // === Lifecycle Methods ===
   async mounted() {
-    this.isPlaying = false;
+    this.isPlaying = this.el.dataset.isPlaying === "true";
     this.startTime = null;
     this.pausedTime = 0;
     this.currentCycle = 0;
     this.animationId = null;
     this.visibleTimes = [];
     this.visibleValues = [];
-    this.gridType = "simple"; // "medical" or "simple"
-    this.displayMode = "single"; // "single" or "multi"
-    this.cursorVisible = true; // cursor visibility state
-    this.loopEnabled = true; // loop playback when recording ends
+    // Read initial settings from data attributes
+    this.gridType = this.el.dataset.gridType || "medical";
+    this.displayMode = this.el.dataset.displayMode || "single";
+    this.cursorVisible = this.el.dataset.cursorVisible === "true";
+    this.loopEnabled = this.el.dataset.loopEnabled === "true";
+    this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
     this.leadHeight = CHART_HEIGHT; // Will be recalculated for multi-lead
     this.calculateMedicallyAccurateDimensions();
 
@@ -188,7 +190,7 @@ const ECGPlayback = {
 
     this.samplingRate = data.metadata.samplingRate;
     this.leadNames = data.leadNames;
-    this.currentLead = 0;
+    // Keep the currentLead from data attributes, don't reset to 0
     this.totalDuration = data.metadata.totalDuration;
 
     this.ecgLeadDatasets = data.leads;
@@ -256,8 +258,17 @@ const ECGPlayback = {
 
   handleCursorVisibilityChange(cursorVisible) {
     this.cursorVisible = cursorVisible;
-    // No need to restart animation, just update the visibility flag
-    // The cursor will be drawn or not based on this flag in the next animation frame
+    
+    // If paused, redraw current state to show/hide cursor immediately
+    if (!this.isPlaying && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const currentCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      const cursorPosition = cursorProgress * this.chartWidth;
+      
+      this.updateWaveform(cursorProgress, currentCycle);
+      this.drawCursor(cursorPosition);
+    }
   },
 
   handleLoopChange(loopEnabled) {
@@ -719,8 +730,8 @@ const ECGPlayback = {
   drawCursor(cursorPosition) {
     if (!this.cursorVisible) return;
 
-    this.context.strokeStyle = "#00000";
-    this.context.lineWidth = 1;
+    this.context.strokeStyle = "#00ff00";
+    this.context.lineWidth = 2;
     this.context.beginPath();
     this.context.moveTo(cursorPosition, 0);
     const canvasHeight = this.canvas.height / (window.devicePixelRatio || 1);

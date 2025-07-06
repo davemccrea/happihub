@@ -8,8 +8,8 @@ defmodule AstrupWeb.ECGLive do
         current_lead: 0,
         elapsed_time: 0,
         display_mode: "single",
-        grid_type: "medical",
-        cursor_visible: true,
+        grid_type: "simple",
+        cursor_visible: false,
         loop_enabled: true,
         lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
       )
@@ -90,7 +90,18 @@ defmodule AstrupWeb.ECGLive do
           </form>
         </div>
 
-        <div id="ecg-playback" phx-hook="ECGPlayback" phx-update="ignore" class="w-full">
+        <div
+          id="ecg-playback"
+          phx-hook="ECGPlayback"
+          phx-update="ignore"
+          class="w-full"
+          data-grid-type={@grid_type}
+          data-display-mode={@display_mode}
+          data-cursor-visible={to_string(@cursor_visible)}
+          data-loop-enabled={to_string(@loop_enabled)}
+          data-current-lead={@current_lead}
+          data-is-playing={to_string(@is_playing)}
+        >
           <div data-ecg-chart class="w-full"></div>
         </div>
 
