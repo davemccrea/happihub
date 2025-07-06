@@ -129,6 +129,14 @@ defmodule AstrupWeb.ECGLive do
     end
   end
 
+  def handle_event("lead_changed", %{"lead" => lead_index}, socket) when is_integer(lead_index) do
+    if lead_index >= 0 and lead_index < length(socket.assigns.lead_names) do
+      {:noreply, assign(socket, current_lead: lead_index)}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("time_update", %{"elapsed_time" => elapsed_time}, socket) do
     {:noreply, assign(socket, elapsed_time: elapsed_time)}
   end

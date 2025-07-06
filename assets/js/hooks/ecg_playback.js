@@ -119,6 +119,16 @@ const ECGPlayback = {
       attributeFilter: ["data-theme"],
     });
 
+    // Add keyboard event listeners for lead switching
+    this.keydownHandler = (event) => {
+      if (event.key === 'j') {
+        this.switchToNextLead();
+      } else if (event.key === 'k') {
+        this.switchToPrevLead();
+      }
+    };
+    document.addEventListener('keydown', this.keydownHandler);
+
     await this.initializeECGChart();
 
     this.handleEvent("playback_changed", (payload) => {
@@ -166,6 +176,10 @@ const ECGPlayback = {
     if (this.themeObserver) {
       this.themeObserver.disconnect();
       this.themeObserver = null;
+    }
+    if (this.keydownHandler) {
+      document.removeEventListener('keydown', this.keydownHandler);
+      this.keydownHandler = null;
     }
 
     this.ecgLeadDatasets = null;
@@ -499,6 +513,30 @@ const ECGPlayback = {
       } else {
         this.clearWaveform();
       }
+    }
+  },
+
+  switchToNextLead() {
+    if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
+    
+    if (this.currentLead < this.ecgLeadDatasets.length - 1) {
+      const nextLead = this.currentLead + 1;
+      this.switchLead(nextLead);
+      
+      // Notify the LiveView of the lead change
+      this.pushEvent("lead_changed", { lead: nextLead });
+    }
+  },
+
+  switchToPrevLead() {
+    if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
+    
+    if (this.currentLead > 0) {
+      const prevLead = this.currentLead - 1;
+      this.switchLead(prevLead);
+      
+      // Notify the LiveView of the lead change
+      this.pushEvent("lead_changed", { lead: prevLead });
     }
   },
 
