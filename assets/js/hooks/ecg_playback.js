@@ -1582,7 +1582,7 @@ const ECGPlayback = {
       cursorWidth: cursorClearWidth,
     };
 
-    this.renderLead(
+    this.renderLeadWaveform(
       this.currentLead,
       null,
       0,
