@@ -9,7 +9,8 @@ defmodule AstrupWeb.ECGLive do
        elapsed_time: 0,
        display_mode: "single",
        grid_type: "simple",
-       lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"]
+       lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"],
+       env: Application.get_env(:astrup, :env)
      )}
   end
 
@@ -70,6 +71,7 @@ defmodule AstrupWeb.ECGLive do
             data-display-mode={@display_mode}
             data-current-lead={@current_lead}
             data-is-playing={to_string(@is_playing)}
+            data-env={@env}
           >
             <div data-ecg-chart class="w-full"></div>
           </div>

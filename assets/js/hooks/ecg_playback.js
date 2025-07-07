@@ -38,18 +38,13 @@ const ECGPlayback = {
     this.setupEventListeners();
     await this.initializeECGChart();
 
-    window.toggleECGDiagnostics = () => {
-      this.showDiagnostics = !this.showDiagnostics;
-      if (this.showDiagnostics) {
-        this.createDiagnosticsPanel();
-        this.updateDiagnostics();
-      } else {
-        this.destroyDiagnosticsPanel();
-      }
-    };
+    if (this.el.dataset.env !== "prod") {
+      this.showDiagnostics = true;
+      this.createDiagnosticsPanel();
+      this.updateDiagnostics();
+      this.memoryInterval = setInterval(() => this.updateMemoryStats(), 2000);
+    }
   },
-
-  updated() {},
 
   /**
    * Sets up all event listeners for the component.
@@ -182,42 +177,35 @@ const ECGPlayback = {
   cleanup() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
-      this.animationId = null;
+    }
+    if (this.memoryInterval) {
+      clearInterval(this.memoryInterval);
     }
     this.cleanupCanvases();
     if (this.resizeHandler) {
       window.removeEventListener("resize", this.resizeHandler);
-      this.resizeHandler = null;
     }
     if (this.themeObserver) {
       this.themeObserver.disconnect();
-      this.themeObserver = null;
     }
     if (this.focusHandler) {
       this.el.removeEventListener("focus", this.focusHandler);
-      this.focusHandler = null;
     }
     if (this.blurHandler) {
       this.el.removeEventListener("blur", this.blurHandler);
-      this.blurHandler = null;
     }
     if (this.keydownHandler) {
       this.el.removeEventListener("keydown", this.keydownHandler);
-      this.keydownHandler = null;
     }
 
+    // Explicitly nullify large data objects to break references
     this.ecgLeadDatasets = null;
     this.precomputedSegments = null;
     this.dataIndexCache = null;
     this.currentLeadData = null;
-    this.leadNames = null;
-    this.allLeadsVisibleData = null;
+    this.allLeadsCursorData = null;
+    this.activeCursorData = null;
     this.eventHandlers = null;
-
-    this.backgroundCanvas = null;
-    this.backgroundContext = null;
-    this.waveformCanvas = null;
-    this.waveformContext = null;
   },
 
   // =================
@@ -246,6 +234,7 @@ const ECGPlayback = {
     this.displayMode = this.el.dataset.displayMode || "single";
     this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
     this.leadHeight = CHART_HEIGHT;
+    this.memory = {};
 
     // Pre-computed data segments for performance
     this.precomputedSegments = new Map();
@@ -263,6 +252,43 @@ const ECGPlayback = {
   // DIAGNOSTICS
   // =================
 
+  /**
+   * Asynchronously updates memory statistics using available performance APIs.
+   * It first tries the modern `measureUserAgentSpecificMemory` for a comprehensive,
+   * cross-origin-isolated measurement. If unavailable, it falls back to the
+   * deprecated `performance.memory` API, which is less accurate but still useful
+   * for basic diagnostics in supporting browsers.
+   *
+   * The results are stored in `this.memory` and the diagnostics panel is updated.
+   * @returns {Promise<void>}
+   */
+  async updateMemoryStats() {
+    if (
+      window.crossOriginIsolated &&
+      "measureUserAgentSpecificMemory" in performance
+    ) {
+      try {
+        const measurement = await performance.measureUserAgentSpecificMemory();
+        this.memory = {
+          usedJSHeapSize: measurement.bytes,
+          // The new API doesn't provide total or limit, so we leave them undefined.
+        };
+      } catch (error) {
+        console.error("Failed to measure memory:", error);
+        this.memory = { error: "Measurement failed" };
+      }
+    } else if ("memory" in performance) {
+      this.memory = {
+        usedJSHeapSize: performance.memory.usedJSHeapSize,
+        totalJSHeapSize: performance.memory.totalJSHeapSize,
+        jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
+      };
+    } else {
+      this.memory = { error: "Not supported" };
+    }
+    this.updateDiagnostics();
+  },
+
   createDiagnosticsPanel() {
     const existingPanel = document.getElementById("diagnostics-panel");
     if (existingPanel) return;
@@ -270,7 +296,7 @@ const ECGPlayback = {
     const panel = document.createElement("div");
     panel.id = "diagnostics-panel";
     panel.className =
-      "mt-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 gap-4";
+      "mt-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
     panel.innerHTML = `
       <div id="diagnostics-col1" class="col-span-1"></div>
       <div id="diagnostics-col2" class="col-span-1"></div>
@@ -318,9 +344,34 @@ const ECGPlayback = {
         widthSeconds: this.widthSeconds,
         totalDuration: this.totalDuration,
         samplingRate: this.samplingRate,
-        totalSegments: this.precomputedSegments.get(this.currentLead)?.size || 0,
+        totalSegments:
+          this.precomputedSegments.get(this.currentLead)?.size || 0,
       },
     };
+
+    if (this.memory) {
+      const memoryData = {};
+      if (this.memory.error) {
+        memoryData.status = this.memory.error;
+      } else {
+        if (this.memory.usedJSHeapSize) {
+          memoryData.usedJSHeapSize = `${(
+            this.memory.usedJSHeapSize / 1048576
+          ).toFixed(2)} MB`;
+        }
+        if (this.memory.totalJSHeapSize) {
+          memoryData.totalJSHeapSize = `${(
+            this.memory.totalJSHeapSize / 1048576
+          ).toFixed(2)} MB`;
+        }
+        if (this.memory.jsHeapSizeLimit) {
+          memoryData.jsHeapSizeLimit = `${(
+            this.memory.jsHeapSizeLimit / 1048576
+          ).toFixed(2)} MB`;
+        }
+      }
+      groupsCol2["Memory"] = memoryData;
+    }
 
     const groupsCol3 = {
       "Playback & Animation": {
@@ -363,6 +414,11 @@ const ECGPlayback = {
               let displayValue;
               if (key === "cursorProgress") {
                 displayValue = `${((value || 0) * 100).toFixed(0)}%`;
+              } else if (
+                typeof value === "string" &&
+                (value.endsWith("MB") || !isNaN(parseFloat(value)))
+              ) {
+                displayValue = value;
               } else if (typeof value === "number") {
                 displayValue = `${value.toFixed(2)}${
                   units[key] ? ` ${units[key]}` : ""
