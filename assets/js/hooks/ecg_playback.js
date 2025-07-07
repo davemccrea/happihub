@@ -64,7 +64,7 @@ const ECGPlayback = {
   setupResizeListener() {
     this.resizeHandler = () => {
       this.calculateMedicallyAccurateDimensions();
-      this.handleWindowResizeAndRecalculateChart();
+      this.handleResize();
     };
     window.addEventListener("resize", this.resizeHandler);
   },
@@ -696,7 +696,7 @@ const ECGPlayback = {
    * preserving the current playback state.
    * @returns {void}
    */
-  handleWindowResizeAndRecalculateChart() {
+  handleResize() {
     const wasPlaying = this.isPlaying;
     if (wasPlaying) this.stopAnimation();
 
