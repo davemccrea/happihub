@@ -1287,24 +1287,25 @@ const ECGPlayback = {
 
   /**
    * Draws the grid for a single lead, dispatching to either the medical or simple grid style.
-   * @param {number} xOffset - The horizontal starting position.
-   * @param {number} yOffset - The vertical starting position.
-   * @param {number} width - The width of the grid.
-   * @param {number} height - The height of the grid.
-   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @param {object} options - Grid drawing options.
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - The horizontal starting position.
+   * @param {number} options.bounds.yOffset - The vertical starting position.
+   * @param {number} options.bounds.width - The width of the grid.
+   * @param {number} options.bounds.height - The height of the grid.
+   * @param {CanvasRenderingContext2D} options.context - The canvas context to draw on.
    * @returns {void}
    */
-  drawLeadGrid(
-    xOffset,
-    yOffset,
-    width,
-    height,
-    context = this.waveformContext
-  ) {
+  drawLeadGrid(options) {
+    const {
+      bounds: { xOffset, yOffset, width, height },
+      context = this.waveformContext
+    } = options;
+
     if (this.gridType === "medical") {
-      this.drawMedicalGrid(xOffset, yOffset, width, height, context);
+      this.drawMedicalGrid({ bounds: { xOffset, yOffset, width, height }, context });
     } else {
-      this.drawSimpleGrid(xOffset, yOffset, width, height, context);
+      this.drawSimpleGrid({ bounds: { xOffset, yOffset, width, height }, context });
     }
   },
 
@@ -1324,20 +1325,20 @@ const ECGPlayback = {
 
   /**
    * Draws a standard medical ECG grid with major and minor lines.
-   * @param {number} xOffset - The horizontal starting position.
-   * @param {number} yOffset - The vertical starting position.
-   * @param {number} width - The width of the grid.
-   * @param {number} height - The height of the grid.
-   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @param {object} options - Grid drawing options.
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - The horizontal starting position.
+   * @param {number} options.bounds.yOffset - The vertical starting position.
+   * @param {number} options.bounds.width - The width of the grid.
+   * @param {number} options.bounds.height - The height of the grid.
+   * @param {CanvasRenderingContext2D} options.context - The canvas context to draw on.
    * @returns {void}
    */
-  drawMedicalGrid(
-    xOffset,
-    yOffset,
-    width,
-    height,
-    context = this.waveformContext
-  ) {
+  drawMedicalGrid(options) {
+    const {
+      bounds: { xOffset, yOffset, width, height },
+      context = this.waveformContext
+    } = options;
     const smallSquareSize = PIXELS_PER_MM;
     const largeSquareSize = 5 * PIXELS_PER_MM;
 
@@ -1388,20 +1389,20 @@ const ECGPlayback = {
 
   /**
    * Draws a simplified grid using dots instead of lines.
-   * @param {number} xOffset - The horizontal starting position.
-   * @param {number} yOffset - The vertical starting position.
-   * @param {number} width - The width of the grid.
-   * @param {number} height - The height of the grid.
-   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @param {object} options - Grid drawing options.
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - The horizontal starting position.
+   * @param {number} options.bounds.yOffset - The vertical starting position.
+   * @param {number} options.bounds.width - The width of the grid.
+   * @param {number} options.bounds.height - The height of the grid.
+   * @param {CanvasRenderingContext2D} options.context - The canvas context to draw on.
    * @returns {void}
    */
-  drawSimpleGrid(
-    xOffset,
-    yOffset,
-    width,
-    height,
-    context = this.waveformContext
-  ) {
+  drawSimpleGrid(options) {
+    const {
+      bounds: { xOffset, yOffset, width, height },
+      context = this.waveformContext
+    } = options;
     const dotSpacing = 5 * PIXELS_PER_MM;
     context.fillStyle = this.colors.gridDots;
 
@@ -1448,16 +1449,25 @@ const ECGPlayback = {
 
   /**
    * Transforms time and value arrays to canvas coordinates.
-   * @param {Array<number>} times - Array of time points.
-   * @param {Array<number>} values - Array of millivolt values.
-   * @param {number} xOffset - The horizontal starting position.
-   * @param {number} yOffset - The vertical starting position.
-   * @param {number} width - The width of the drawing area.
-   * @param {number} height - The height of the drawing area.
-   * @param {number} timeSpan - The total duration shown in this area (in seconds).
+   * @param {object} options - Transformation options.
+   * @param {Array<number>} options.times - Array of time points.
+   * @param {Array<number>} options.values - Array of millivolt values.
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - The horizontal starting position.
+   * @param {number} options.bounds.yOffset - The vertical starting position.
+   * @param {number} options.bounds.width - The width of the drawing area.
+   * @param {number} options.bounds.height - The height of the drawing area.
+   * @param {number} options.timeSpan - The total duration shown in this area (in seconds).
    * @returns {Array<{x: number, y: number}>} Array of canvas coordinates.
    */
-  transformCoordinates(times, values, xOffset, yOffset, width, height, timeSpan) {
+  transformCoordinates(options) {
+    const {
+      times,
+      values,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan
+    } = options;
+
     const xScale = width / timeSpan;
     const yScale = height / (this.yMax - this.yMin);
     
@@ -1515,28 +1525,29 @@ const ECGPlayback = {
    * Draws a segment of the waveform up to the current cursor position.
    * It clears a small area just ahead of the cursor to create the illusion of a moving line.
    * This is the lowest-level drawing function for the animated waveform.
-   * @param {Array<number>} times - Array of time points for the waveform segment.
-   * @param {Array<number>} values - Array of millivolt values for the waveform segment.
-   * @param {number} xOffset - The horizontal starting position of the lead's grid.
-   * @param {number} yOffset - The vertical starting position of the lead's grid.
-   * @param {number} width - The total width of the lead's grid.
-   * @param {number} height - The total height of the lead's grid.
-   * @param {number} timeSpan - The total duration shown in this grid (in seconds).
-   * @param {number} cursorPosition - The current horizontal pixel position of the cursor.
-   * @param {number} cursorWidth - The width of the area to clear ahead of the cursor.
+   * @param {object} options - Drawing options.
+   * @param {Array<number>} options.times - Array of time points for the waveform segment.
+   * @param {Array<number>} options.values - Array of millivolt values for the waveform segment.
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - The horizontal starting position of the lead's grid.
+   * @param {number} options.bounds.yOffset - The vertical starting position of the lead's grid.
+   * @param {number} options.bounds.width - The total width of the lead's grid.
+   * @param {number} options.bounds.height - The total height of the lead's grid.
+   * @param {number} options.timeSpan - The total duration shown in this grid (in seconds).
+   * @param {object} options.cursor - The cursor options.
+   * @param {number} options.cursor.position - The current horizontal pixel position of the cursor.
+   * @param {number} options.cursor.width - The width of the area to clear ahead of the cursor.
    * @returns {void}
    */
-  drawWaveformToCursor(
-    times,
-    values,
-    xOffset,
-    yOffset,
-    width,
-    height,
-    timeSpan,
-    cursorPosition,
-    cursorWidth
-  ) {
+  drawWaveformToCursor(options) {
+    const {
+      times,
+      values,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan,
+      cursor: { position: cursorPosition, width: cursorWidth }
+    } = options;
+
     if (!times || times.length === 0) return;
 
     const { clearX, clearWidth } = this.calculateClearBounds(xOffset, width, cursorPosition, cursorWidth);
@@ -1547,7 +1558,12 @@ const ECGPlayback = {
 
     this.setupWaveformDrawing();
     
-    const coordinates = this.transformCoordinates(times, values, xOffset, yOffset, width, height, timeSpan);
+    const coordinates = this.transformCoordinates({
+      times,
+      values,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan
+    });
 
     let hasMovedTo = false;
     for (const { x, y } of coordinates) {
@@ -1582,16 +1598,18 @@ const ECGPlayback = {
       cursorWidth: cursorClearWidth,
     };
 
-    this.renderLeadWaveform(
-      this.currentLead,
-      null,
-      0,
-      0,
-      this.chartWidth,
-      CHART_HEIGHT,
-      this.widthSeconds,
+    this.renderLeadWaveform({
+      leadIndex: this.currentLead,
+      leadData: null,
+      bounds: {
+        xOffset: 0,
+        yOffset: 0,
+        width: this.chartWidth,
+        height: CHART_HEIGHT
+      },
+      timeSpan: this.widthSeconds,
       cursorData
-    );
+    });
   },
 
   /**
@@ -1621,16 +1639,18 @@ const ECGPlayback = {
         cursorWidth: cursorClearWidth,
       };
 
-      this.renderLeadWaveform(
-        leadData.leadIndex,
-        null,
-        xOffset,
-        yOffset,
-        columnWidth,
-        this.leadHeight,
-        columnTimeSpan,
+      this.renderLeadWaveform({
+        leadIndex: leadData.leadIndex,
+        leadData: null,
+        bounds: {
+          xOffset,
+          yOffset,
+          width: columnWidth,
+          height: this.leadHeight
+        },
+        timeSpan: columnTimeSpan,
         cursorData
-      );
+      });
     }
   },
 
@@ -1657,7 +1677,10 @@ const ECGPlayback = {
     height,
     context = this.waveformContext
   ) {
-    this.drawLeadGrid(xOffset, yOffset, width, height, context);
+    this.drawLeadGrid({
+      bounds: { xOffset, yOffset, width, height },
+      context
+    });
     this.drawLeadLabel(leadIndex, xOffset, yOffset, context);
   },
 
@@ -1665,51 +1688,47 @@ const ECGPlayback = {
    * Renders waveform data for a single lead on the foreground canvas. It handles drawing either
    * a static waveform or an animated cursor-driven waveform. The background grid is assumed to be 
    * already rendered on the background canvas.
-   * @param {number} _leadIndex - The index of the lead (used for context).
-   * @param {object} leadData - The full dataset for the lead (for static drawing).
-   * @param {number} xOffset - The horizontal starting position.
-   * @param {number} yOffset - The vertical starting position.
-   * @param {number} width - The width of the lead's grid.
-   * @param {number} height - The height of the lead's grid.
-   * @param {number} timeSpan - The total duration shown in this grid (in seconds).
-   * @param {object} cursorData - Data for drawing the animated cursor. If null, a static waveform is drawn.
+   * @param {object} options - Rendering options.
+   * @param {number} options.leadIndex - The index of the lead (used for context).
+   * @param {object} options.leadData - The full dataset for the lead (for static drawing).
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - The horizontal starting position.
+   * @param {number} options.bounds.yOffset - The vertical starting position.
+   * @param {number} options.bounds.width - The width of the lead's grid.
+   * @param {number} options.bounds.height - The height of the lead's grid.
+   * @param {number} options.timeSpan - The total duration shown in this grid (in seconds).
+   * @param {object} options.cursorData - Data for drawing the animated cursor. If null, a static waveform is drawn.
    * @returns {void}
    */
-  renderLeadWaveform(
-    _leadIndex,
-    leadData,
-    xOffset,
-    yOffset,
-    width,
-    height,
-    timeSpan,
-    cursorData = null
-  ) {
+  renderLeadWaveform(options) {
+    const {
+      leadData,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan,
+      cursorData = null
+    } = options;
+
     // Background is already rendered on the background canvas
     // Only draw waveform data on the foreground canvas
 
     if (cursorData) {
-      this.drawWaveformToCursor(
-        cursorData.times,
-        cursorData.values,
-        xOffset,
-        yOffset,
-        width,
-        height,
+      this.drawWaveformToCursor({
+        times: cursorData.times,
+        values: cursorData.values,
+        bounds: { xOffset, yOffset, width, height },
         timeSpan,
-        cursorData.cursorPosition,
-        cursorData.cursorWidth
-      );
+        cursor: {
+          position: cursorData.cursorPosition,
+          width: cursorData.cursorWidth
+        }
+      });
     } else if (leadData && leadData.times && leadData.values) {
-      this.drawLeadWaveform(
-        leadData.times,
-        leadData.values,
-        xOffset,
-        yOffset,
-        width,
-        height,
+      this.drawLeadWaveform({
+        times: leadData.times,
+        values: leadData.values,
+        bounds: { xOffset, yOffset, width, height },
         timeSpan
-      );
+      });
     }
   },
 
@@ -1755,21 +1774,35 @@ const ECGPlayback = {
 
   /**
    * Draws a complete, static waveform for a given lead.
-   * @param {Array<number>} times - Array of time points.
-   * @param {Array<number>} values - Array of millivolt values.
-   * @param {number} xOffset - The horizontal starting position.
-   * @param {number} yOffset - The vertical starting position.
-   * @param {number} width - The width of the drawing area.
-   * @param {number} height - The height of the drawing area.
-   * @param {number} timeSpan - The total duration shown in this area (in seconds).
+   * @param {object} options - Drawing options.
+   * @param {Array<number>} options.times - Array of time points.
+   * @param {Array<number>} options.values - Array of millivolt values.
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - The horizontal starting position.
+   * @param {number} options.bounds.yOffset - The vertical starting position.
+   * @param {number} options.bounds.width - The width of the drawing area.
+   * @param {number} options.bounds.height - The height of the drawing area.
+   * @param {number} options.timeSpan - The total duration shown in this area (in seconds).
    * @returns {void}
    */
-  drawLeadWaveform(times, values, xOffset, yOffset, width, height, timeSpan) {
+  drawLeadWaveform(options) {
+    const {
+      times,
+      values,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan
+    } = options;
+
     if (times.length === 0) return;
 
     this.setupWaveformDrawing();
     
-    const coordinates = this.transformCoordinates(times, values, xOffset, yOffset, width, height, timeSpan);
+    const coordinates = this.transformCoordinates({
+      times,
+      values,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan
+    });
 
     let hasMovedTo = false;
     for (const { x, y } of coordinates) {
