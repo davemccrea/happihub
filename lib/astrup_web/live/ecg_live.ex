@@ -84,9 +84,11 @@ defmodule AstrupWeb.ECGLive do
           </div>
         </div>
 
-        <.button phx-click="toggle_playback" variant="primary">
-          {if @is_playing, do: "Pause", else: "Play"}
-        </.button>
+        <div class="flex gap-4 items-center">
+          <.button phx-click="toggle_playback" variant="primary">
+            {if @is_playing, do: "Pause", else: "Play"}
+          </.button>
+        </div>
       </div>
     </Layouts.app>
     """

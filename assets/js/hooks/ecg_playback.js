@@ -37,7 +37,19 @@ const ECGPlayback = {
     this.updateThemeColors();
     this.setupEventListeners();
     await this.initializeECGChart();
+
+    window.toggleECGDiagnostics = () => {
+      this.showDiagnostics = !this.showDiagnostics;
+      if (this.showDiagnostics) {
+        this.createDiagnosticsPanel();
+        this.updateDiagnostics();
+      } else {
+        this.destroyDiagnosticsPanel();
+      }
+    };
   },
+
+  updated() {},
 
   /**
    * Sets up all event listeners for the component.
@@ -219,6 +231,9 @@ const ECGPlayback = {
    */
   initializeState() {
     this.isPlaying = this.el.dataset.isPlaying === "true";
+    this.showDiagnostics = false;
+    this.lastDynamicData = {};
+    this.activeSegments = [];
     this.startTime = null;
     this.pausedTime = 0;
     this.animationCycle = 0;
@@ -242,6 +257,138 @@ const ECGPlayback = {
     this.backgroundContext = null;
     this.waveformCanvas = null;
     this.waveformContext = null;
+  },
+
+  // =================
+  // DIAGNOSTICS
+  // =================
+
+  createDiagnosticsPanel() {
+    const existingPanel = document.getElementById("diagnostics-panel");
+    if (existingPanel) return;
+
+    const panel = document.createElement("div");
+    panel.id = "diagnostics-panel";
+    panel.className =
+      "mt-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 gap-4";
+    panel.innerHTML = `
+      <div id="diagnostics-col1" class="col-span-1"></div>
+      <div id="diagnostics-col2" class="col-span-1"></div>
+      <div id="diagnostics-col3" class="col-span-1"></div>
+    `;
+    this.el.appendChild(panel);
+  },
+
+  destroyDiagnosticsPanel() {
+    const panel = document.getElementById("diagnostics-panel");
+    if (panel) {
+      panel.remove();
+    }
+  },
+
+  /**
+   * Updates the on-screen diagnostics panel with the latest data.
+   * @param {object} diagnosticsData - The data to display.
+   * @returns {void}
+   */
+  updateDiagnostics(dynamicData = this.lastDynamicData) {
+    if (!this.showDiagnostics) return;
+
+    const col1 = document.querySelector("#diagnostics-col1");
+    const col2 = document.querySelector("#diagnostics-col2");
+    const col3 = document.querySelector("#diagnostics-col3");
+
+    if (!col1 || !col2 || !col3) return;
+
+    const groupsCol1 = {
+      Configuration: {
+        displayMode: this.displayMode,
+        gridType: this.gridType,
+      },
+      "ECG Paper Standards": {
+        mmPerSecond: MM_PER_SECOND,
+        mmPerMillivolt: MM_PER_MILLIVOLT,
+        pixelsPerMm: PIXELS_PER_MM,
+      },
+    };
+
+    const groupsCol2 = {
+      "Data & Dimensions": {
+        chartWidth: this.chartWidth,
+        widthSeconds: this.widthSeconds,
+        totalDuration: this.totalDuration,
+        samplingRate: this.samplingRate,
+        totalSegments: this.precomputedSegments.get(this.currentLead)?.size || 0,
+      },
+    };
+
+    const groupsCol3 = {
+      "Playback & Animation": {
+        isPlaying: this.isPlaying,
+        currentLead: this.leadNames[this.currentLead],
+        animationCycle: dynamicData.animationCycle,
+        elapsedTime: dynamicData.elapsedTime,
+        cursorProgress: dynamicData.cursorProgress,
+        cursorPosition: dynamicData.cursorPosition,
+        localCursorPosition:
+          this.displayMode === "multi" ? dynamicData.localCursorPosition : null,
+      },
+      "Real-time Rendering": {
+        activeSegments: this.activeSegments.length,
+        activePoints: dynamicData.activePoints,
+        totalActiveLeads: dynamicData.totalActiveLeads,
+        activePointsPerLead: dynamicData.activePointsPerLead,
+      },
+    };
+
+    const units = {
+      chartWidth: "px",
+      widthSeconds: "s",
+      totalDuration: "s",
+      samplingRate: "Hz",
+      elapsedTime: "s",
+      cursorPosition: "px",
+      localCursorPosition: "px",
+      mmPerSecond: "mm/s",
+      mmPerMillivolt: "mm/mV",
+      pixelsPerMm: "px/mm",
+    };
+
+    const formatGrouped = (groups) => {
+      return Object.entries(groups)
+        .map(([groupName, values]) => {
+          const valueHTML = Object.entries(values)
+            .filter(([_, value]) => value !== undefined && value !== null)
+            .map(([key, value]) => {
+              let displayValue;
+              if (key === "cursorProgress") {
+                displayValue = `${((value || 0) * 100).toFixed(0)}%`;
+              } else if (typeof value === "number") {
+                displayValue = `${value.toFixed(2)}${
+                  units[key] ? ` ${units[key]}` : ""
+                }`;
+              } else {
+                displayValue = value;
+              }
+              return `<div><strong class="opacity-70">${key}:</strong> ${displayValue}</div>`;
+            })
+            .join("");
+
+          if (valueHTML.trim() === "") return "";
+
+          return `
+            <div class="mt-4">
+              <h4 class="font-bold text-xs uppercase tracking-wider">${groupName}</h4>
+              ${valueHTML}
+            </div>
+          `;
+        })
+        .join("");
+    };
+
+    col1.innerHTML = formatGrouped(groupsCol1);
+    col2.innerHTML = formatGrouped(groupsCol2);
+    col3.innerHTML = formatGrouped(groupsCol3);
   },
 
   // =========================
@@ -831,6 +978,29 @@ const ECGPlayback = {
     }
 
     this.drawCursorWaveform();
+
+    if (this.showDiagnostics) {
+      let segmentsInfo = {};
+      if (this.displayMode === "single") {
+        segmentsInfo = {
+          activePoints: this.activeCursorData?.values.length || 0,
+        };
+      } else {
+        segmentsInfo = {
+          activePointsPerLead: this.allLeadsCursorData?.[0]?.values.length || 0,
+          totalActiveLeads: this.allLeadsCursorData?.length || 0,
+        };
+      }
+
+      this.lastDynamicData = {
+        elapsedTime,
+        cursorProgress,
+        animationCycle,
+        cursorPosition: this.cursorPosition,
+        ...segmentsInfo,
+      };
+      this.updateDiagnostics();
+    }
   },
 
   /**
@@ -859,6 +1029,7 @@ const ECGPlayback = {
       currentScreenStartTime,
       elapsedTime
     );
+    this.activeSegments = segments;
 
     if (segments.length > 0) {
       // Combine segments into cursor data
@@ -896,6 +1067,7 @@ const ECGPlayback = {
       Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
 
     this.allLeadsCursorData = [];
+    this.activeSegments = [];
 
     for (
       let leadIndex = 0;
@@ -908,6 +1080,9 @@ const ECGPlayback = {
         columnCycleStart,
         elapsedTime
       );
+      if (leadIndex === 0) {
+        this.activeSegments = segments;
+      }
 
       if (segments.length > 0) {
         // Combine segments into cursor data
@@ -977,6 +1152,13 @@ const ECGPlayback = {
   pauseAnimation() {
     this.pausedTime = Date.now();
     this.stopAnimation();
+
+    // Render the final frame when paused
+    const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+    const cursorProgress =
+      (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+    const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+    this.processWaveformUpdate(cursorProgress, animationCycle);
   },
 
   /**
