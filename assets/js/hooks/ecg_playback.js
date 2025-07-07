@@ -64,7 +64,7 @@ const ECGPlayback = {
   setupResizeListener() {
     this.resizeHandler = () => {
       this.calculateMedicallyAccurateDimensions();
-      this.handleResize();
+      this.handleWindowResizeAndRecalculateChart();
     };
     window.addEventListener("resize", this.resizeHandler);
   },
@@ -102,7 +102,7 @@ const ECGPlayback = {
       const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processWaveformUpdate(cursorProgress, animationCycle);
+      this.processAnimationFrame(cursorProgress, animationCycle);
     }
   },
 
@@ -314,7 +314,7 @@ const ECGPlayback = {
 
   /**
    * Updates the on-screen diagnostics panel with the latest data.
-   * @param {object} diagnosticsData - The data to display.
+   * @param {object} dynamicData - The dynamic data to display (defaults to this.lastDynamicData).
    * @returns {void}
    */
   updateDiagnostics(dynamicData = this.lastDynamicData) {
@@ -480,7 +480,7 @@ const ECGPlayback = {
    * @param {number} leadIndex - The index of the ECG lead.
    * @returns {{xOffset: number, yOffset: number, columnWidth: number}} The position and width for the lead.
    */
-  getLeadPosition(leadIndex) {
+  calculateLeadGridCoordinates(leadIndex) {
     const { column, row } = this.getLeadColumnAndRow(leadIndex);
     const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
     const columnWidth =
@@ -696,7 +696,7 @@ const ECGPlayback = {
    * preserving the current playback state.
    * @returns {void}
    */
-  handleResize() {
+  handleWindowResizeAndRecalculateChart() {
     const wasPlaying = this.isPlaying;
     if (wasPlaying) this.stopAnimation();
 
@@ -708,7 +708,7 @@ const ECGPlayback = {
       const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processWaveformUpdate(cursorProgress, animationCycle);
+      this.processAnimationFrame(cursorProgress, animationCycle);
     }
 
     if (wasPlaying) {
@@ -778,7 +778,7 @@ const ECGPlayback = {
         const cursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
         const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.processWaveformUpdate(cursorProgress, animationCycle);
+        this.processAnimationFrame(cursorProgress, animationCycle);
       }
 
       if (wasPlaying) {
@@ -793,13 +793,13 @@ const ECGPlayback = {
   // =================
 
   /**
-   * Finds the index in the data array that corresponds to a specific time.
+   * Calculates the index in the data array that corresponds to a specific time.
    * Uses a direct O(1) calculation based on the constant sampling rate for high performance.
    * @param {object} leadData - The dataset for a single lead.
-   * @param {number} targetTime - The time in seconds to find the index for.
+   * @param {number} targetTime - The time in seconds to calculate the index for.
    * @returns {number} The closest index in the data array for the given time.
    */
-  findDataIndexByTimeForLead(leadData, targetTime) {
+  calculateDataIndexForTime(leadData, targetTime) {
     if (!leadData || !leadData.times.length) {
       return 0;
     }
@@ -850,8 +850,8 @@ const ECGPlayback = {
           this.totalDuration
         );
 
-        const startIndex = this.findDataIndexByTimeForLead(leadData, startTime);
-        const endIndex = this.findDataIndexByTimeForLead(leadData, endTime);
+        const startIndex = this.calculateDataIndexForTime(leadData, startTime);
+        const endIndex = this.calculateDataIndexForTime(leadData, endTime);
 
         if (endIndex >= startIndex && startIndex < leadData.times.length) {
           const times = leadData.times.slice(startIndex, endIndex + 1);
@@ -944,7 +944,7 @@ const ECGPlayback = {
         const cursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
         const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.processWaveformUpdate(cursorProgress, animationCycle);
+        this.processAnimationFrame(cursorProgress, animationCycle);
       } else {
         this.clearWaveform();
       }
@@ -1014,7 +1014,7 @@ const ECGPlayback = {
    * @param {number} animationCycle - How many times the animation has looped over the screen.
    * @returns {void}
    */
-  processWaveformUpdate(cursorProgress, animationCycle) {
+  processAnimationFrame(cursorProgress, animationCycle) {
     let elapsedTime =
       animationCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
 
@@ -1028,12 +1028,12 @@ const ECGPlayback = {
     this.calculateCursorPosition(elapsedTime);
 
     if (this.displayMode === "single") {
-      this.prepareSingleLeadData(elapsedTime);
+      this.loadVisibleDataForSingleLead(elapsedTime);
     } else {
-      this.prepareMultiLeadData(elapsedTime);
+      this.loadVisibleDataForAllLeads(elapsedTime);
     }
 
-    this.drawCursorWaveform();
+    this.renderCurrentDisplayMode();
 
     if (this.showDiagnostics) {
       let segmentsInfo = {};
@@ -1075,7 +1075,7 @@ const ECGPlayback = {
    * @param {number} elapsedTime - The total time elapsed since playback started.
    * @returns {void}
    */
-  prepareSingleLeadData(elapsedTime) {
+  loadVisibleDataForSingleLead(elapsedTime) {
     const currentScreenStartTime =
       Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
 
@@ -1117,7 +1117,7 @@ const ECGPlayback = {
    * @param {number} elapsedTime - The total time elapsed since playback started.
    * @returns {void}
    */
-  prepareMultiLeadData(elapsedTime) {
+  loadVisibleDataForAllLeads(elapsedTime) {
     const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
     const columnCycleStart =
       Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
@@ -1202,7 +1202,7 @@ const ECGPlayback = {
   },
 
   /**
-   * Pauses the animation and records the time.
+   * Pauses the animation, records the pause time, and renders the final frame at the current position.
    * @returns {void}
    */
   pauseAnimation() {
@@ -1214,7 +1214,7 @@ const ECGPlayback = {
     const cursorProgress =
       (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
     const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-    this.processWaveformUpdate(cursorProgress, animationCycle);
+    this.processAnimationFrame(cursorProgress, animationCycle);
   },
 
   /**
@@ -1273,7 +1273,7 @@ const ECGPlayback = {
         this.animationCycle = animationCycle;
       }
 
-      this.processWaveformUpdate(cursorProgress, animationCycle);
+      this.processAnimationFrame(cursorProgress, animationCycle);
 
       this.animationId = requestAnimationFrame(animate);
     };
@@ -1430,11 +1430,11 @@ const ECGPlayback = {
   },
 
   /**
-   * Main waveform rendering function, called on every animation frame.
-   * It dispatches to the correct drawing function based on the display mode.
+   * Main rendering dispatcher, called on every animation frame.
+   * It dispatches to the correct drawing function based on the display mode (single vs multi-lead).
    * @returns {void}
    */
-  drawCursorWaveform() {
+  renderCurrentDisplayMode() {
     if (this.displayMode === "single") {
       this.drawSingleLeadCursor();
     } else {
@@ -1445,6 +1445,56 @@ const ECGPlayback = {
   // ==============================
   // RENDERING - CANVAS OPERATIONS
   // ==============================
+
+  /**
+   * Transforms time and value arrays to canvas coordinates.
+   * @param {Array<number>} times - Array of time points.
+   * @param {Array<number>} values - Array of millivolt values.
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {number} width - The width of the drawing area.
+   * @param {number} height - The height of the drawing area.
+   * @param {number} timeSpan - The total duration shown in this area (in seconds).
+   * @returns {Array<{x: number, y: number}>} Array of canvas coordinates.
+   */
+  transformCoordinates(times, values, xOffset, yOffset, width, height, timeSpan) {
+    const xScale = width / timeSpan;
+    const yScale = height / (this.yMax - this.yMin);
+    
+    const coordinates = [];
+    for (let i = 0; i < times.length; i++) {
+      const x = xOffset + times[i] * xScale;
+      const y = yOffset + height - (values[i] - this.yMin) * yScale;
+      coordinates.push({ x, y });
+    }
+    
+    return coordinates;
+  },
+
+  /**
+   * Sets up canvas context for waveform drawing.
+   * @param {CanvasRenderingContext2D} context - The canvas context to setup.
+   * @returns {void}
+   */
+  setupWaveformDrawing(context = this.waveformContext) {
+    context.strokeStyle = this.colors.waveform;
+    context.lineWidth = WAVEFORM_LINE_WIDTH;
+    context.beginPath();
+  },
+
+  /**
+   * Calculates the bounds for clearing the cursor area.
+   * @param {number} xOffset - The horizontal starting position of the lead's grid.
+   * @param {number} width - The total width of the lead's grid.
+   * @param {number} cursorPosition - The current horizontal pixel position of the cursor.
+   * @param {number} cursorWidth - The width of the area to clear ahead of the cursor.
+   * @returns {{clearX: number, clearWidth: number}} The calculated clear bounds.
+   */
+  calculateClearBounds(xOffset, width, cursorPosition, cursorWidth) {
+    const clearX = Math.max(xOffset, cursorPosition - cursorWidth / 2);
+    const clearWidth = Math.min(cursorWidth, xOffset + width - clearX);
+    return { clearX, clearWidth };
+  },
 
   /**
    * Clears a small rectangular area on the waveform canvas, typically right in
@@ -1476,7 +1526,7 @@ const ECGPlayback = {
    * @param {number} cursorWidth - The width of the area to clear ahead of the cursor.
    * @returns {void}
    */
-  drawLeadCursor(
+  drawWaveformToCursor(
     times,
     values,
     xOffset,
@@ -1489,25 +1539,18 @@ const ECGPlayback = {
   ) {
     if (!times || times.length === 0) return;
 
-    const clearX = Math.max(xOffset, cursorPosition - cursorWidth / 2);
-    const clearWidth = Math.min(cursorWidth, xOffset + width - clearX);
+    const { clearX, clearWidth } = this.calculateClearBounds(xOffset, width, cursorPosition, cursorWidth);
 
     if (clearWidth > 0) {
       this.clearCursorArea(clearX, clearWidth);
     }
 
-    this.waveformContext.strokeStyle = this.colors.waveform;
-    this.waveformContext.lineWidth = WAVEFORM_LINE_WIDTH;
-    this.waveformContext.beginPath();
-
-    const xScale = width / timeSpan;
-    const yScale = height / (this.yMax - this.yMin);
+    this.setupWaveformDrawing();
+    
+    const coordinates = this.transformCoordinates(times, values, xOffset, yOffset, width, height, timeSpan);
 
     let hasMovedTo = false;
-    for (let i = 0; i < times.length; i++) {
-      const x = xOffset + times[i] * xScale;
-      const y = yOffset + height - (values[i] - this.yMin) * yScale;
-
+    for (const { x, y } of coordinates) {
       if (x <= cursorPosition) {
         if (!hasMovedTo) {
           this.waveformContext.moveTo(x, y);
@@ -1560,7 +1603,7 @@ const ECGPlayback = {
       return;
 
     for (const leadData of this.allLeadsCursorData) {
-      const { xOffset, yOffset, columnWidth } = this.getLeadPosition(
+      const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(
         leadData.leadIndex
       );
 
@@ -1578,7 +1621,7 @@ const ECGPlayback = {
         cursorWidth: cursorClearWidth,
       };
 
-      this.renderLead(
+      this.renderLeadWaveform(
         leadData.leadIndex,
         null,
         xOffset,
@@ -1619,8 +1662,9 @@ const ECGPlayback = {
   },
 
   /**
-   * High-level rendering function for a single lead. It handles drawing either
-   * a static waveform or an animated cursor-driven waveform.
+   * Renders waveform data for a single lead on the foreground canvas. It handles drawing either
+   * a static waveform or an animated cursor-driven waveform. The background grid is assumed to be 
+   * already rendered on the background canvas.
    * @param {number} _leadIndex - The index of the lead (used for context).
    * @param {object} leadData - The full dataset for the lead (for static drawing).
    * @param {number} xOffset - The horizontal starting position.
@@ -1631,7 +1675,7 @@ const ECGPlayback = {
    * @param {object} cursorData - Data for drawing the animated cursor. If null, a static waveform is drawn.
    * @returns {void}
    */
-  renderLead(
+  renderLeadWaveform(
     _leadIndex,
     leadData,
     xOffset,
@@ -1645,7 +1689,7 @@ const ECGPlayback = {
     // Only draw waveform data on the foreground canvas
 
     if (cursorData) {
-      this.drawLeadCursor(
+      this.drawWaveformToCursor(
         cursorData.times,
         cursorData.values,
         xOffset,
@@ -1687,7 +1731,7 @@ const ECGPlayback = {
     // Render grid directly to background context
     if (this.displayMode === "multi") {
       for (let i = 0; i < this.leadNames.length; i++) {
-        const { xOffset, yOffset, columnWidth } = this.getLeadPosition(i);
+        const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(i);
         this.renderLeadBackground(
           i,
           xOffset,
@@ -1721,21 +1765,14 @@ const ECGPlayback = {
    * @returns {void}
    */
   drawLeadWaveform(times, values, xOffset, yOffset, width, height, timeSpan) {
-    const pointCount = times.length;
-    if (pointCount === 0) return;
+    if (times.length === 0) return;
 
-    this.waveformContext.strokeStyle = this.colors.waveform;
-    this.waveformContext.lineWidth = WAVEFORM_LINE_WIDTH;
-    this.waveformContext.beginPath();
-
-    const xScale = width / timeSpan;
-    const yScale = height / (this.yMax - this.yMin);
+    this.setupWaveformDrawing();
+    
+    const coordinates = this.transformCoordinates(times, values, xOffset, yOffset, width, height, timeSpan);
 
     let hasMovedTo = false;
-    for (let i = 0; i < pointCount; i++) {
-      const x = xOffset + times[i] * xScale;
-      const y = yOffset + height - (values[i] - this.yMin) * yScale;
-
+    for (const { x, y } of coordinates) {
       if (!hasMovedTo) {
         this.waveformContext.moveTo(x, y);
         hasMovedTo = true;
