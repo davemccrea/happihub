@@ -106,11 +106,11 @@ const ECGPlayback = {
   setupKeyboardListeners() {
     this.keydownHandler = (event) => {
       switch (event.key) {
-        case "ArrowDown":
+        case "j":
           event.preventDefault();
           this.switchToNextLead();
           break;
-        case "ArrowUp":
+        case "k":
           event.preventDefault();
           this.switchToPrevLead();
           break;

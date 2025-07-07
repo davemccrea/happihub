@@ -58,8 +58,6 @@ defmodule AstrupWeb.ECGLive do
               ]}
             />
           </form>
-
-
         </div>
 
         <div class="space-y-4">
@@ -75,11 +73,11 @@ defmodule AstrupWeb.ECGLive do
           >
             <div data-ecg-chart class="w-full"></div>
           </div>
-          
+
           <div class="text-sm text-gray-500 flex items-center gap-2">
             <span>Click on the ECG chart and use</span>
-            <kbd class="kbd kbd-sm">↑</kbd>
-            <kbd class="kbd kbd-sm">↓</kbd>
+            <kbd class="kbd kbd-sm">k</kbd>
+            <kbd class="kbd kbd-sm">j</kbd>
             <span>to switch leads,</span>
             <kbd class="kbd kbd-sm">Space</kbd>
             <span>to play/pause</span>
@@ -96,23 +94,23 @@ defmodule AstrupWeb.ECGLive do
 
   def handle_event("toggle_playback", _params, socket) do
     new_playing = !socket.assigns.is_playing
-    
-    socket = 
+
+    socket =
       socket
       |> assign(is_playing: new_playing)
       |> push_event("playback_changed", %{is_playing: new_playing})
-    
+
     {:noreply, socket}
   end
 
   def handle_event("change_lead", %{"lead" => lead_index_str}, socket) do
     case Integer.parse(lead_index_str) do
       {lead_index, ""} when lead_index >= 0 and lead_index < length(socket.assigns.lead_names) ->
-        socket = 
+        socket =
           socket
           |> assign(current_lead: lead_index)
           |> push_event("lead_changed", %{lead: lead_index})
-        
+
         {:noreply, socket}
 
       _ ->
@@ -128,7 +126,8 @@ defmodule AstrupWeb.ECGLive do
     end
   end
 
-  def handle_event("playback_changed", %{"is_playing" => is_playing}, socket) when is_boolean(is_playing) do
+  def handle_event("playback_changed", %{"is_playing" => is_playing}, socket)
+      when is_boolean(is_playing) do
     {:noreply, assign(socket, is_playing: is_playing)}
   end
 
@@ -142,11 +141,11 @@ defmodule AstrupWeb.ECGLive do
 
   def handle_event("change_display_mode", %{"display_mode" => display_mode}, socket) do
     if display_mode in ["single", "multi"] do
-      socket = 
+      socket =
         socket
         |> assign(display_mode: display_mode)
         |> push_event("display_mode_changed", %{display_mode: display_mode})
-      
+
       {:noreply, socket}
     else
       {:noreply, socket}
@@ -155,16 +154,14 @@ defmodule AstrupWeb.ECGLive do
 
   def handle_event("change_grid_type", %{"grid_type" => grid_type}, socket) do
     if grid_type in ["medical", "simple"] do
-      socket = 
+      socket =
         socket
         |> assign(grid_type: grid_type)
         |> push_event("grid_changed", %{grid_type: grid_type})
-      
+
       {:noreply, socket}
     else
       {:noreply, socket}
     end
   end
-
-
 end
