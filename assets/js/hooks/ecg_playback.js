@@ -34,32 +34,46 @@ const ECGPlayback = {
   async mounted() {
     this.initializeState();
     this.calculateMedicallyAccurateDimensions();
-
     this.updateThemeColors();
+    this.setupEventListeners();
+    await this.initializeECGChart();
+  },
 
+  /**
+   * Sets up all event listeners for the component.
+   * @returns {void}
+   */
+  setupEventListeners() {
+    this.setupResizeListener();
+    this.setupThemeListener();
+    this.setupKeyboardListeners();
+    this.setupLiveViewListeners();
+  },
+
+  /**
+   * Sets up the window resize event listener.
+   * @returns {void}
+   */
+  setupResizeListener() {
     this.resizeHandler = () => {
       this.calculateMedicallyAccurateDimensions();
       this.handleResize();
     };
     window.addEventListener("resize", this.resizeHandler);
+  },
 
+  /**
+   * Sets up a MutationObserver to watch for theme changes.
+   * @returns {void}
+   */
+  setupThemeListener() {
     this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (
           mutation.type === "attributes" &&
           mutation.attributeName === "data-theme"
         ) {
-          this.updateThemeColors();
-          this.renderGridBackground();
-          if (!this.isPlaying && this.startTime && this.pausedTime) {
-            const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-            const cursorProgress =
-              (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-            const animationCycle = Math.floor(
-              elapsedSeconds / this.widthSeconds
-            );
-            this.processWaveformUpdate(cursorProgress, animationCycle);
-          }
+          this.handleThemeChange();
         }
       });
     });
@@ -67,17 +81,43 @@ const ECGPlayback = {
       attributes: true,
       attributeFilter: ["data-theme"],
     });
+  },
 
+  /**
+   * Handles the logic for when the theme changes.
+   * @returns {void}
+   */
+  handleThemeChange() {
+    this.updateThemeColors();
+    this.renderGridBackground();
+    if (!this.isPlaying && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.processWaveformUpdate(cursorProgress, animationCycle);
+    }
+  },
+
+  /**
+   * Sets up keyboard event listeners for playback control.
+   * @returns {void}
+   */
+  setupKeyboardListeners() {
     this.keydownHandler = (event) => {
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        this.switchToNextLead();
-      } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        this.switchToPrevLead();
-      } else if (event.key === " ") {
-        event.preventDefault();
-        this.togglePlayback();
+      switch (event.key) {
+        case "ArrowDown":
+          event.preventDefault();
+          this.switchToNextLead();
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          this.switchToPrevLead();
+          break;
+        case " ":
+          event.preventDefault();
+          this.togglePlayback();
+          break;
       }
     };
 
@@ -94,9 +134,13 @@ const ECGPlayback = {
 
     this.el.addEventListener("focus", this.focusHandler);
     this.el.addEventListener("blur", this.blurHandler);
+  },
 
-    await this.initializeECGChart();
-
+  /**
+   * Sets up handlers for LiveView events.
+   * @returns {void}
+   */
+  setupLiveViewListeners() {
     this.handleEvent("playback_changed", (payload) => {
       this.handlePlaybackChange(payload.is_playing);
     });
