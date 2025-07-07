@@ -9,9 +9,9 @@ const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const WAVEFORM_LINE_WIDTH = 1.25;
 const DOT_RADIUS = 1.2;
 
-// ================
+// ===============
 // LAYOUT CONSTANTS
-// ================
+// ===============
 const DEFAULT_WIDTH_SECONDS = 2.5;
 const CONTAINER_PADDING = 40;
 const COLUMNS_PER_DISPLAY = 4;
@@ -118,6 +118,11 @@ const ECGPlayback = {
     this.cleanup();
   },
 
+  /**
+   * Cleans up all resources, event listeners, and observers to prevent memory leaks.
+   * This is called when the component is about to be removed from the DOM.
+   * @returns {void}
+   */
   cleanup() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
@@ -163,6 +168,11 @@ const ECGPlayback = {
   // STATE MANAGEMENT
   // =================
 
+  /**
+   * Initializes the component's internal state from data attributes on the element.
+   * Sets up default values for playback, display mode, and other properties.
+   * @returns {void}
+   */
   initializeState() {
     this.isPlaying = this.el.dataset.isPlaying === "true";
     this.startTime = null;
@@ -194,6 +204,11 @@ const ECGPlayback = {
   // LEAD POSITIONING & LAYOUT
   // =========================
 
+  /**
+   * Determines the grid column and row for a given lead index in multi-lead view.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @returns {{column: number, row: number}} The grid position.
+   */
   getLeadColumnAndRow(leadIndex) {
     const leadPositions = [
       { column: 0, row: 0 },
@@ -213,6 +228,11 @@ const ECGPlayback = {
     return leadPositions[leadIndex] || { column: 0, row: 0 };
   },
 
+  /**
+   * Calculates the pixel offset and width for a lead in the multi-lead display grid.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @returns {{xOffset: number, yOffset: number, columnWidth: number}} The position and width for the lead.
+   */
   getLeadPosition(leadIndex) {
     const { column, row } = this.getLeadColumnAndRow(leadIndex);
     const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
@@ -229,6 +249,11 @@ const ECGPlayback = {
   // THEME & VISUAL CONFIGURATION
   // =============================
 
+  /**
+   * Reads the current `data-theme` from the HTML element and updates the color palette
+   * for the grid, waveform, and labels.
+   * @returns {void}
+   */
   updateThemeColors() {
     const theme =
       document.documentElement.getAttribute("data-theme") || "light";
@@ -247,6 +272,11 @@ const ECGPlayback = {
   // DATA LOADING & SETUP
   // ========================
 
+  /**
+   * Orchestrates the entire setup process: loads data, calculates dimensions,
+   * creates canvases, and renders the initial view.
+   * @returns {Promise<void>}
+   */
   async initializeECGChart() {
     this.currentLeadData = await this.loadECGData();
     if (!this.widthSeconds) {
@@ -256,6 +286,11 @@ const ECGPlayback = {
     this.renderGridBackground();
   },
 
+  /**
+   * Fetches the ECG data from a JSON file, parses it, and stores it in memory.
+   * It separates the raw signal into individual datasets for each lead.
+   * @returns {Promise<object>} The dataset for the initially selected lead.
+   */
   async loadECGData() {
     const response = await fetch("/assets/json/ptb-xl/09436_hr.json");
     if (!response.ok) {
@@ -313,6 +348,11 @@ const ECGPlayback = {
   // CANVAS & DIMENSIONS
   // ===================
 
+  /**
+   * Calculates the chart's width in pixels based on standard medical units (mm/second).
+   * This ensures the visualization is medically accurate and scales correctly with the container.
+   * @returns {void}
+   */
   calculateMedicallyAccurateDimensions() {
     const container = this.el.querySelector("[data-ecg-chart]");
     if (!container) {
@@ -333,6 +373,12 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Creates and configures the dual-canvas system for rendering.
+   * A background canvas is used for the static grid, and a foreground canvas
+   * is used for the animated waveform to optimize performance.
+   * @returns {void}
+   */
   recreateCanvas() {
     this.cleanupCanvases();
 
@@ -377,6 +423,10 @@ const ECGPlayback = {
     this.waveformContext.scale(devicePixelRatio, devicePixelRatio);
   },
 
+  /**
+   * Removes the canvas elements from the DOM to prevent memory leaks.
+   * @returns {void}
+   */
   cleanupCanvases() {
     if (this.backgroundCanvas) {
       this.backgroundCanvas.remove();
@@ -394,6 +444,11 @@ const ECGPlayback = {
   // EVENT HANDLERS
   // ==============
 
+  /**
+   * Handles window resize events by recalculating dimensions and redrawing the chart,
+   * preserving the current playback state.
+   * @returns {void}
+   */
   handleResize() {
     const wasPlaying = this.isPlaying;
     if (wasPlaying) this.stopAnimation();
@@ -415,6 +470,11 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Responds to `playback_changed` events from the server to play or pause the animation.
+   * @param {boolean} isPlaying - The new playback state.
+   * @returns {void}
+   */
   handlePlaybackChange(isPlaying) {
     this.isPlaying = isPlaying;
     if (isPlaying) {
@@ -424,6 +484,11 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Responds to `lead_changed` events from the server to switch the displayed lead.
+   * @param {number} leadIndex - The index of the new lead to display.
+   * @returns {void}
+   */
   handleLeadChange(leadIndex) {
     if (
       !isNaN(leadIndex) &&
@@ -435,6 +500,11 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Responds to `grid_changed` events to toggle between medical and simple grid styles.
+   * @param {string} gridType - The new grid type ("medical" or "simple").
+   * @returns {void}
+   */
   handleGridChange(gridType) {
     if (gridType === "medical" || gridType === "simple") {
       this.gridType = gridType;
@@ -442,6 +512,11 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Responds to `display_mode_changed` events to switch between single and multi-lead views.
+   * @param {string} displayMode - The new display mode ("single" or "multi").
+   * @returns {void}
+   */
   handleDisplayModeChange(displayMode) {
     if (displayMode === "single" || displayMode === "multi") {
       const wasPlaying = this.isPlaying;
@@ -470,11 +545,19 @@ const ECGPlayback = {
   // UTILITY FUNCTIONS
   // =================
 
+  /**
+   * Finds the index in the data array that corresponds to a specific time.
+   * Uses a direct O(1) calculation based on the constant sampling rate for high performance.
+   * @param {object} leadData - The dataset for a single lead.
+   * @param {number} targetTime - The time in seconds to find the index for.
+   * @returns {number} The closest index in the data array for the given time.
+   */
   findDataIndexByTimeForLead(leadData, targetTime) {
     if (!leadData || !leadData.times.length) {
       return 0;
     }
 
+    // With a constant sampling rate, we can calculate the index directly.
     const estimatedIndex = Math.round(targetTime * this.samplingRate);
     return Math.min(estimatedIndex, leadData.times.length - 1);
   },
@@ -483,6 +566,13 @@ const ECGPlayback = {
   // DATA PRE-COMPUTATION
   // ====================
 
+  /**
+   * A key performance optimization. This function runs once at startup to process
+   * the entire ECG dataset. It chunks the data for each lead into small, 100ms segments
+   * and stores them in a Map for extremely fast lookups during the animation loop.
+   * This avoids slow array searches on every frame.
+   * @returns {void}
+   */
   precomputeDataSegments() {
     this.precomputedSegments.clear();
     this.dataIndexCache.clear();
@@ -532,6 +622,12 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Retrieves a single pre-computed data segment for a given lead and time.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @param {number} time - The time in seconds.
+   * @returns {object | null} The pre-computed segment, or null if not found.
+   */
   getPrecomputedSegment(leadIndex, time) {
     const leadSegments = this.precomputedSegments.get(leadIndex);
     if (!leadSegments) return null;
@@ -540,6 +636,14 @@ const ECGPlayback = {
     return leadSegments.get(segmentKey) || null;
   },
 
+  /**
+   * Retrieves all the pre-computed data segments that fall within a given time range.
+   * This is the main function used by the animation to get the data it needs to draw.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @param {number} startTime - The start of the time range in seconds.
+   * @param {number} endTime - The end of the time range in seconds.
+   * @returns {Array<object>} A list of pre-computed data segments.
+   */
   getSegmentsForTimeRange(leadIndex, startTime, endTime) {
     const leadSegments = this.precomputedSegments.get(leadIndex);
     if (!leadSegments) return [];
@@ -566,6 +670,11 @@ const ECGPlayback = {
   // LEAD SWITCHING
   // ==============
 
+  /**
+   * Switches the view to a different ECG lead.
+   * @param {number} leadIndex - The index of the lead to switch to.
+   * @returns {void}
+   */
   switchLead(leadIndex) {
     const wasPlaying = this.isPlaying;
     if (wasPlaying) this.stopAnimation();
@@ -595,6 +704,10 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Switches to the next lead in the list and notifies the server.
+   * @returns {void}
+   */
   switchToNextLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
 
@@ -606,6 +719,10 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Switches to the previous lead in the list and notifies the server.
+   * @returns {void}
+   */
   switchToPrevLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
 
@@ -621,6 +738,10 @@ const ECGPlayback = {
   // PLAYBACK CONTROL
   // ================
 
+  /**
+   * Toggles the playback state between playing and paused and notifies the server.
+   * @returns {void}
+   */
   togglePlayback() {
     const newPlayingState = !this.isPlaying;
     this.isPlaying = newPlayingState;
@@ -638,6 +759,14 @@ const ECGPlayback = {
   // DATA TRANSFORMATION
   // =====================
 
+  /**
+   * This is the core data processing function called on every animation frame.
+   * It calculates the current playback time, determines which data is needed,
+   * and triggers the rendering of the waveform.
+   * @param {number} cursorProgress - The cursor's progress (0 to 1) across the current screen.
+   * @param {number} animationCycle - How many times the animation has looped over the screen.
+   * @returns {void}
+   */
   processWaveformUpdate(cursorProgress, animationCycle) {
     let elapsedTime =
       animationCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
@@ -660,11 +789,22 @@ const ECGPlayback = {
     this.drawCursorWaveform();
   },
 
+  /**
+   * Calculates the cursor's horizontal pixel position based on the elapsed time.
+   * @param {number} elapsedTime - The total time elapsed since playback started.
+   * @returns {void}
+   */
   calculateCursorPosition(elapsedTime) {
     this.cursorPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
     this.cursorPosition = this.cursorPosition % this.chartWidth;
   },
 
+  /**
+   * Prepares the waveform data for the single-lead view.
+   * It uses `getSegmentsForTimeRange` to efficiently fetch the visible data.
+   * @param {number} elapsedTime - The total time elapsed since playback started.
+   * @returns {void}
+   */
   prepareSingleLeadData(elapsedTime) {
     const currentScreenStartTime =
       Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
@@ -700,6 +840,12 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Prepares the waveform data for the multi-lead view.
+   * It fetches data for all 12 leads for the current time slice.
+   * @param {number} elapsedTime - The total time elapsed since playback started.
+   * @returns {void}
+   */
   prepareMultiLeadData(elapsedTime) {
     const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
     const columnCycleStart =
@@ -750,6 +896,10 @@ const ECGPlayback = {
   // ANIMATION CONTROL
   // =================
 
+  /**
+   * Starts the animation from the beginning.
+   * @returns {void}
+   */
   startAnimation() {
     this.startTime = Date.now();
     this.pausedTime = 0;
@@ -761,6 +911,10 @@ const ECGPlayback = {
     this.startAnimationLoop();
   },
 
+  /**
+   * Resumes the animation from a paused state.
+   * @returns {void}
+   */
   resumeAnimation() {
     if (!this.startTime) {
       this.startAnimation();
@@ -772,11 +926,19 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Pauses the animation and records the time.
+   * @returns {void}
+   */
   pauseAnimation() {
     this.pausedTime = Date.now();
     this.stopAnimation();
   },
 
+  /**
+   * Stops the `requestAnimationFrame` loop.
+   * @returns {void}
+   */
   stopAnimation() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
@@ -785,6 +947,10 @@ const ECGPlayback = {
     this.isPlaying = false;
   },
 
+  /**
+   * Resets the entire playback state to the beginning.
+   * @returns {void}
+   */
   resetPlayback() {
     this.stopAnimation();
     this.startTime = null;
@@ -797,6 +963,12 @@ const ECGPlayback = {
     this.clearWaveform();
   },
 
+  /**
+   * The main animation driver. It uses `requestAnimationFrame` to repeatedly
+   * call itself, creating a smooth animation loop that is synchronized with
+   * the browser's rendering cycle.
+   * @returns {void}
+   */
   startAnimationLoop() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
@@ -831,6 +1003,15 @@ const ECGPlayback = {
   // RENDERING - GRID
   // =================
 
+  /**
+   * Draws the grid for a single lead, dispatching to either the medical or simple grid style.
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {number} width - The width of the grid.
+   * @param {number} height - The height of the grid.
+   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @returns {void}
+   */
   drawLeadGrid(
     xOffset,
     yOffset,
@@ -845,12 +1026,29 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Draws the text label (e.g., "V1", "II") for a lead.
+   * @param {number} leadIndex - The index of the lead to label.
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @returns {void}
+   */
   drawLeadLabel(leadIndex, xOffset, yOffset, context = this.waveformContext) {
     context.fillStyle = this.colors.labels;
     context.font = "12px Arial";
     context.fillText(this.leadNames[leadIndex], xOffset + 5, yOffset + 15);
   },
 
+  /**
+   * Draws a standard medical ECG grid with major and minor lines.
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {number} width - The width of the grid.
+   * @param {number} height - The height of the grid.
+   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @returns {void}
+   */
   drawMedicalGrid(
     xOffset,
     yOffset,
@@ -906,6 +1104,15 @@ const ECGPlayback = {
     context.stroke();
   },
 
+  /**
+   * Draws a simplified grid using dots instead of lines.
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {number} width - The width of the grid.
+   * @param {number} height - The height of the grid.
+   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @returns {void}
+   */
   drawSimpleGrid(
     xOffset,
     yOffset,
@@ -929,6 +1136,10 @@ const ECGPlayback = {
   // RENDERING - WAVEFORM
   // =====================
 
+  /**
+   * Clears the entire foreground (waveform) canvas.
+   * @returns {void}
+   */
   clearWaveform() {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
@@ -936,6 +1147,11 @@ const ECGPlayback = {
     this.waveformContext.clearRect(0, 0, this.chartWidth, canvasHeight);
   },
 
+  /**
+   * Main waveform rendering function, called on every animation frame.
+   * It dispatches to the correct drawing function based on the display mode.
+   * @returns {void}
+   */
   drawCursorWaveform() {
     if (this.displayMode === "single") {
       this.drawSingleLeadCursor();
@@ -948,6 +1164,13 @@ const ECGPlayback = {
   // RENDERING - CANVAS OPERATIONS
   // ==============================
 
+  /**
+   * Clears a small rectangular area on the waveform canvas, typically right in
+   * front of the moving cursor, to prepare for the next draw cycle.
+   * @param {number} x - The horizontal position to start clearing.
+   * @param {number} width - The width of the area to clear.
+   * @returns {void}
+   */
   clearCursorArea(x, width) {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
@@ -956,6 +1179,21 @@ const ECGPlayback = {
     this.waveformContext.clearRect(x, 0, width, canvasHeight);
   },
 
+  /**
+   * Draws a segment of the waveform up to the current cursor position.
+   * It clears a small area just ahead of the cursor to create the illusion of a moving line.
+   * This is the lowest-level drawing function for the animated waveform.
+   * @param {Array<number>} times - Array of time points for the waveform segment.
+   * @param {Array<number>} values - Array of millivolt values for the waveform segment.
+   * @param {number} xOffset - The horizontal starting position of the lead's grid.
+   * @param {number} yOffset - The vertical starting position of the lead's grid.
+   * @param {number} width - The total width of the lead's grid.
+   * @param {number} height - The total height of the lead's grid.
+   * @param {number} timeSpan - The total duration shown in this grid (in seconds).
+   * @param {number} cursorPosition - The current horizontal pixel position of the cursor.
+   * @param {number} cursorWidth - The width of the area to clear ahead of the cursor.
+   * @returns {void}
+   */
   drawLeadCursor(
     times,
     values,
@@ -1003,6 +1241,10 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Orchestrates drawing the animated cursor for the single-lead view.
+   * @returns {void}
+   */
   drawSingleLeadCursor() {
     if (!this.activeCursorData || this.activeCursorData.times.length === 0)
       return;
@@ -1027,6 +1269,10 @@ const ECGPlayback = {
     );
   },
 
+  /**
+   * Orchestrates drawing the animated cursors for all 12 leads in the multi-lead view.
+   * @returns {void}
+   */
   drawMultiLeadCursor() {
     if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0)
       return;
@@ -1067,6 +1313,17 @@ const ECGPlayback = {
   // RENDERING - LEAD COMPONENTS
   // ============================
 
+  /**
+   * Renders the background for a single lead, including its grid and label.
+   * This is drawn to the static background canvas for performance.
+   * @param {number} leadIndex - The index of the lead to render.
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {number} width - The width of the lead's grid.
+   * @param {number} height - The height of the lead's grid.
+   * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
+   * @returns {void}
+   */
   renderLeadBackground(
     leadIndex,
     xOffset,
@@ -1079,6 +1336,19 @@ const ECGPlayback = {
     this.drawLeadLabel(leadIndex, xOffset, yOffset, context);
   },
 
+  /**
+   * High-level rendering function for a single lead. It handles drawing either
+   * a static waveform or an animated cursor-driven waveform.
+   * @param {number} _leadIndex - The index of the lead (used for context).
+   * @param {object} leadData - The full dataset for the lead (for static drawing).
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {number} width - The width of the lead's grid.
+   * @param {number} height - The height of the lead's grid.
+   * @param {number} timeSpan - The total duration shown in this grid (in seconds).
+   * @param {object} cursorData - Data for drawing the animated cursor. If null, a static waveform is drawn.
+   * @returns {void}
+   */
   renderLead(
     _leadIndex,
     leadData,
@@ -1117,6 +1387,12 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Renders the entire grid background for the current display mode.
+   * This function draws to the background canvas only, which is a key performance
+   * optimization as the grid does not need to be redrawn on every animation frame.
+   * @returns {void}
+   */
   renderGridBackground() {
     if (!this.backgroundCanvas || !this.backgroundContext) return;
 
@@ -1151,6 +1427,17 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Draws a complete, static waveform for a given lead.
+   * @param {Array<number>} times - Array of time points.
+   * @param {Array<number>} values - Array of millivolt values.
+   * @param {number} xOffset - The horizontal starting position.
+   * @param {number} yOffset - The vertical starting position.
+   * @param {number} width - The width of the drawing area.
+   * @param {number} height - The height of the drawing area.
+   * @param {number} timeSpan - The total duration shown in this area (in seconds).
+   * @returns {void}
+   */
   drawLeadWaveform(times, values, xOffset, yOffset, width, height, timeSpan) {
     const pointCount = times.length;
     if (pointCount === 0) return;
