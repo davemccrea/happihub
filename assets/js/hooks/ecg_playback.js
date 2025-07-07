@@ -470,32 +470,13 @@ const ECGPlayback = {
   // UTILITY FUNCTIONS
   // =================
 
-  findDataIndexByTime(targetTime) {
-    return this.findDataIndexByTimeForLead(this.currentLeadData, targetTime);
-  },
-
   findDataIndexByTimeForLead(leadData, targetTime) {
     if (!leadData || !leadData.times.length) {
       return 0;
     }
 
-    let left = 0;
-    let right = leadData.times.length - 1;
-
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      const midTime = leadData.times[mid];
-
-      if (midTime === targetTime) {
-        return mid;
-      } else if (midTime < targetTime) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-
-    return Math.min(left, leadData.times.length - 1);
+    const estimatedIndex = Math.round(targetTime * this.samplingRate);
+    return Math.min(estimatedIndex, leadData.times.length - 1);
   },
 
   // ====================
