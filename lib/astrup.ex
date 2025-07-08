@@ -7,7 +7,7 @@ defmodule Astrup do
   if it comes from the database, an external API or others.
   """
 
-  @defaults %{age_range: "31-50", sex: :male}
+  @defaults %{age_range: "31-50", sex: "male"}
 
   def check_values_against_reference_range(lab, values, context \\ @defaults) do
     values

@@ -62,7 +62,8 @@ defmodule Astrup.MixProject do
       {:bandit, "~> 1.5"},
       {:tzdata, "~> 1.1"},
       {:backpex, "~> 0.13.0"},
-      {:earmark, "~> 1.4"}
+      {:earmark, "~> 1.4"},
+      {:nimble_parsec, "~> 1.4"}
     ]
   end
 
