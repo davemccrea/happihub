@@ -5,7 +5,7 @@ defmodule AstrupWeb.ECGLive do
     {:ok,
      assign(socket,
        is_playing: false,
-       current_lead: 0,
+       current_lead: 1,
        elapsed_time: 0,
        display_mode: "single",
        grid_type: "simple",
