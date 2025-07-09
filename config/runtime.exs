@@ -35,6 +35,12 @@ sendgrid_api_key =
 config :astrup, :claude_api_key, claude_api_key
 
 if(config_env() == :prod) do
+  ecg_databases_path =
+    System.get_env("ecg_databases_path") ||
+      raise "environment variable ecg_databases_path is missing."
+
+  config :astrup, :ecg_databases_path, ecg_databases_path
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

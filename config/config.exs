@@ -7,6 +7,17 @@
 # General application configuration
 import Config
 
+config :pythonx, :uv_init,
+  pyproject_toml: """
+  [project]
+  name = "project"
+  version = "0.0.0"
+  requires-python = "==3.13.*"
+  dependencies = [
+    "wfdb==4.3.0"
+  ]
+  """
+
 config :astrup, :scopes,
   user: [
     default: true,

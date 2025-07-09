@@ -1,4 +1,4 @@
-defmodule PTBXLTestHelper do
+defmodule PtbxlTestHelper do
   @moduledoc """
   Test helper functions for PTB-XL dataset tests.
   """
@@ -25,7 +25,7 @@ defmodule PTBXLTestHelper do
       ecg_id: 1,
       patient_id: 15709.0,
       age: 56.0,
-      sex: 1,
+      sex: :male,
       height: nil,
       weight: 63.0,
       nurse: 2.0,

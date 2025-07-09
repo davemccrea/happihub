@@ -8,6 +8,8 @@ config :bcrypt_elixir, :log_rounds, 1
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
+config :astrup, ecg_databases_path: "/Users/david/ecg_databases"
+
 config :astrup, Astrup.Repo,
   username: "postgres",
   password: "postgres",
