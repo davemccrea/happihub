@@ -10,7 +10,8 @@ defmodule AstrupWeb.ECGLive do
        display_mode: "single",
        grid_type: "simple",
        lead_names: ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"],
-       env: Application.get_env(:astrup, :env)
+       env: Application.get_env(:astrup, :env),
+       ecg_loaded: false
      )}
   end
 
@@ -20,79 +21,103 @@ defmodule AstrupWeb.ECGLive do
       <div class="space-y-12">
         <h1 class="text-2xl font-bold">ECG Test</h1>
 
-        <div class="flex gap-4">
-          <form phx-change="change_lead">
-            <.input
-              type="select"
-              name="lead"
-              value={@current_lead}
-              label="Current Lead"
-              options={
-                Enum.with_index(@lead_names)
-                |> Enum.map(fn {name, index} -> {"Lead #{name}", index} end)
-              }
-            />
-          </form>
+        <%= if @ecg_loaded do %>
+          <div class="flex gap-4">
+            <form phx-change="change_lead">
+              <.input
+                type="select"
+                name="lead"
+                value={@current_lead}
+                label="Current Lead"
+                options={
+                  Enum.with_index(@lead_names)
+                  |> Enum.map(fn {name, index} -> {"Lead #{name}", index} end)
+                }
+              />
+            </form>
 
-          <form phx-change="change_display_mode">
-            <.input
-              type="select"
-              name="display_mode"
-              value={@display_mode}
-              label="Display Mode"
-              options={[
-                {"Single Lead", "single"},
-                {"All Leads", "multi"}
-              ]}
-            />
-          </form>
+            <form phx-change="change_display_mode">
+              <.input
+                type="select"
+                name="display_mode"
+                value={@display_mode}
+                label="Display Mode"
+                options={[
+                  {"Single Lead", "single"},
+                  {"All Leads", "multi"}
+                ]}
+              />
+            </form>
 
-          <form phx-change="change_grid_type">
-            <.input
-              type="select"
-              name="grid_type"
-              value={@grid_type}
-              label="Grid Type"
-              options={[
-                {"Medical Grid", "medical"},
-                {"Simple Grid", "simple"}
-              ]}
-            />
-          </form>
-        </div>
+            <form phx-change="change_grid_type">
+              <.input
+                type="select"
+                name="grid_type"
+                value={@grid_type}
+                label="Grid Type"
+                options={[
+                  {"Medical Grid", "medical"},
+                  {"Simple Grid", "simple"}
+                ]}
+              />
+            </form>
+          </div>
+        <% end %>
 
         <div class="space-y-4">
-          <div
-            id="ecg-playback"
-            phx-hook="ECGPlayback"
-            phx-update="ignore"
-            class="w-full"
-            data-grid-type={@grid_type}
-            data-display-mode={@display_mode}
-            data-current-lead={@current_lead}
-            data-is-playing={to_string(@is_playing)}
-            data-env={@env}
-          >
-            <div data-ecg-chart class="w-full"></div>
+          <div class="relative">
+            <div
+              id="ecg-playback"
+              phx-hook="ECGPlayback"
+              phx-update="ignore"
+              class="w-full"
+              data-grid-type={@grid_type}
+              data-display-mode={@display_mode}
+              data-current-lead={@current_lead}
+              data-is-playing={to_string(@is_playing)}
+              data-env={@env}
+            >
+              <div data-ecg-chart class="w-full"></div>
+            </div>
+            
+            <%= if not @ecg_loaded do %>
+              <div class="absolute inset-0 flex items-center justify-center bg-base-100 bg-opacity-90">
+                <div class="text-center space-y-4">
+                  <div class="text-6xl opacity-30">
+                    <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                  </div>
+                  <div class="space-y-2">
+                    <p class="text-lg font-medium">No ECG Data Loaded</p>
+                    <p class="text-sm text-gray-500">Click "Load Random ECG" to begin</p>
+                  </div>
+                </div>
+              </div>
+            <% end %>
           </div>
 
-          <div class="text-sm text-gray-500 flex items-center gap-2">
-            <span>Click on the ECG chart and use</span>
-            <kbd class="kbd kbd-sm">k</kbd>
-            <kbd class="kbd kbd-sm">j</kbd>
-            <span>to switch leads,</span>
-            <kbd class="kbd kbd-sm">Space</kbd>
-            <span>to play/pause</span>
-          </div>
+          <%= if @ecg_loaded do %>
+            <div class="text-sm text-gray-500 flex items-center gap-2">
+              <span>Click on the ECG chart and use</span>
+              <kbd class="kbd kbd-sm">k</kbd>
+              <kbd class="kbd kbd-sm">j</kbd>
+              <span>to switch leads,</span>
+              <kbd class="kbd kbd-sm">Space</kbd>
+              <span>to play/pause</span>
+            </div>
+          <% end %>
         </div>
 
         <div class="flex gap-4 items-center">
-          <.button phx-click="toggle_playback" variant="primary">
-            {if @is_playing, do: "Pause", else: "Play"}
-          </.button>
+          <%= if @ecg_loaded do %>
+            <.button phx-click="toggle_playback" variant="primary">
+              {if @is_playing, do: "Pause", else: "Play"}
+            </.button>
+          <% end %>
           
           <.button phx-click="load_random_ecg">
-            Load Random ECG
+            {if @ecg_loaded, do: "Load Different ECG", else: "Load Random ECG"}
           </.button>
         </div>
       </div>
@@ -176,7 +201,10 @@ defmodule AstrupWeb.ECGLive do
   def handle_event("load_random_ecg", _params, socket) do
     case load_random_ecg_data() do
       {:ok, ecg_data} ->
-        socket = push_event(socket, "ecg_data_pushed", %{data: ecg_data})
+        socket = 
+          socket
+          |> assign(ecg_loaded: true, is_playing: false)
+          |> push_event("ecg_data_pushed", %{data: ecg_data})
         {:noreply, socket}
       
       {:error, reason} ->

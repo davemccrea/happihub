@@ -1801,6 +1801,7 @@ const ECGPlayback = {
     }
   },
 
+
   /**
    * Draws a complete, static waveform for a given lead.
    * @param {object} options - Drawing options.
