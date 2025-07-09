@@ -31,12 +31,12 @@ const ECGPlayback = {
   // INITIALIZATION & LIFECYCLE
   // ==========================
 
-  async mounted() {
+  mounted() {
     this.initializeState();
     this.calculateMedicallyAccurateDimensions();
     this.updateThemeColors();
     this.setupEventListeners();
-    await this.initializeECGChart();
+    this.initializeECGChart();
 
     if (this.el.dataset.env !== "prod") {
       this.showDiagnostics = true;
@@ -162,6 +162,10 @@ const ECGPlayback = {
 
     this.handleEvent("display_mode_changed", (payload) => {
       this.handleDisplayModeChange(payload.display_mode);
+    });
+
+    this.handleEvent("ecg_data_pushed", (payload) => {
+      this.handleECGDataPushed(payload);
     });
   },
 
@@ -376,7 +380,7 @@ const ECGPlayback = {
     const groupsCol3 = {
       "Playback & Animation": {
         isPlaying: this.isPlaying,
-        currentLead: this.leadNames[this.currentLead],
+        currentLead: this.leadNames ? this.leadNames[this.currentLead] : "N/A",
         animationCycle: dynamicData.animationCycle,
         elapsedTime: dynamicData.elapsedTime,
         cursorProgress: dynamicData.cursorProgress,
@@ -520,12 +524,12 @@ const ECGPlayback = {
   // ========================
 
   /**
-   * Orchestrates the entire setup process: loads data, calculates dimensions,
+   * Orchestrates the initial setup process: calculates dimensions,
    * creates canvases, and renders the initial view.
-   * @returns {Promise<void>}
+   * ECG data will be loaded separately when pushed from the server.
+   * @returns {void}
    */
-  async initializeECGChart() {
-    this.currentLeadData = await this.loadECGData();
+  initializeECGChart() {
     if (!this.widthSeconds) {
       this.calculateMedicallyAccurateDimensions();
     }
@@ -534,61 +538,73 @@ const ECGPlayback = {
   },
 
   /**
-   * Fetches the ECG data from a JSON file, parses it, and stores it in memory.
-   * It separates the raw signal into individual datasets for each lead.
-   * @returns {Promise<object>} The dataset for the initially selected lead.
+   * Handles ECG data pushed from the server.
+   * Processes the data and stores it in memory.
+   * @param {object} payload - The ECG data payload from the server.
+   * @returns {void}
    */
-  async loadECGData() {
-    const response = await fetch("/assets/json/ptb-xl/09436_hr.json");
-    if (!response.ok) {
-      throw new Error(`Failed to load ECG data: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.fs || !data.sig_name || !data.p_signal) {
-      throw new Error("Invalid ECG data format");
-    }
-
-    this.samplingRate = data.fs;
-    this.leadNames = data.sig_name;
-    this.totalDuration = data.p_signal.length / data.fs;
-
-    this.ecgLeadDatasets = [];
-
-    let globalMin = Infinity;
-    let globalMax = -Infinity;
-
-    for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
-      const times = [];
-      const values = [];
-
-      for (
-        let sampleIndex = 0;
-        sampleIndex < data.p_signal.length;
-        sampleIndex++
-      ) {
-        const time = sampleIndex / this.samplingRate;
-        const value = data.p_signal[sampleIndex][leadIndex];
-
-        times.push(time);
-        values.push(value);
-
-        if (value < globalMin) globalMin = value;
-        if (value > globalMax) globalMax = value;
+  handleECGDataPushed(payload) {
+    try {
+      const data = payload.data;
+      
+      if (!data.fs || !data.sig_name || !data.p_signal) {
+        console.error("Invalid ECG data format:", data);
+        return;
       }
 
-      this.ecgLeadDatasets.push({ times, values });
+      this.samplingRate = data.fs;
+      this.leadNames = data.sig_name;
+      this.totalDuration = data.p_signal.length / data.fs;
+
+      this.ecgLeadDatasets = [];
+
+      let globalMin = Infinity;
+      let globalMax = -Infinity;
+
+      for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
+        const times = [];
+        const values = [];
+
+        for (
+          let sampleIndex = 0;
+          sampleIndex < data.p_signal.length;
+          sampleIndex++
+        ) {
+          const time = sampleIndex / this.samplingRate;
+          const value = data.p_signal[sampleIndex][leadIndex];
+
+          times.push(time);
+          values.push(value);
+
+          if (value < globalMin) globalMin = value;
+          if (value > globalMax) globalMax = value;
+        }
+
+        this.ecgLeadDatasets.push({ times, values });
+      }
+
+      this.yMin = -HEIGHT_MILLIVOLTS / 2;
+      this.yMax = HEIGHT_MILLIVOLTS / 2;
+      this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
+
+      // Pre-compute data segments for all leads
+      this.precomputeDataSegments();
+      
+      // Re-render the grid background with the new data
+      this.renderGridBackground();
+      
+      // Clear any existing waveform
+      this.clearWaveform();
+      
+      console.log("ECG data loaded successfully:", {
+        samplingRate: this.samplingRate,
+        leadNames: this.leadNames,
+        totalDuration: this.totalDuration,
+        leadCount: this.ecgLeadDatasets.length
+      });
+    } catch (error) {
+      console.error("Error processing ECG data:", error);
     }
-
-    this.yMin = -HEIGHT_MILLIVOLTS / 2;
-    this.yMax = HEIGHT_MILLIVOLTS / 2;
-    this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
-
-    // Pre-compute data segments for all leads
-    this.precomputeDataSegments();
-
-    return this.currentLeadData;
   },
 
   // ===================
@@ -1318,6 +1334,8 @@ const ECGPlayback = {
    * @returns {void}
    */
   drawLeadLabel(leadIndex, xOffset, yOffset, context = this.waveformContext) {
+    if (!this.leadNames || !this.leadNames[leadIndex]) return;
+    
     context.fillStyle = this.colors.labels;
     context.font = "12px Arial";
     context.fillText(this.leadNames[leadIndex], xOffset + 5, yOffset + 15);
@@ -1748,7 +1766,7 @@ const ECGPlayback = {
     this.backgroundContext.clearRect(0, 0, this.chartWidth, canvasHeight);
 
     // Render grid directly to background context
-    if (this.displayMode === "multi") {
+    if (this.displayMode === "multi" && this.leadNames) {
       for (let i = 0; i < this.leadNames.length; i++) {
         const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(i);
         this.renderLeadBackground(
@@ -1760,7 +1778,7 @@ const ECGPlayback = {
           this.backgroundContext
         );
       }
-    } else {
+    } else if (this.leadNames) {
       this.renderLeadBackground(
         this.currentLead,
         0,

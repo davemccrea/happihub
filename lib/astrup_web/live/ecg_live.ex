@@ -90,6 +90,10 @@ defmodule AstrupWeb.ECGLive do
           <.button phx-click="toggle_playback" variant="primary">
             {if @is_playing, do: "Pause", else: "Play"}
           </.button>
+          
+          <.button phx-click="load_random_ecg">
+            Load Random ECG
+          </.button>
         </div>
       </div>
     </Layouts.app>
@@ -166,6 +170,82 @@ defmodule AstrupWeb.ECGLive do
       {:noreply, socket}
     else
       {:noreply, socket}
+    end
+  end
+
+  def handle_event("load_random_ecg", _params, socket) do
+    case load_random_ecg_data() do
+      {:ok, ecg_data} ->
+        socket = push_event(socket, "ecg_data_pushed", %{data: ecg_data})
+        {:noreply, socket}
+      
+      {:error, reason} ->
+        socket = put_flash(socket, :error, "Failed to load ECG: #{reason}")
+        {:noreply, socket}
+    end
+  end
+
+  # Private functions
+  
+  defp load_random_ecg_data() do
+    {:ok, file_path} = get_random_ecg_file()
+    load_ecg_json(file_path)
+  end
+  
+  defp get_random_ecg_file() do
+    ecg_files = [
+      "00068_hr.json", "00295_hr.json", "00391_hr.json", "00612_hr.json", "00745_hr.json",
+      "00746_hr.json", "01001_hr.json", "01183_hr.json", "01373_hr.json", "01380_hr.json",
+      "01531_hr.json", "01732_hr.json", "01956_hr.json", "02109_hr.json", "02221_hr.json",
+      "02243_hr.json", "02524_hr.json", "02591_hr.json", "02808_hr.json", "02838_hr.json",
+      "02855_hr.json", "02978_hr.json", "03024_hr.json", "03140_hr.json", "03423_hr.json",
+      "03694_hr.json", "04002_hr.json", "04289_hr.json", "04372_hr.json", "04400_hr.json",
+      "04651_hr.json", "04816_hr.json", "04831_hr.json", "04924_hr.json", "05071_hr.json",
+      "05079_hr.json", "05607_hr.json", "05608_hr.json", "05617_hr.json", "05867_hr.json",
+      "06058_hr.json", "06363_hr.json", "06470_hr.json", "06489_hr.json", "06546_hr.json",
+      "06643_hr.json", "06775_hr.json", "06838_hr.json", "06888_hr.json", "07176_hr.json",
+      "07406_hr.json", "07792_hr.json", "07830_hr.json", "08032_hr.json", "08457_hr.json",
+      "08595_hr.json", "08777_hr.json", "08900_hr.json", "09072_hr.json", "09237_hr.json",
+      "09413_hr.json", "09436_hr.json", "09462_hr.json", "09793_hr.json", "09833_hr.json",
+      "09967_hr.json", "10151_hr.json", "10246_hr.json", "10384_hr.json", "10399_hr.json",
+      "10582_hr.json", "11075_hr.json", "11248_hr.json", "11267_hr.json", "11351_hr.json",
+      "11413_hr.json", "11439_hr.json", "11754_hr.json", "11825_hr.json", "11980_hr.json",
+      "12020_hr.json", "12021_hr.json", "12554_hr.json", "12611_hr.json", "12745_hr.json",
+      "12800_hr.json", "12856_hr.json", "12927_hr.json", "12946_hr.json", "13018_hr.json",
+      "13302_hr.json", "13420_hr.json", "13455_hr.json", "13459_hr.json", "13495_hr.json",
+      "13506_hr.json", "13658_hr.json", "14091_hr.json", "14101_hr.json", "14138_hr.json",
+      "14208_hr.json", "14256_hr.json", "14351_hr.json", "14378_hr.json", "14396_hr.json",
+      "14571_hr.json", "14989_hr.json", "15175_hr.json", "15906_hr.json", "15937_hr.json",
+      "15996_hr.json", "16060_hr.json", "16162_hr.json", "16181_hr.json", "16490_hr.json",
+      "16655_hr.json", "16742_hr.json", "16752_hr.json", "16801_hr.json", "16820_hr.json",
+      "17211_hr.json", "17233_hr.json", "17241_hr.json", "17471_hr.json", "17578_hr.json",
+      "17768_hr.json", "17842_hr.json", "18036_hr.json", "18114_hr.json", "18375_hr.json",
+      "18409_hr.json", "18753_hr.json", "19119_hr.json", "19353_hr.json", "19474_hr.json",
+      "19503_hr.json", "19548_hr.json", "19731_hr.json", "19813_hr.json", "19980_hr.json",
+      "20000_hr.json", "20421_hr.json", "20893_hr.json", "20909_hr.json", "21102_hr.json",
+      "21112_hr.json", "21125_hr.json", "21280_hr.json", "21394_hr.json", "21703_hr.json",
+      "21800_hr.json"
+    ]
+    
+    random_file = Enum.random(ecg_files)
+    file_path = Path.join([Application.app_dir(:astrup), "priv", "static", "assets", "json", "ptb-xl", random_file])
+    
+    {:ok, file_path}
+  end
+  
+  defp load_ecg_json(file_path) do
+    case File.read(file_path) do
+      {:ok, json_content} ->
+        case Jason.decode(json_content) do
+          {:ok, data} ->
+            {:ok, data}
+          
+          {:error, reason} ->
+            {:error, "Failed to parse JSON: #{inspect(reason)}"}
+        end
+      
+      {:error, reason} ->
+        {:error, "Failed to read file: #{inspect(reason)}"}
     end
   end
 end
