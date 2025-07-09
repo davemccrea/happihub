@@ -164,7 +164,7 @@ defmodule Astrup.EcgDatabases.Ptbxl.Query do
     end
   end
 
-  defp filter_high_quality(records) do
+  def filter_high_quality(records) do
     records
     |> Enum.filter(fn record ->
       (record.strat_fold == 9 or record.strat_fold == 10) and
@@ -172,7 +172,7 @@ defmodule Astrup.EcgDatabases.Ptbxl.Query do
     end)
   end
 
-  defp filter_signal_quality(records) do
+  def filter_signal_quality(records) do
     records
     |> Enum.filter(fn record ->
       (record.electrodes_problems == "" or record.electrodes_problems == nil) and

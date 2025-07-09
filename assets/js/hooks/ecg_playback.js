@@ -148,6 +148,10 @@ const ECGPlayback = {
    * @returns {void}
    */
   setupLiveViewListeners() {
+    this.handleEvent("initial_state", (payload) => {
+      this.handleInitialState(payload);
+    });
+
     this.handleEvent("playback_changed", (payload) => {
       this.handlePlaybackChange(payload.is_playing);
     });
@@ -217,12 +221,12 @@ const ECGPlayback = {
   // =================
 
   /**
-   * Initializes the component's internal state from data attributes on the element.
+   * Initializes the component's internal state with default values.
    * Sets up default values for playback, display mode, and other properties.
    * @returns {void}
    */
   initializeState() {
-    this.isPlaying = this.el.dataset.isPlaying === "true";
+    this.isPlaying = false;
     this.showDiagnostics = false;
     this.lastDynamicData = {};
     this.activeSegments = [];
@@ -234,9 +238,9 @@ const ECGPlayback = {
     this.cursorWidth = SINGLE_LEAD_CURSOR_WIDTH;
     this.activeCursorData = null;
     this.allLeadsCursorData = null;
-    this.gridType = this.el.dataset.gridType || "medical";
-    this.displayMode = this.el.dataset.displayMode || "single";
-    this.currentLead = parseInt(this.el.dataset.currentLead) || 0;
+    this.gridType = "simple";
+    this.displayMode = "single";
+    this.currentLead = 1; // Lead II as default
     this.leadHeight = CHART_HEIGHT;
     this.memory = {};
 
@@ -552,6 +556,10 @@ const ECGPlayback = {
         return;
       }
 
+      // Reset playback state when loading new ECG data
+      this.stopAnimation();
+      this.resetPlayback();
+
       this.samplingRate = data.fs;
       this.leadNames = data.sig_name;
       this.totalDuration = data.p_signal.length / data.fs;
@@ -595,6 +603,16 @@ const ECGPlayback = {
 
       // Clear any existing waveform
       this.clearWaveform();
+
+      // Setup and update button state (button now exists in DOM)
+      this.setupPlayPauseButton();
+      this.updatePlayPauseButton();
+      
+      // Setup selectors (they now exist in DOM)
+      this.setupSelectors();
+      
+      // Set initial lead selector visibility
+      this.updateLeadSelectorVisibility("single");
 
       console.log("ECG data loaded successfully:", {
         samplingRate: this.samplingRate,
@@ -730,6 +748,27 @@ const ECGPlayback = {
     if (wasPlaying) {
       this.isPlaying = true;
       this.startAnimationLoop();
+    }
+  },
+
+  /**
+   * Handles initial state setup from the server.
+   * @param {Object} state - The initial state object from the server.
+   * @returns {void}
+   */
+  handleInitialState(state) {
+    if (typeof state.is_playing === 'boolean') {
+      this.isPlaying = state.is_playing;
+    }
+    if (typeof state.current_lead === 'number') {
+      this.currentLead = state.current_lead;
+    }
+    if (typeof state.display_mode === 'string') {
+      this.displayMode = state.display_mode;
+      this.cursorWidth = state.display_mode === 'single' ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH;
+    }
+    if (typeof state.grid_type === 'string') {
+      this.gridType = state.grid_type;
     }
   },
 
@@ -945,6 +984,9 @@ const ECGPlayback = {
     this.currentLead = leadIndex;
     this.currentLeadData = this.ecgLeadDatasets[leadIndex];
 
+    // Update the lead selector to match the current lead
+    this.updateLeadSelector();
+
     if (this.displayMode === "single") {
       // Clear both canvases and re-render for new lead
       this.clearWaveform();
@@ -1016,6 +1058,8 @@ const ECGPlayback = {
     } else {
       this.pauseAnimation();
     }
+
+    this.updatePlayPauseButton();
   },
 
   // =====================
@@ -1259,6 +1303,93 @@ const ECGPlayback = {
     this.allLeadsVisibleData = null;
 
     this.clearWaveform();
+  },
+
+  /**
+   * Updates the play/pause button text based on current playback state.
+   * @returns {void}
+   */
+  updatePlayPauseButton() {
+    const button = document.getElementById("play-pause-button");
+    if (button) {
+      button.textContent = this.isPlaying ? "Pause" : "Play";
+    }
+  },
+
+  /**
+   * Sets up the play/pause button click handler.
+   * @returns {void}
+   */
+  setupPlayPauseButton() {
+    const button = document.getElementById("play-pause-button");
+    if (button && !button.dataset.listenerAdded) {
+      button.addEventListener("click", () => {
+        this.togglePlayback();
+      });
+      button.dataset.listenerAdded = "true";
+    }
+  },
+
+  /**
+   * Sets up event handlers for the three selectors.
+   * @returns {void}
+   */
+  setupSelectors() {
+    // Lead selector
+    const leadSelector = document.getElementById("lead-selector");
+    if (leadSelector && !leadSelector.dataset.listenerAdded) {
+      leadSelector.addEventListener("change", (e) => {
+        const leadIndex = parseInt(e.target.value);
+        this.switchLead(leadIndex);
+      });
+      leadSelector.dataset.listenerAdded = "true";
+    }
+
+    // Display mode selector
+    const displayModeSelector = document.getElementById("display-mode-selector");
+    if (displayModeSelector && !displayModeSelector.dataset.listenerAdded) {
+      displayModeSelector.addEventListener("change", (e) => {
+        this.handleDisplayModeChange(e.target.value);
+        this.updateLeadSelectorVisibility(e.target.value);
+      });
+      displayModeSelector.dataset.listenerAdded = "true";
+    }
+
+    // Grid type selector
+    const gridTypeSelector = document.getElementById("grid-type-selector");
+    if (gridTypeSelector && !gridTypeSelector.dataset.listenerAdded) {
+      gridTypeSelector.addEventListener("change", (e) => {
+        this.handleGridChange(e.target.value);
+      });
+      gridTypeSelector.dataset.listenerAdded = "true";
+    }
+  },
+
+  /**
+   * Shows or hides the lead selector based on display mode.
+   * @param {string} displayMode - The display mode ("single" or "multi")
+   * @returns {void}
+   */
+  updateLeadSelectorVisibility(displayMode) {
+    const leadSelectorContainer = document.getElementById("lead-selector-container");
+    if (leadSelectorContainer) {
+      if (displayMode === "multi") {
+        leadSelectorContainer.style.display = "none";
+      } else {
+        leadSelectorContainer.style.display = "block";
+      }
+    }
+  },
+
+  /**
+   * Updates the lead selector value to match the current lead.
+   * @returns {void}
+   */
+  updateLeadSelector() {
+    const leadSelector = document.getElementById("lead-selector");
+    if (leadSelector) {
+      leadSelector.value = this.currentLead;
+    }
   },
 
   /**
