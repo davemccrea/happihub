@@ -3,7 +3,7 @@
 // ==================
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
-const PIXELS_PER_MM = 4;
+const PIXELS_PER_MM = 6;
 const HEIGHT_MILLIVOLTS = 2.5;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const WAVEFORM_LINE_WIDTH = 1.25;
@@ -18,7 +18,7 @@ const COLUMNS_PER_DISPLAY = 4;
 const ROWS_PER_DISPLAY = 3;
 const COLUMN_PADDING = 0;
 const ROW_PADDING = 0;
-const MULTI_LEAD_HEIGHT_SCALE = 1;
+const MULTI_LEAD_HEIGHT_SCALE = 0.8;
 
 // ===================
 // ANIMATION CONSTANTS
@@ -1800,7 +1800,6 @@ const ECGPlayback = {
       );
     }
   },
-
 
   /**
    * Draws a complete, static waveform for a given lead.
