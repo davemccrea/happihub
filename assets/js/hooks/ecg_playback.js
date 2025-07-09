@@ -546,7 +546,7 @@ const ECGPlayback = {
   handleECGDataPushed(payload) {
     try {
       const data = payload.data;
-      
+
       if (!data.fs || !data.sig_name || !data.p_signal) {
         console.error("Invalid ECG data format:", data);
         return;
@@ -589,18 +589,18 @@ const ECGPlayback = {
 
       // Pre-compute data segments for all leads
       this.precomputeDataSegments();
-      
+
       // Re-render the grid background with the new data
       this.renderGridBackground();
-      
+
       // Clear any existing waveform
       this.clearWaveform();
-      
+
       console.log("ECG data loaded successfully:", {
         samplingRate: this.samplingRate,
         leadNames: this.leadNames,
         totalDuration: this.totalDuration,
-        leadCount: this.ecgLeadDatasets.length
+        leadCount: this.ecgLeadDatasets.length,
       });
     } catch (error) {
       console.error("Error processing ECG data:", error);
@@ -1315,13 +1315,19 @@ const ECGPlayback = {
   drawLeadGrid(options) {
     const {
       bounds: { xOffset, yOffset, width, height },
-      context = this.waveformContext
+      context = this.waveformContext,
     } = options;
 
     if (this.gridType === "medical") {
-      this.drawMedicalGrid({ bounds: { xOffset, yOffset, width, height }, context });
+      this.drawMedicalGrid({
+        bounds: { xOffset, yOffset, width, height },
+        context,
+      });
     } else {
-      this.drawSimpleGrid({ bounds: { xOffset, yOffset, width, height }, context });
+      this.drawSimpleGrid({
+        bounds: { xOffset, yOffset, width, height },
+        context,
+      });
     }
   },
 
@@ -1335,7 +1341,7 @@ const ECGPlayback = {
    */
   drawLeadLabel(leadIndex, xOffset, yOffset, context = this.waveformContext) {
     if (!this.leadNames || !this.leadNames[leadIndex]) return;
-    
+
     context.fillStyle = this.colors.labels;
     context.font = "12px Arial";
     context.fillText(this.leadNames[leadIndex], xOffset + 5, yOffset + 15);
@@ -1355,7 +1361,7 @@ const ECGPlayback = {
   drawMedicalGrid(options) {
     const {
       bounds: { xOffset, yOffset, width, height },
-      context = this.waveformContext
+      context = this.waveformContext,
     } = options;
     const smallSquareSize = PIXELS_PER_MM;
     const largeSquareSize = 5 * PIXELS_PER_MM;
@@ -1419,7 +1425,7 @@ const ECGPlayback = {
   drawSimpleGrid(options) {
     const {
       bounds: { xOffset, yOffset, width, height },
-      context = this.waveformContext
+      context = this.waveformContext,
     } = options;
     const dotSpacing = 5 * PIXELS_PER_MM;
     context.fillStyle = this.colors.gridDots;
@@ -1483,19 +1489,19 @@ const ECGPlayback = {
       times,
       values,
       bounds: { xOffset, yOffset, width, height },
-      timeSpan
+      timeSpan,
     } = options;
 
     const xScale = width / timeSpan;
     const yScale = height / (this.yMax - this.yMin);
-    
+
     const coordinates = [];
     for (let i = 0; i < times.length; i++) {
       const x = xOffset + times[i] * xScale;
       const y = yOffset + height - (values[i] - this.yMin) * yScale;
       coordinates.push({ x, y });
     }
-    
+
     return coordinates;
   },
 
@@ -1563,24 +1569,29 @@ const ECGPlayback = {
       values,
       bounds: { xOffset, yOffset, width, height },
       timeSpan,
-      cursor: { position: cursorPosition, width: cursorWidth }
+      cursor: { position: cursorPosition, width: cursorWidth },
     } = options;
 
     if (!times || times.length === 0) return;
 
-    const { clearX, clearWidth } = this.calculateClearBounds(xOffset, width, cursorPosition, cursorWidth);
+    const { clearX, clearWidth } = this.calculateClearBounds(
+      xOffset,
+      width,
+      cursorPosition,
+      cursorWidth
+    );
 
     if (clearWidth > 0) {
       this.clearCursorArea(clearX, clearWidth);
     }
 
     this.setupWaveformDrawing();
-    
+
     const coordinates = this.transformCoordinates({
       times,
       values,
       bounds: { xOffset, yOffset, width, height },
-      timeSpan
+      timeSpan,
     });
 
     let hasMovedTo = false;
@@ -1623,10 +1634,10 @@ const ECGPlayback = {
         xOffset: 0,
         yOffset: 0,
         width: this.chartWidth,
-        height: CHART_HEIGHT
+        height: CHART_HEIGHT,
       },
       timeSpan: this.widthSeconds,
-      cursorData
+      cursorData,
     });
   },
 
@@ -1639,9 +1650,8 @@ const ECGPlayback = {
       return;
 
     for (const leadData of this.allLeadsCursorData) {
-      const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(
-        leadData.leadIndex
-      );
+      const { xOffset, yOffset, columnWidth } =
+        this.calculateLeadGridCoordinates(leadData.leadIndex);
 
       const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
       const columnProgress =
@@ -1664,10 +1674,10 @@ const ECGPlayback = {
           xOffset,
           yOffset,
           width: columnWidth,
-          height: this.leadHeight
+          height: this.leadHeight,
         },
         timeSpan: columnTimeSpan,
-        cursorData
+        cursorData,
       });
     }
   },
@@ -1697,14 +1707,14 @@ const ECGPlayback = {
   ) {
     this.drawLeadGrid({
       bounds: { xOffset, yOffset, width, height },
-      context
+      context,
     });
     this.drawLeadLabel(leadIndex, xOffset, yOffset, context);
   },
 
   /**
    * Renders waveform data for a single lead on the foreground canvas. It handles drawing either
-   * a static waveform or an animated cursor-driven waveform. The background grid is assumed to be 
+   * a static waveform or an animated cursor-driven waveform. The background grid is assumed to be
    * already rendered on the background canvas.
    * @param {object} options - Rendering options.
    * @param {number} options.leadIndex - The index of the lead (used for context).
@@ -1723,7 +1733,7 @@ const ECGPlayback = {
       leadData,
       bounds: { xOffset, yOffset, width, height },
       timeSpan,
-      cursorData = null
+      cursorData = null,
     } = options;
 
     // Background is already rendered on the background canvas
@@ -1737,15 +1747,15 @@ const ECGPlayback = {
         timeSpan,
         cursor: {
           position: cursorData.cursorPosition,
-          width: cursorData.cursorWidth
-        }
+          width: cursorData.cursorWidth,
+        },
       });
     } else if (leadData && leadData.times && leadData.values) {
       this.drawLeadWaveform({
         times: leadData.times,
         values: leadData.values,
         bounds: { xOffset, yOffset, width, height },
-        timeSpan
+        timeSpan,
       });
     }
   },
@@ -1768,7 +1778,8 @@ const ECGPlayback = {
     // Render grid directly to background context
     if (this.displayMode === "multi" && this.leadNames) {
       for (let i = 0; i < this.leadNames.length; i++) {
-        const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(i);
+        const { xOffset, yOffset, columnWidth } =
+          this.calculateLeadGridCoordinates(i);
         this.renderLeadBackground(
           i,
           xOffset,
@@ -1808,18 +1819,18 @@ const ECGPlayback = {
       times,
       values,
       bounds: { xOffset, yOffset, width, height },
-      timeSpan
+      timeSpan,
     } = options;
 
     if (times.length === 0) return;
 
     this.setupWaveformDrawing();
-    
+
     const coordinates = this.transformCoordinates({
       times,
       values,
       bounds: { xOffset, yOffset, width, height },
-      timeSpan
+      timeSpan,
     });
 
     let hasMovedTo = false;
