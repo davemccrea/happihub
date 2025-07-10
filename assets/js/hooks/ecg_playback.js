@@ -206,7 +206,10 @@ const ECGPlayback = {
       this.el.removeEventListener("keydown", this.keydownHandler);
     }
     if (this.canvasClickHandler && this.backgroundCanvas) {
-      this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
+      this.backgroundCanvas.removeEventListener(
+        "click",
+        this.canvasClickHandler
+      );
     }
 
     // Explicitly nullify large data objects to break references
@@ -488,7 +491,10 @@ const ECGPlayback = {
    */
   setupCanvasClickHandler() {
     if (this.canvasClickHandler) {
-      this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
+      this.backgroundCanvas.removeEventListener(
+        "click",
+        this.canvasClickHandler
+      );
     }
 
     this.canvasClickHandler = (event) => {
@@ -522,7 +528,8 @@ const ECGPlayback = {
     }
 
     for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
-      const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(leadIndex);
+      const { xOffset, yOffset, columnWidth } =
+        this.calculateLeadGridCoordinates(leadIndex);
       
       // Check if click is within this lead's bounds
       if (
@@ -548,7 +555,9 @@ const ECGPlayback = {
     this.displayMode = "single";
     
     // Update the display mode selector
-    const displayModeSelector = document.getElementById("display-mode-selector");
+    const displayModeSelector = document.getElementById(
+      "display-mode-selector"
+    );
     if (displayModeSelector) {
       displayModeSelector.value = "single";
     }
@@ -569,7 +578,8 @@ const ECGPlayback = {
     } else if (this.startTime && this.pausedTime) {
       // If paused, render the current frame
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.processAnimationFrame(cursorProgress, animationCycle);
     }
@@ -584,7 +594,9 @@ const ECGPlayback = {
     this.displayMode = "multi";
     
     // Update the display mode selector
-    const displayModeSelector = document.getElementById("display-mode-selector");
+    const displayModeSelector = document.getElementById(
+      "display-mode-selector"
+    );
     if (displayModeSelector) {
       displayModeSelector.value = "multi";
     }
@@ -602,7 +614,8 @@ const ECGPlayback = {
     } else if (this.startTime && this.pausedTime) {
       // If paused, render the current frame
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.processAnimationFrame(cursorProgress, animationCycle);
     }
@@ -868,7 +881,10 @@ const ECGPlayback = {
   cleanupCanvases() {
     if (this.backgroundCanvas) {
       if (this.canvasClickHandler) {
-        this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
+        this.backgroundCanvas.removeEventListener(
+          "click",
+          this.canvasClickHandler
+        );
       }
       this.backgroundCanvas.remove();
       this.backgroundCanvas = null;
