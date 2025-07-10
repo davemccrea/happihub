@@ -606,9 +606,9 @@ const ECGPlayback = {
     }
   },
 
-  // ========================
-  // CANVAS INTERACTION & UI
-  // ========================
+  // ============================
+  // DISPLAY MODE & LEAD SWITCHING
+  // ============================
 
   /**
    * Sets up click event handler for canvas to allow lead selection in multi-lead mode.
@@ -987,13 +987,12 @@ const ECGPlayback = {
     }
   },
 
-  // ==============
+  // =================
   // EVENT HANDLERS
-  // ==============
+  // =================
 
   /**
-   * Handles window resize events by recalculating dimensions and redrawing the chart,
-   * preserving the current playback state.
+   * Handles window resize events by recalculating dimensions and redrawing the chart.
    * @returns {void}
    */
   handleResize() {
@@ -1069,10 +1068,6 @@ const ECGPlayback = {
       this.recreateCanvasAndRestart();
     }
   },
-
-  // =================
-  // UTILITY FUNCTIONS
-  // =================
 
   // ====================
   // DATA PRE-COMPUTATION
@@ -1163,9 +1158,9 @@ const ECGPlayback = {
     return segments;
   },
 
-  // ==============
-  // LEAD SWITCHING
-  // ==============
+  // ========================
+  // LEAD SWITCHING & CONTROL
+  // ========================
 
   /**
    * Switches the view to a different ECG lead.
@@ -1238,9 +1233,9 @@ const ECGPlayback = {
     }
   },
 
-  // ================
-  // PLAYBACK CONTROL
-  // ================
+  // =========================
+  // PLAYBACK & ANIMATION LOOP
+  // =========================
 
   /**
    * Toggles the playback state between playing and paused and notifies the server.
@@ -1261,9 +1256,6 @@ const ECGPlayback = {
     this.updatePlayPauseButton();
   },
 
-  // =====================
-  // DATA TRANSFORMATION
-  // =====================
 
   handlePlaybackEnd() {
     this.pushEvent("playback_ended", {});
@@ -1486,9 +1478,6 @@ const ECGPlayback = {
     this.qrsFlashContext.fill();
   },
 
-  // =================
-  // ANIMATION CONTROL
-  // ================="
 
   /**
    * Starts the animation from the beginning.
