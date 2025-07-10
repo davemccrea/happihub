@@ -189,6 +189,9 @@ const ECGPlayback = {
     if (this.memoryInterval) {
       clearInterval(this.memoryInterval);
     }
+    if (this.qrsFlashTimeout) {
+      clearTimeout(this.qrsFlashTimeout);
+    }
     this.cleanupCanvases();
     if (this.resizeHandler) {
       window.removeEventListener("resize", this.resizeHandler);
@@ -251,6 +254,11 @@ const ECGPlayback = {
     this.memory = {};
     this.loopEnabled = false;
 
+    // QRS flash indicator
+    this.qrsFlashActive = false;
+    this.qrsFlashTimeout = null;
+    this.qrsFlashDuration = 100; // milliseconds
+
     // Pre-computed data segments for performance
     this.precomputedSegments = new Map();
     this.segmentDuration = 0.1; // 100ms segments
@@ -261,6 +269,8 @@ const ECGPlayback = {
     this.backgroundContext = null;
     this.waveformCanvas = null;
     this.waveformContext = null;
+    this.qrsFlashCanvas = null;
+    this.qrsFlashContext = null;
   },
 
   // =================
@@ -878,6 +888,20 @@ const ECGPlayback = {
 
     this.waveformContext = this.waveformCanvas.getContext("2d");
     this.waveformContext.scale(devicePixelRatio, devicePixelRatio);
+
+    // Create QRS flash canvas (top layer for indicators)
+    this.qrsFlashCanvas = document.createElement("canvas");
+    this.qrsFlashCanvas.width = this.chartWidth * devicePixelRatio;
+    this.qrsFlashCanvas.height = canvasHeight * devicePixelRatio;
+    this.qrsFlashCanvas.style.width = this.chartWidth + "px";
+    this.qrsFlashCanvas.style.height = canvasHeight + "px";
+    this.qrsFlashCanvas.style.display = "block";
+    this.qrsFlashCanvas.style.marginTop = `-${canvasHeight}px`; // Overlap the waveform canvas
+    this.qrsFlashCanvas.style.pointerEvents = "none"; // Allow clicks to pass through
+    container.appendChild(this.qrsFlashCanvas);
+
+    this.qrsFlashContext = this.qrsFlashCanvas.getContext("2d");
+    this.qrsFlashContext.scale(devicePixelRatio, devicePixelRatio);
   },
 
   /**
@@ -900,6 +924,11 @@ const ECGPlayback = {
       this.waveformCanvas.remove();
       this.waveformCanvas = null;
       this.waveformContext = null;
+    }
+    if (this.qrsFlashCanvas) {
+      this.qrsFlashCanvas.remove();
+      this.qrsFlashCanvas = null;
+      this.qrsFlashContext = null;
     }
   },
 
@@ -1296,6 +1325,9 @@ const ECGPlayback = {
 
     this.renderCurrentDisplayMode();
 
+    // Draw QRS flash dot on its own canvas layer
+    this.drawQrsFlashDot();
+
     if (this.showDiagnostics) {
       let segmentsInfo = {};
       if (this.displayMode === "single") {
@@ -1346,12 +1378,49 @@ const ECGPlayback = {
       
       if (qrsTime <= elapsedTime) {
         console.log(`🫀 QRS Complex detected at ${qrsTime.toFixed(3)}s (index: ${this.qrsIndexes[i]})`);
+        this.triggerQrsFlash();
         this.lastQrsIndex = i;
       } else {
         // Since QRS timestamps are sorted, we can break early
         break;
       }
     }
+  },
+
+  /**
+   * Triggers the QRS flash indicator.
+   * @returns {void}
+   */
+  triggerQrsFlash() {
+    // Clear any existing timeout
+    if (this.qrsFlashTimeout) {
+      clearTimeout(this.qrsFlashTimeout);
+    }
+
+    // Activate the flash
+    this.qrsFlashActive = true;
+
+    // Set timeout to deactivate the flash and clear the dot
+    this.qrsFlashTimeout = setTimeout(() => {
+      this.qrsFlashActive = false;
+      this.qrsFlashTimeout = null;
+      // Clear the flash dot area
+      this.clearQrsFlashArea();
+    }, this.qrsFlashDuration);
+  },
+
+  /**
+   * Clears the QRS flash canvas to ensure the dot disappears.
+   * @returns {void}
+   */
+  clearQrsFlashArea() {
+    if (!this.qrsFlashContext || !this.qrsFlashCanvas) return;
+    
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.qrsFlashCanvas.height / devicePixelRatio;
+    
+    // Clear the entire QRS flash canvas
+    this.qrsFlashContext.clearRect(0, 0, this.chartWidth, canvasHeight);
   },
 
   /**
@@ -1530,6 +1599,13 @@ const ECGPlayback = {
 
     // Reset QRS tracking
     this.lastQrsIndex = -1;
+
+    // Reset QRS flash state
+    if (this.qrsFlashTimeout) {
+      clearTimeout(this.qrsFlashTimeout);
+      this.qrsFlashTimeout = null;
+    }
+    this.qrsFlashActive = false;
 
     this.clearWaveform();
   },
@@ -2230,6 +2306,24 @@ const ECGPlayback = {
     }
 
     this.waveformContext.stroke();
+  },
+
+  /**
+   * Draws the QRS flash indicator dot in the top right corner of the chart.
+   * @returns {void}
+   */
+  drawQrsFlashDot() {
+    if (!this.qrsFlashActive || !this.qrsFlashContext) return;
+
+    const dotRadius = 5;
+    const margin = 15;
+    const dotX = this.chartWidth - margin;
+    const dotY = margin;
+
+    this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
+    this.qrsFlashContext.beginPath();
+    this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
+    this.qrsFlashContext.fill();
   },
 };
 
