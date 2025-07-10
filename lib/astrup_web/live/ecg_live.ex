@@ -58,6 +58,14 @@ defmodule AstrupWeb.ECGLive do
                 <option value="simple" selected>Simple Grid</option>
               </select>
             </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">Playback</label>
+              <label class="cursor-pointer label">
+                <input type="checkbox" id="loop-checkbox" class="checkbox checkbox-primary" />
+                <span class="label-text ml-2">Loop playback</span>
+              </label>
+            </div>
           </div>
         <% end %>
 

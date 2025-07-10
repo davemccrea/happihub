@@ -243,6 +243,7 @@ const ECGPlayback = {
     this.currentLead = 1; // Lead II as default
     this.leadHeight = CHART_HEIGHT;
     this.memory = {};
+    this.loopEnabled = false;
 
     // Pre-computed data segments for performance
     this.precomputedSegments = new Map();
@@ -558,6 +559,7 @@ const ECGPlayback = {
 
       // Reset playback state when loading new ECG data
       this.stopAnimation();
+
       this.resetPlayback();
 
       this.samplingRate = data.fs;
@@ -607,10 +609,10 @@ const ECGPlayback = {
       // Setup and update button state (button now exists in DOM)
       this.setupPlayPauseButton();
       this.updatePlayPauseButton();
-      
+
       // Setup selectors (they now exist in DOM)
       this.setupSelectors();
-      
+
       // Set initial lead selector visibility
       this.updateLeadSelectorVisibility("single");
 
@@ -757,17 +759,20 @@ const ECGPlayback = {
    * @returns {void}
    */
   handleInitialState(state) {
-    if (typeof state.is_playing === 'boolean') {
+    if (typeof state.is_playing === "boolean") {
       this.isPlaying = state.is_playing;
     }
-    if (typeof state.current_lead === 'number') {
+    if (typeof state.current_lead === "number") {
       this.currentLead = state.current_lead;
     }
-    if (typeof state.display_mode === 'string') {
+    if (typeof state.display_mode === "string") {
       this.displayMode = state.display_mode;
-      this.cursorWidth = state.display_mode === 'single' ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH;
+      this.cursorWidth =
+        state.display_mode === "single"
+          ? SINGLE_LEAD_CURSOR_WIDTH
+          : MULTI_LEAD_CURSOR_WIDTH;
     }
-    if (typeof state.grid_type === 'string') {
+    if (typeof state.grid_type === "string") {
       this.gridType = state.grid_type;
     }
   },
@@ -1080,8 +1085,20 @@ const ECGPlayback = {
 
     if (elapsedTime >= this.totalDuration) {
       this.pushEvent("playback_ended", {});
-      this.stopAnimation();
-      this.resetPlayback();
+      console.log("Playback ended. Loop enabled:", this.loopEnabled);
+      // Also check the checkbox directly in case the listener wasn't set up
+      const loopCheckbox = document.getElementById("loop-checkbox");
+      const currentLoopState = loopCheckbox ? loopCheckbox.checked : false;
+      console.log("Checkbox state:", currentLoopState);
+      if (this.loopEnabled || currentLoopState) {
+        console.log("Restarting playback due to loop");
+        this.resetPlayback();
+        this.startAnimation();
+      } else {
+        console.log("Stopping playback (loop disabled)");
+        this.stopAnimation();
+        this.resetPlayback();
+      }
       return;
     }
 
@@ -1236,6 +1253,7 @@ const ECGPlayback = {
    * @returns {void}
    */
   startAnimation() {
+    this.isPlaying = true;
     this.startTime = Date.now();
     this.pausedTime = 0;
     this.animationCycle = 0;
@@ -1346,7 +1364,9 @@ const ECGPlayback = {
     }
 
     // Display mode selector
-    const displayModeSelector = document.getElementById("display-mode-selector");
+    const displayModeSelector = document.getElementById(
+      "display-mode-selector"
+    );
     if (displayModeSelector && !displayModeSelector.dataset.listenerAdded) {
       displayModeSelector.addEventListener("change", (e) => {
         this.handleDisplayModeChange(e.target.value);
@@ -1363,6 +1383,16 @@ const ECGPlayback = {
       });
       gridTypeSelector.dataset.listenerAdded = "true";
     }
+
+    // Loop checkbox
+    const loopCheckbox = document.getElementById("loop-checkbox");
+    if (loopCheckbox && !loopCheckbox.dataset.listenerAdded) {
+      loopCheckbox.addEventListener("change", (event) => {
+        this.loopEnabled = event.target.checked;
+        console.log("Loop enabled:", this.loopEnabled);
+      });
+      loopCheckbox.dataset.listenerAdded = "true";
+    }
   },
 
   /**
@@ -1371,7 +1401,9 @@ const ECGPlayback = {
    * @returns {void}
    */
   updateLeadSelectorVisibility(displayMode) {
-    const leadSelectorContainer = document.getElementById("lead-selector-container");
+    const leadSelectorContainer = document.getElementById(
+      "lead-selector-container"
+    );
     if (leadSelectorContainer) {
       if (displayMode === "multi") {
         leadSelectorContainer.style.display = "none";
