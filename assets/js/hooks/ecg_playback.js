@@ -906,14 +906,11 @@ const ECGPlayback = {
 
     const canvasHeight =
       this.displayMode === "multi"
-        ? ROWS_PER_DISPLAY * ((CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
-          (ROWS_PER_DISPLAY - 1) * ROW_PADDING
+        ? ROWS_PER_DISPLAY * ((CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE) + (ROWS_PER_DISPLAY - 1) * ROW_PADDING
         : CHART_HEIGHT * this.heightScale;
 
     this.leadHeight =
-      this.displayMode === "multi"
-        ? (CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE
-        : CHART_HEIGHT * this.heightScale;
+      this.displayMode === "multi" ? (CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE : CHART_HEIGHT * this.heightScale;
 
     const container = this.el.querySelector("[data-ecg-chart]");
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -1256,7 +1253,6 @@ const ECGPlayback = {
     this.updatePlayPauseButton();
   },
 
-
   handlePlaybackEnd() {
     this.pushEvent("playback_ended", {});
     const loopCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("loop-checkbox"));
@@ -1477,7 +1473,6 @@ const ECGPlayback = {
     this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
     this.qrsFlashContext.fill();
   },
-
 
   /**
    * Starts the animation from the beginning.
@@ -2207,14 +2202,7 @@ const ECGPlayback = {
         this.renderLeadBackground(i, xOffset, yOffset, columnWidth, this.leadHeight, this.backgroundContext);
       }
     } else if (this.leadNames) {
-      this.renderLeadBackground(
-        this.currentLead,
-        0,
-        0,
-        this.chartWidth,
-        CHART_HEIGHT * this.heightScale,
-        this.backgroundContext
-      );
+      this.renderLeadBackground(this.currentLead, 0, 0, this.chartWidth, CHART_HEIGHT * this.heightScale, this.backgroundContext);
     }
   },
 
