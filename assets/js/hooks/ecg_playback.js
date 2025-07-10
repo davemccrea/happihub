@@ -730,6 +730,11 @@ const ECGPlayback = {
       this.samplingRate = data.fs;
       this.leadNames = data.sig_name;
       this.totalDuration = data.p_signal.length / data.fs;
+      
+      // Store QRS data for logging
+      this.qrsIndexes = data.qrs || [];
+      this.qrsTimestamps = this.qrsIndexes.map(index => index / this.samplingRate);
+      this.lastQrsIndex = -1;
 
       this.ecgLeadDatasets = [];
 
@@ -786,6 +791,7 @@ const ECGPlayback = {
         leadNames: this.leadNames,
         totalDuration: this.totalDuration,
         leadCount: this.ecgLeadDatasets.length,
+        qrsCount: this.qrsIndexes.length,
       });
     } catch (error) {
       console.error("Error processing ECG data:", error);
@@ -1277,6 +1283,9 @@ const ECGPlayback = {
       return;
     }
 
+    // Check for QRS occurrences
+    this.checkQrsOccurrences(elapsedTime);
+
     this.calculateCursorPosition(elapsedTime);
 
     if (this.displayMode === "single") {
@@ -1319,6 +1328,30 @@ const ECGPlayback = {
   calculateCursorPosition(elapsedTime) {
     this.cursorPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
     this.cursorPosition = this.cursorPosition % this.chartWidth;
+  },
+
+  /**
+   * Checks if the current elapsed time has passed any QRS timestamps and logs them.
+   * @param {number} elapsedTime - The total time elapsed since playback started.
+   * @returns {void}
+   */
+  checkQrsOccurrences(elapsedTime) {
+    if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) {
+      return;
+    }
+
+    // Find QRS events that have occurred since the last check
+    for (let i = this.lastQrsIndex + 1; i < this.qrsTimestamps.length; i++) {
+      const qrsTime = this.qrsTimestamps[i];
+      
+      if (qrsTime <= elapsedTime) {
+        console.log(`🫀 QRS Complex detected at ${qrsTime.toFixed(3)}s (index: ${this.qrsIndexes[i]})`);
+        this.lastQrsIndex = i;
+      } else {
+        // Since QRS timestamps are sorted, we can break early
+        break;
+      }
+    }
   },
 
   /**
@@ -1494,6 +1527,9 @@ const ECGPlayback = {
     this.cursorPosition = 0;
 
     this.allLeadsVisibleData = null;
+
+    // Reset QRS tracking
+    this.lastQrsIndex = -1;
 
     this.clearWaveform();
   },

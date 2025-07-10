@@ -10,7 +10,13 @@ defmodule AstrupWeb.ECGLive do
       |> Ptbxl.Query.filter_signal_quality()
       |> Enum.random()
 
-    Astrup.Wfdb.read("ptbxl", record.filename_lr)
+    db_name = "ptbxl"
+    filename = record.filename_lr
+
+    ecg_data = Astrup.Wfdb.read(db_name, filename)
+    qrs = Astrup.Wfdb.detect_qrs(db_name, filename) |> dbg()
+
+    Map.put(ecg_data, "qrs", qrs)
   end
 
   def mount(_params, _session, socket) do

@@ -4,6 +4,40 @@ defmodule Astrup.Wfdb do
     read(dataset_path, db_name, file_path)
   end
 
+  def detect_qrs(db_name, file_path) do
+    dataset_path = Application.get_env(:astrup, :ecg_databases_path)
+    detect_qrs(dataset_path, db_name, file_path)
+  end
+
+  def detect_qrs(dataset_path, db_name, file_path) do
+    args = %{"dataset_path" => dataset_path, "db_name" => db_name, "file_path" => file_path}
+
+    {result, _globals} =
+      Pythonx.eval(
+        """
+        import wfdb
+        from wfdb import processing
+
+        dataset_path = dataset_path.decode('utf-8')
+        db_name = db_name.decode('utf-8')
+        file_path = file_path.decode('utf-8')
+
+        sig, fields = wfdb.rdsamp(dataset_path + "/" + db_name + "/" + file_path, channels=[1])
+        xqrs = processing.XQRS(sig=sig[:,0], fs=fields['fs'])
+        xqrs.detect()
+
+        {
+          'qrs_inds': xqrs.qrs_inds.tolist(),
+          'fs': fields['fs']
+        }
+        """,
+        args
+      )
+
+    result = Pythonx.decode(result)
+    result["qrs_inds"]
+  end
+
   def read(dataset_path, db_name, file_path) do
     args = %{"dataset_path" => dataset_path, "db_name" => db_name, "file_path" => file_path}
 
