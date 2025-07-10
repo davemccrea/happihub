@@ -112,12 +112,19 @@ const ECGPlayback = {
    */
   setupKeyboardListeners() {
     this.keydownHandler = (event) => {
+      // Only handle shortcuts if not typing in an input field
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.isContentEditable) {
+        return;
+      }
+
       switch (event.key) {
         case "j":
+        case "ArrowDown":
           event.preventDefault();
           this.switchToNextLead();
           break;
         case "k":
+        case "ArrowUp":
           event.preventDefault();
           this.switchToPrevLead();
           break;
@@ -128,19 +135,8 @@ const ECGPlayback = {
       }
     };
 
-    this.el.setAttribute("tabindex", "0");
-    this.el.style.outline = "none";
-
-    this.focusHandler = () => {
-      this.el.addEventListener("keydown", this.keydownHandler);
-    };
-
-    this.blurHandler = () => {
-      this.el.removeEventListener("keydown", this.keydownHandler);
-    };
-
-    this.el.addEventListener("focus", this.focusHandler);
-    this.el.addEventListener("blur", this.blurHandler);
+    // Add global keyboard listener
+    document.addEventListener("keydown", this.keydownHandler);
   },
 
   /**
@@ -199,14 +195,8 @@ const ECGPlayback = {
     if (this.themeObserver) {
       this.themeObserver.disconnect();
     }
-    if (this.focusHandler) {
-      this.el.removeEventListener("focus", this.focusHandler);
-    }
-    if (this.blurHandler) {
-      this.el.removeEventListener("blur", this.blurHandler);
-    }
     if (this.keydownHandler) {
-      this.el.removeEventListener("keydown", this.keydownHandler);
+      document.removeEventListener("keydown", this.keydownHandler);
     }
     if (this.canvasClickHandler && this.backgroundCanvas) {
       this.backgroundCanvas.removeEventListener(
