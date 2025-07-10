@@ -251,7 +251,6 @@ defmodule Astrup.EcgDatabases.Ptbxl.QueryTest do
     end
   end
 
-
   describe "single selection functions" do
     test "get_by_scp_code/3 gets specific count of records by SCP code" do
       records = PtbxlTestHelper.sample_ecg_records()

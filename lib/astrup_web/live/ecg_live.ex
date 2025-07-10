@@ -174,7 +174,8 @@ defmodule AstrupWeb.ECGLive do
                       class="range range-sm w-full"
                     />
                     <div class="text-xs text-base-content/60 mt-1 text-center">
-                      <span id="grid-scale-value">1.0x</span> (25 mm/s → <span id="grid-scale-speed">25 mm/s</span>)
+                      <span id="grid-scale-value">1.0x</span>
+                      (25 mm/s → <span id="grid-scale-speed">25 mm/s</span>)
                     </div>
                   </div>
 
@@ -191,7 +192,8 @@ defmodule AstrupWeb.ECGLive do
                       class="range range-sm w-full"
                     />
                     <div class="text-xs text-base-content/60 mt-1 text-center">
-                      <span id="amplitude-scale-value">1.0x</span> (10 mm/mV → <span id="amplitude-scale-gain">10 mm/mV</span>)
+                      <span id="amplitude-scale-value">1.0x</span>
+                      (10 mm/mV → <span id="amplitude-scale-gain">10 mm/mV</span>)
                     </div>
                   </div>
 
@@ -208,7 +210,8 @@ defmodule AstrupWeb.ECGLive do
                       class="range range-sm w-full"
                     />
                     <div class="text-xs text-base-content/60 mt-1 text-center">
-                      <span id="height-scale-value">1.2x</span> (Chart height: <span id="height-scale-pixels">180px</span>)
+                      <span id="height-scale-value">1.2x</span>
+                      (Chart height: <span id="height-scale-pixels">180px</span>)
                     </div>
                   </div>
 
