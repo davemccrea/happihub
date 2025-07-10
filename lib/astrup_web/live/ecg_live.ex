@@ -149,7 +149,7 @@ defmodule AstrupWeb.ECGLive do
 
           <%= if @ecg_loaded do %>
             <div class="text-sm text-gray-500 flex items-center gap-2">
-              <span>Click on the ECG chart and use</span>
+              <span>Use</span>
               <kbd class="kbd kbd-sm">k</kbd>
               <kbd class="kbd kbd-sm">j</kbd>
               <span>to switch leads,</span>
@@ -158,12 +158,10 @@ defmodule AstrupWeb.ECGLive do
             </div>
           <% end %>
         </div>
-
       </div>
     </Layouts.app>
     """
   end
-
 
   def handle_event("load_random_ecg", _params, socket) do
     record = get_random_record()
