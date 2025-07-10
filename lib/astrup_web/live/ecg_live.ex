@@ -33,38 +33,60 @@ defmodule AstrupWeb.ECGLive do
         <%= if @ecg_loaded do %>
           <div class="flex gap-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Display Mode</label>
-              <select id="display-mode-selector" class="select select-bordered">
-                <option value="single" selected>Single Lead</option>
-                <option value="multi">All Leads</option>
-              </select>
+              <.input
+                type="select"
+                id="display-mode-selector"
+                label="Display Mode"
+                name="display-mode"
+                value="single"
+                options={[{"Single Lead", "single"}, {"All Leads", "multi"}]}
+              />
             </div>
 
             <div id="lead-selector-container">
-              <label class="block text-sm font-medium mb-2">Current Lead</label>
-              <select id="lead-selector" class="select select-bordered">
-                <%= for {name, index} <- Enum.with_index(@lead_names) do %>
-                  <option value={index} selected={index == 1}>
-                    Lead <%= name %>
-                  </option>
-                <% end %>
-              </select>
+              <.input
+                type="select"
+                id="lead-selector"
+                label="Current Lead"
+                name="lead"
+                value={1}
+                options={
+                  for {name, index} <- Enum.with_index(@lead_names) do
+                    {"Lead #{name}", index}
+                  end
+                }
+              />
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">Grid Type</label>
-              <select id="grid-type-selector" class="select select-bordered">
-                <option value="medical">Medical Grid</option>
-                <option value="simple" selected>Simple Grid</option>
-              </select>
+              <.input
+                type="select"
+                id="grid-type-selector"
+                label="Grid Type"
+                name="grid-type"
+                value="simple"
+                options={[{"Medical Grid", "medical"}, {"Simple Grid", "simple"}]}
+              />
             </div>
 
             <div>
-              <label class="block text-sm font-medium mb-2">Playback</label>
-              <label class="cursor-pointer label">
-                <input type="checkbox" id="loop-checkbox" class="checkbox checkbox-primary" />
-                <span class="label-text ml-2">Loop playback</span>
-              </label>
+              <.input
+                type="checkbox"
+                id="loop-checkbox"
+                label="Loop playback"
+                name="loop"
+                value="false"
+              />
+            </div>
+
+            <div>
+              <.input
+                type="checkbox"
+                id="debug-checkbox"
+                label="Show diagnostics"
+                name="debug"
+                value="false"
+              />
             </div>
           </div>
         <% end %>
