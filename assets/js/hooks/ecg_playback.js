@@ -1,3 +1,5 @@
+// @ts-check
+
 // ==================
 // RENDERING CONSTANTS
 // ==================
@@ -45,7 +47,7 @@ const ECGPlayback = {
 
     if (this.el.dataset.env !== "prod") {
       this.showDiagnostics = false; // Hidden by default
-      this.memoryInterval = setInterval(() => this.updateMemoryStats(), 2000);
+      this.memoryInterval = setInterval(() => this.updateMemoryStats(), MEMORY_UPDATE_INTERVAL_MS);
     }
   },
 
@@ -67,10 +69,7 @@ const ECGPlayback = {
   setupThemeListener() {
     this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (
-          mutation.type === "attributes" &&
-          mutation.attributeName === "data-theme"
-        ) {
+        if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
           this.handleThemeChange();
         }
       });
@@ -86,8 +85,7 @@ const ECGPlayback = {
     this.renderGridBackground();
     if (!this.isPlaying && this.startTime && this.pausedTime) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.processAnimationFrame(cursorProgress, animationCycle);
     }
@@ -96,11 +94,7 @@ const ECGPlayback = {
   setupKeyboardListeners() {
     this.keydownHandler = (event) => {
       // Only handle shortcuts if not typing in an input field
-      if (
-        event.target.tagName === "INPUT" ||
-        event.target.tagName === "TEXTAREA" ||
-        event.target.isContentEditable
-      ) {
+      if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA" || event.target.isContentEditable) {
         return;
       }
 
@@ -177,10 +171,7 @@ const ECGPlayback = {
       document.removeEventListener("keydown", this.keydownHandler);
     }
     if (this.canvasClickHandler && this.backgroundCanvas) {
-      this.backgroundCanvas.removeEventListener(
-        "click",
-        this.canvasClickHandler
-      );
+      this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
     }
 
     // Explicitly nullify large data objects to break references
@@ -220,7 +211,7 @@ const ECGPlayback = {
     // QRS flash indicator
     this.qrsFlashActive = false;
     this.qrsFlashTimeout = null;
-    this.qrsFlashDuration = 100; // milliseconds
+    this.qrsFlashDuration = QRS_FLASH_DURATION_MS;
     this.qrsIndicatorEnabled = true;
     this.gridScale = 1.0;
     this.amplitudeScale = 1.0;
@@ -228,7 +219,7 @@ const ECGPlayback = {
 
     // Pre-computed data segments for performance
     this.precomputedSegments = new Map();
-    this.segmentDuration = 0.1; // 100ms segments
+    this.segmentDuration = SEGMENT_DURATION_SECONDS;
     this.dataIndexCache = new Map();
 
     // Canvas layers for optimized rendering
@@ -255,12 +246,9 @@ const ECGPlayback = {
    * @returns {Promise<void>}
    */
   async updateMemoryStats() {
-    if (
-      window.crossOriginIsolated &&
-      "measureUserAgentSpecificMemory" in performance
-    ) {
+    if (window.crossOriginIsolated && "measureUserAgentSpecificMemory" in performance) {
       try {
-        const measurement = await performance.measureUserAgentSpecificMemory();
+        const measurement = await /** @type {any} */ (performance).measureUserAgentSpecificMemory();
         this.memory = {
           usedJSHeapSize: measurement.bytes,
           // The new API doesn't provide total or limit, so we leave them undefined.
@@ -270,10 +258,11 @@ const ECGPlayback = {
         this.memory = { error: "Measurement failed" };
       }
     } else if ("memory" in performance) {
+      const perfMemory = /** @type {any} */ (performance).memory;
       this.memory = {
-        usedJSHeapSize: performance.memory.usedJSHeapSize,
-        totalJSHeapSize: performance.memory.totalJSHeapSize,
-        jsHeapSizeLimit: performance.memory.jsHeapSizeLimit,
+        usedJSHeapSize: perfMemory.usedJSHeapSize,
+        totalJSHeapSize: perfMemory.totalJSHeapSize,
+        jsHeapSizeLimit: perfMemory.jsHeapSizeLimit,
       };
     } else {
       this.memory = { error: "Not supported" };
@@ -287,8 +276,7 @@ const ECGPlayback = {
 
     const panel = document.createElement("div");
     panel.id = "diagnostics-panel";
-    panel.className =
-      "mt-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
+    panel.className = "mt-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
     panel.innerHTML = `
       <div id="diagnostics-col1" class="col-span-1"></div>
       <div id="diagnostics-col2" class="col-span-1"></div>
@@ -331,8 +319,7 @@ const ECGPlayback = {
         widthSeconds: this.widthSeconds,
         totalDuration: this.totalDuration,
         samplingRate: this.samplingRate,
-        totalSegments:
-          this.precomputedSegments.get(this.currentLead)?.size || 0,
+        totalSegments: this.precomputedSegments.get(this.currentLead)?.size || 0,
       },
     };
 
@@ -342,19 +329,13 @@ const ECGPlayback = {
         memoryData.status = this.memory.error;
       } else {
         if (this.memory.usedJSHeapSize) {
-          memoryData.usedJSHeapSize = `${(
-            this.memory.usedJSHeapSize / 1048576
-          ).toFixed(2)} MB`;
+          memoryData.usedJSHeapSize = `${(this.memory.usedJSHeapSize / 1048576).toFixed(2)} MB`;
         }
         if (this.memory.totalJSHeapSize) {
-          memoryData.totalJSHeapSize = `${(
-            this.memory.totalJSHeapSize / 1048576
-          ).toFixed(2)} MB`;
+          memoryData.totalJSHeapSize = `${(this.memory.totalJSHeapSize / 1048576).toFixed(2)} MB`;
         }
         if (this.memory.jsHeapSizeLimit) {
-          memoryData.jsHeapSizeLimit = `${(
-            this.memory.jsHeapSizeLimit / 1048576
-          ).toFixed(2)} MB`;
+          memoryData.jsHeapSizeLimit = `${(this.memory.jsHeapSizeLimit / 1048576).toFixed(2)} MB`;
         }
       }
       groupsCol2["Memory"] = memoryData;
@@ -368,8 +349,7 @@ const ECGPlayback = {
         elapsedTime: dynamicData.elapsedTime,
         cursorProgress: dynamicData.cursorProgress,
         cursorPosition: dynamicData.cursorPosition,
-        localCursorPosition:
-          this.displayMode === "multi" ? dynamicData.localCursorPosition : null,
+        localCursorPosition: this.displayMode === "multi" ? dynamicData.localCursorPosition : null,
       },
       "QRS Detection": {
         totalQrsCount: this.qrsIndexes ? this.qrsIndexes.length : 0,
@@ -405,15 +385,10 @@ const ECGPlayback = {
               let displayValue;
               if (key === "cursorProgress") {
                 displayValue = `${((value || 0) * 100).toFixed(0)}%`;
-              } else if (
-                typeof value === "string" &&
-                (value.endsWith("MB") || !isNaN(parseFloat(value)))
-              ) {
+              } else if (typeof value === "string" && (value.endsWith("MB") || !isNaN(parseFloat(value)))) {
                 displayValue = value;
               } else if (typeof value === "number") {
-                displayValue = `${value.toFixed(2)}${
-                  units[key] ? ` ${units[key]}` : ""
-                }`;
+                displayValue = `${value.toFixed(2)}${units[key] ? ` ${units[key]}` : ""}`;
               } else {
                 displayValue = value;
               }
@@ -438,6 +413,10 @@ const ECGPlayback = {
     col3.innerHTML = formatGrouped(groupsCol3);
   },
 
+  // =================
+  // UTILITY FUNCTIONS
+  // =================
+
   // Common utility for preserving canvas state during operations
   withCanvasStatePreservation(operation) {
     const wasPlaying = this.isPlaying;
@@ -447,8 +426,7 @@ const ECGPlayback = {
 
     if (!wasPlaying && this.startTime && this.pausedTime) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.processAnimationFrame(cursorProgress, animationCycle);
     }
@@ -459,11 +437,75 @@ const ECGPlayback = {
     }
   },
 
+  calculateDataIndexForTime(leadData, targetTime) {
+    if (!leadData || !leadData.times || leadData.times.length === 0) {
+      console.warn("Invalid lead data provided to calculateDataIndexForTime");
+      return 0;
+    }
+
+    if (typeof targetTime !== "number" || targetTime < 0) {
+      console.warn(`Invalid target time: ${targetTime}`);
+      return 0;
+    }
+
+    if (!this.samplingRate || this.samplingRate <= 0) {
+      console.warn(`Invalid sampling rate: ${this.samplingRate}`);
+      return 0;
+    }
+
+    // With a constant sampling rate, we can calculate the index directly.
+    const estimatedIndex = Math.round(targetTime * this.samplingRate);
+    return Math.min(estimatedIndex, leadData.times.length - 1);
+  },
+
+  transformCoordinates(options) {
+    if (!options || !options.times || !options.values || !options.bounds) {
+      console.warn("Invalid options provided to transformCoordinates");
+      return [];
+    }
+
+    const {
+      times,
+      values,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan,
+    } = options;
+
+    if (times.length !== values.length) {
+      console.warn("Times and values arrays must have the same length");
+      return [];
+    }
+
+    if (timeSpan <= 0 || width <= 0 || height <= 0) {
+      console.warn("Invalid dimensions provided to transformCoordinates");
+      return [];
+    }
+
+    const xScale = width / timeSpan;
+    const yScale = height / (this.yMax - this.yMin);
+
+    const coordinates = [];
+    for (let i = 0; i < times.length; i++) {
+      const x = xOffset + times[i] * xScale;
+      // Apply amplitude scale to the voltage values
+      const scaledValue = values[i] * this.amplitudeScale;
+      const y = yOffset + height - (scaledValue - this.yMin) * yScale;
+      coordinates.push({ x, y });
+    }
+
+    return coordinates;
+  },
+
+  // ===================
+  // SCALE & UI CONTROLS
+  // ===================
+
   handleGridScaleChange() {
     this.withCanvasStatePreservation(() => {
       this.calculateMedicallyAccurateDimensions();
       this.recreateCanvas();
       this.renderGridBackground();
+      this.clearWaveform();
     });
   },
 
@@ -496,9 +538,7 @@ const ECGPlayback = {
   },
 
   updateAmplitudeScaleDisplay() {
-    const amplitudeScaleValue = document.getElementById(
-      "amplitude-scale-value"
-    );
+    const amplitudeScaleValue = document.getElementById("amplitude-scale-value");
     const amplitudeScaleGain = document.getElementById("amplitude-scale-gain");
 
     if (amplitudeScaleValue) {
@@ -532,7 +572,7 @@ const ECGPlayback = {
       this.createDiagnosticsPanel();
       this.updateDiagnostics();
       if (!this.memoryInterval) {
-        this.memoryInterval = setInterval(() => this.updateMemoryStats(), 2000);
+        this.memoryInterval = setInterval(() => this.updateMemoryStats(), MEMORY_UPDATE_INTERVAL_MS);
       }
     } else {
       this.destroyDiagnosticsPanel();
@@ -543,16 +583,17 @@ const ECGPlayback = {
     }
   },
 
+  // ========================
+  // CANVAS INTERACTION & UI
+  // ========================
+
   /**
    * Sets up click event handler for canvas to allow lead selection in multi-lead mode.
    * @returns {void}
    */
   setupCanvasClickHandler() {
     if (this.canvasClickHandler) {
-      this.backgroundCanvas.removeEventListener(
-        "click",
-        this.canvasClickHandler
-      );
+      this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
     }
 
     this.canvasClickHandler = (event) => {
@@ -586,16 +627,10 @@ const ECGPlayback = {
     }
 
     for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
-      const { xOffset, yOffset, columnWidth } =
-        this.calculateLeadGridCoordinates(leadIndex);
+      const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(leadIndex);
 
       // Check if click is within this lead's bounds
-      if (
-        x >= xOffset &&
-        x <= xOffset + columnWidth &&
-        y >= yOffset &&
-        y <= yOffset + this.leadHeight
-      ) {
+      if (x >= xOffset && x <= xOffset + columnWidth && y >= yOffset && y <= yOffset + this.leadHeight) {
         return leadIndex;
       }
     }
@@ -613,9 +648,7 @@ const ECGPlayback = {
     this.displayMode = "single";
 
     // Update the display mode selector
-    const displayModeSelector = document.getElementById(
-      "display-mode-selector"
-    );
+    const displayModeSelector = /** @type {HTMLSelectElement} */ (document.getElementById("display-mode-selector"));
     if (displayModeSelector) {
       displayModeSelector.value = "single";
     }
@@ -636,8 +669,7 @@ const ECGPlayback = {
     } else if (this.startTime && this.pausedTime) {
       // If paused, render the current frame
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.processAnimationFrame(cursorProgress, animationCycle);
     }
@@ -652,9 +684,7 @@ const ECGPlayback = {
     this.displayMode = "multi";
 
     // Update the display mode selector
-    const displayModeSelector = document.getElementById(
-      "display-mode-selector"
-    );
+    const displayModeSelector = /** @type {HTMLSelectElement} */ (document.getElementById("display-mode-selector"));
     if (displayModeSelector) {
       displayModeSelector.value = "multi";
     }
@@ -672,8 +702,7 @@ const ECGPlayback = {
     } else if (this.startTime && this.pausedTime) {
       // If paused, render the current frame
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.processAnimationFrame(cursorProgress, animationCycle);
     }
@@ -715,8 +744,7 @@ const ECGPlayback = {
   calculateLeadGridCoordinates(leadIndex) {
     const { column, row } = this.getLeadColumnAndRow(leadIndex);
     const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
-    const columnWidth =
-      (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
+    const columnWidth = (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
 
     const xOffset = column * (columnWidth + COLUMN_PADDING);
     const yOffset = row * (this.leadHeight + ROW_PADDING);
@@ -734,8 +762,7 @@ const ECGPlayback = {
    * @returns {void}
    */
   updateThemeColors() {
-    const theme =
-      document.documentElement.getAttribute("data-theme") || "light";
+    const theme = document.documentElement.getAttribute("data-theme") || "light";
     const isDark = theme === "dark";
 
     this.colors = {
@@ -791,9 +818,7 @@ const ECGPlayback = {
 
       // Store QRS data for logging
       this.qrsIndexes = data.qrs || [];
-      this.qrsTimestamps = this.qrsIndexes.map(
-        (index) => index / this.samplingRate
-      );
+      this.qrsTimestamps = this.qrsIndexes.map((index) => index / this.samplingRate);
       this.lastQrsIndex = -1;
       this.qrsDetectedCount = 0;
 
@@ -814,11 +839,7 @@ const ECGPlayback = {
         const times = [];
         const values = [];
 
-        for (
-          let sampleIndex = 0;
-          sampleIndex < data.p_signal.length;
-          sampleIndex++
-        ) {
+        for (let sampleIndex = 0; sampleIndex < data.p_signal.length; sampleIndex++) {
           const time = sampleIndex / this.samplingRate;
           const value = data.p_signal[sampleIndex][leadIndex];
 
@@ -879,8 +900,7 @@ const ECGPlayback = {
   calculateMedicallyAccurateDimensions() {
     const container = this.el.querySelector("[data-ecg-chart]");
     if (!container) {
-      this.chartWidth =
-        DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM * this.gridScale;
+      this.chartWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM * this.gridScale;
       this.widthSeconds = DEFAULT_WIDTH_SECONDS;
       return;
     }
@@ -909,8 +929,7 @@ const ECGPlayback = {
 
     const canvasHeight =
       this.displayMode === "multi"
-        ? ROWS_PER_DISPLAY *
-            ((CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
+        ? ROWS_PER_DISPLAY * ((CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
           (ROWS_PER_DISPLAY - 1) * ROW_PADDING
         : CHART_HEIGHT * this.heightScale;
 
@@ -973,10 +992,7 @@ const ECGPlayback = {
   cleanupCanvases() {
     if (this.backgroundCanvas) {
       if (this.canvasClickHandler) {
-        this.backgroundCanvas.removeEventListener(
-          "click",
-          this.canvasClickHandler
-        );
+        this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
       }
       this.backgroundCanvas.remove();
       this.backgroundCanvas = null;
@@ -1012,8 +1028,7 @@ const ECGPlayback = {
 
     if (!wasPlaying && this.startTime && this.pausedTime) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.processAnimationFrame(cursorProgress, animationCycle);
     }
@@ -1038,10 +1053,7 @@ const ECGPlayback = {
     }
     if (typeof state.display_mode === "string") {
       this.displayMode = state.display_mode;
-      this.cursorWidth =
-        state.display_mode === "single"
-          ? SINGLE_LEAD_CURSOR_WIDTH
-          : MULTI_LEAD_CURSOR_WIDTH;
+      this.cursorWidth = state.display_mode === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH;
     }
     if (typeof state.grid_type === "string") {
       this.gridType = state.grid_type;
@@ -1068,12 +1080,7 @@ const ECGPlayback = {
    * @returns {void}
    */
   handleLeadChange(leadIndex) {
-    if (
-      !isNaN(leadIndex) &&
-      this.ecgLeadDatasets &&
-      leadIndex >= 0 &&
-      leadIndex < this.ecgLeadDatasets.length
-    ) {
+    if (!isNaN(leadIndex) && this.ecgLeadDatasets && leadIndex >= 0 && leadIndex < this.ecgLeadDatasets.length) {
       this.switchLead(leadIndex);
     }
   },
@@ -1106,8 +1113,7 @@ const ECGPlayback = {
 
       if (!wasPlaying && this.startTime && this.pausedTime) {
         const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-        const cursorProgress =
-          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+        const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
         const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
         this.processAnimationFrame(cursorProgress, animationCycle);
       }
@@ -1122,34 +1128,6 @@ const ECGPlayback = {
   // =================
   // UTILITY FUNCTIONS
   // =================
-
-  /**
-   * Calculates the index in the data array that corresponds to a specific time.
-   * Uses a direct O(1) calculation based on the constant sampling rate for high performance.
-   * @param {object} leadData - The dataset for a single lead.
-   * @param {number} targetTime - The time in seconds to calculate the index for.
-   * @returns {number} The closest index in the data array for the given time.
-   */
-  calculateDataIndexForTime(leadData, targetTime) {
-    if (!leadData || !leadData.times || leadData.times.length === 0) {
-      console.warn('Invalid lead data provided to calculateDataIndexForTime');
-      return 0;
-    }
-
-    if (typeof targetTime !== 'number' || targetTime < 0) {
-      console.warn(`Invalid target time: ${targetTime}`);
-      return 0;
-    }
-
-    if (!this.samplingRate || this.samplingRate <= 0) {
-      console.warn(`Invalid sampling rate: ${this.samplingRate}`);
-      return 0;
-    }
-
-    // With a constant sampling rate, we can calculate the index directly.
-    const estimatedIndex = Math.round(targetTime * this.samplingRate);
-    return Math.min(estimatedIndex, leadData.times.length - 1);
-  },
 
   // ====================
   // DATA PRE-COMPUTATION
@@ -1171,26 +1149,15 @@ const ECGPlayback = {
     }
 
     // Pre-compute segments for each lead
-    for (
-      let leadIndex = 0;
-      leadIndex < this.ecgLeadDatasets.length;
-      leadIndex++
-    ) {
+    for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
       const leadData = this.ecgLeadDatasets[leadIndex];
       const leadSegments = new Map();
 
       // Create segments every 100ms
-      for (
-        let time = 0;
-        time < this.totalDuration;
-        time += this.segmentDuration
-      ) {
+      for (let time = 0; time < this.totalDuration; time += this.segmentDuration) {
         const segmentKey = Math.floor(time / this.segmentDuration);
         const startTime = segmentKey * this.segmentDuration;
-        const endTime = Math.min(
-          startTime + this.segmentDuration,
-          this.totalDuration
-        );
+        const endTime = Math.min(startTime + this.segmentDuration, this.totalDuration);
 
         const startIndex = this.calculateDataIndexForTime(leadData, startTime);
         const endIndex = this.calculateDataIndexForTime(leadData, endTime);
@@ -1241,11 +1208,7 @@ const ECGPlayback = {
     const endSegment = Math.floor(endTime / this.segmentDuration);
 
     const segments = [];
-    for (
-      let segmentKey = startSegment;
-      segmentKey <= endSegment;
-      segmentKey++
-    ) {
+    for (let segmentKey = startSegment; segmentKey <= endSegment; segmentKey++) {
       const segment = leadSegments.get(segmentKey);
       if (segment) {
         segments.push(segment);
@@ -1291,8 +1254,7 @@ const ECGPlayback = {
     } else {
       if (this.startTime && this.pausedTime) {
         const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-        const cursorProgress =
-          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+        const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
         const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
         this.processAnimationFrame(cursorProgress, animationCycle);
       } else {
@@ -1360,7 +1322,7 @@ const ECGPlayback = {
 
   handlePlaybackEnd() {
     this.pushEvent("playback_ended", {});
-    const loopCheckbox = document.getElementById("loop-checkbox");
+    const loopCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("loop-checkbox"));
     const currentLoopState = loopCheckbox ? loopCheckbox.checked : false;
     if (this.loopEnabled || currentLoopState) {
       this.resetPlayback();
@@ -1432,10 +1394,87 @@ const ECGPlayback = {
   },
 
   /**
-   * Checks if the current elapsed time has passed any QRS timestamps and logs them.
+   * Prepares the waveform data for the single-lead view.
+   * It uses `getSegmentsForTimeRange` to efficiently fetch the visible data.
    * @param {number} elapsedTime - The total time elapsed since playback started.
    * @returns {void}
    */
+  loadVisibleDataForSingleLead(elapsedTime) {
+    const currentScreenStartTime = Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
+
+    // Use pre-computed segments instead of real-time slicing
+    const segments = this.getSegmentsForTimeRange(this.currentLead, currentScreenStartTime, elapsedTime);
+    this.activeSegments = segments;
+
+    if (segments.length > 0) {
+      // Combine segments into cursor data
+      const times = [];
+      const values = [];
+
+      for (const segment of segments) {
+        for (let i = 0; i < segment.times.length; i++) {
+          const absoluteTime = segment.originalStartTime + segment.times[i];
+          if (absoluteTime >= currentScreenStartTime && absoluteTime <= elapsedTime) {
+            times.push(absoluteTime - currentScreenStartTime);
+            values.push(segment.values[i]);
+          }
+        }
+      }
+
+      this.activeCursorData = { times, values };
+    } else {
+      this.activeCursorData = { times: [], values: [] };
+    }
+  },
+
+  /**
+   * Prepares the waveform data for the multi-lead view.
+   * It fetches data for all 12 leads for the current time slice.
+   * @param {number} elapsedTime - The total time elapsed since playback started.
+   * @returns {void}
+   */
+  loadVisibleDataForAllLeads(elapsedTime) {
+    const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
+    const columnCycleStart = Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
+
+    this.allLeadsCursorData = [];
+    this.activeSegments = [];
+
+    for (let leadIndex = 0; leadIndex < this.ecgLeadDatasets.length; leadIndex++) {
+      // Use pre-computed segments instead of real-time slicing
+      const segments = this.getSegmentsForTimeRange(leadIndex, columnCycleStart, elapsedTime);
+      if (leadIndex === 0) {
+        this.activeSegments = segments;
+      }
+
+      if (segments.length > 0) {
+        // Combine segments into cursor data
+        const times = [];
+        const values = [];
+
+        for (const segment of segments) {
+          for (let i = 0; i < segment.times.length; i++) {
+            const absoluteTime = segment.originalStartTime + segment.times[i];
+            if (absoluteTime >= columnCycleStart && absoluteTime <= elapsedTime) {
+              times.push(absoluteTime - columnCycleStart);
+              values.push(segment.values[i]);
+            }
+          }
+        }
+
+        this.allLeadsCursorData.push({
+          leadIndex,
+          times,
+          values,
+        });
+      }
+    }
+  },
+
+  // ==================
+  // QRS DETECTION & UI
+  // ==================
+
   checkQrsOccurrences(elapsedTime) {
     if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) {
       return;
@@ -1460,10 +1499,6 @@ const ECGPlayback = {
     }
   },
 
-  /**
-   * Triggers the QRS flash indicator.
-   * @returns {void}
-   */
   triggerQrsFlash() {
     // Clear any existing timeout
     if (this.qrsFlashTimeout) {
@@ -1482,10 +1517,6 @@ const ECGPlayback = {
     }, this.qrsFlashDuration);
   },
 
-  /**
-   * Clears the QRS flash canvas to ensure the dot disappears.
-   * @returns {void}
-   */
   clearQrsFlashArea() {
     if (!this.qrsFlashContext || !this.qrsFlashCanvas) return;
 
@@ -1496,107 +1527,23 @@ const ECGPlayback = {
     this.qrsFlashContext.clearRect(0, 0, this.chartWidth, canvasHeight);
   },
 
-  /**
-   * Prepares the waveform data for the single-lead view.
-   * It uses `getSegmentsForTimeRange` to efficiently fetch the visible data.
-   * @param {number} elapsedTime - The total time elapsed since playback started.
-   * @returns {void}
-   */
-  loadVisibleDataForSingleLead(elapsedTime) {
-    const currentScreenStartTime =
-      Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
+  drawQrsFlashDot() {
+    if (!this.qrsFlashActive || !this.qrsFlashContext) return;
 
-    // Use pre-computed segments instead of real-time slicing
-    const segments = this.getSegmentsForTimeRange(
-      this.currentLead,
-      currentScreenStartTime,
-      elapsedTime
-    );
-    this.activeSegments = segments;
+    const dotRadius = 5;
+    const margin = 15;
+    const dotX = this.chartWidth - margin;
+    const dotY = margin;
 
-    if (segments.length > 0) {
-      // Combine segments into cursor data
-      const times = [];
-      const values = [];
-
-      for (const segment of segments) {
-        for (let i = 0; i < segment.times.length; i++) {
-          const absoluteTime = segment.originalStartTime + segment.times[i];
-          if (
-            absoluteTime >= currentScreenStartTime &&
-            absoluteTime <= elapsedTime
-          ) {
-            times.push(absoluteTime - currentScreenStartTime);
-            values.push(segment.values[i]);
-          }
-        }
-      }
-
-      this.activeCursorData = { times, values };
-    } else {
-      this.activeCursorData = { times: [], values: [] };
-    }
-  },
-
-  /**
-   * Prepares the waveform data for the multi-lead view.
-   * It fetches data for all 12 leads for the current time slice.
-   * @param {number} elapsedTime - The total time elapsed since playback started.
-   * @returns {void}
-   */
-  loadVisibleDataForAllLeads(elapsedTime) {
-    const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
-    const columnCycleStart =
-      Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
-
-    this.allLeadsCursorData = [];
-    this.activeSegments = [];
-
-    for (
-      let leadIndex = 0;
-      leadIndex < this.ecgLeadDatasets.length;
-      leadIndex++
-    ) {
-      // Use pre-computed segments instead of real-time slicing
-      const segments = this.getSegmentsForTimeRange(
-        leadIndex,
-        columnCycleStart,
-        elapsedTime
-      );
-      if (leadIndex === 0) {
-        this.activeSegments = segments;
-      }
-
-      if (segments.length > 0) {
-        // Combine segments into cursor data
-        const times = [];
-        const values = [];
-
-        for (const segment of segments) {
-          for (let i = 0; i < segment.times.length; i++) {
-            const absoluteTime = segment.originalStartTime + segment.times[i];
-            if (
-              absoluteTime >= columnCycleStart &&
-              absoluteTime <= elapsedTime
-            ) {
-              times.push(absoluteTime - columnCycleStart);
-              values.push(segment.values[i]);
-            }
-          }
-        }
-
-        this.allLeadsCursorData.push({
-          leadIndex,
-          times,
-          values,
-        });
-      }
-    }
+    this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
+    this.qrsFlashContext.beginPath();
+    this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
+    this.qrsFlashContext.fill();
   },
 
   // =================
   // ANIMATION CONTROL
-  // =================
+  // ================="
 
   /**
    * Starts the animation from the beginning.
@@ -1639,8 +1586,7 @@ const ECGPlayback = {
 
     // Render the final frame when paused
     const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-    const cursorProgress =
-      (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+    const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
     const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
     this.processAnimationFrame(cursorProgress, animationCycle);
   },
@@ -1714,6 +1660,12 @@ const ECGPlayback = {
    * @returns {void}
    */
   // Helper to setup event listener with duplicate prevention
+  /**
+   * @param {string} elementId
+   * @param {string} eventType
+   * @param {EventListener} handler
+   * @param {((element: HTMLElement) => void) | null} [initializer]
+   */
   setupElementListener(elementId, eventType, handler, initializer = null) {
     const element = document.getElementById(elementId);
     if (element && !element.dataset.listenerAdded) {
@@ -1725,75 +1677,106 @@ const ECGPlayback = {
 
   setupBasicSelectors() {
     this.setupElementListener("lead-selector", "change", (e) => {
-      const leadIndex = parseInt(e.target.value);
+      const leadIndex = parseInt(/** @type {HTMLSelectElement} */ (e.target).value);
       this.switchLead(leadIndex);
     });
 
     this.setupElementListener("display-mode-selector", "change", (e) => {
-      this.handleDisplayModeChange(e.target.value);
-      this.updateLeadSelectorVisibility(e.target.value);
+      const value = /** @type {HTMLSelectElement} */ (e.target).value;
+      this.handleDisplayModeChange(value);
+      this.updateLeadSelectorVisibility(value);
     });
 
     this.setupElementListener("grid-type-selector", "change", (e) => {
-      this.handleGridChange(e.target.value);
+      this.handleGridChange(/** @type {HTMLSelectElement} */ (e.target).value);
     });
   },
 
   setupCheckboxes() {
-    this.setupElementListener("loop-checkbox", "change", (event) => {
-      this.loopEnabled = event.target.checked;
-    }, (element) => {
-      element.checked = this.loopEnabled;
-    });
-
-    this.setupElementListener("qrs-indicator-checkbox", "change", (event) => {
-      this.qrsIndicatorEnabled = event.target.checked;
-      if (!this.qrsIndicatorEnabled && this.qrsFlashActive) {
-        this.qrsFlashActive = false;
-        if (this.qrsFlashTimeout) {
-          clearTimeout(this.qrsFlashTimeout);
-          this.qrsFlashTimeout = null;
-        }
-        this.clearQrsFlashArea();
+    this.setupElementListener(
+      "loop-checkbox",
+      "change",
+      (event) => {
+        this.loopEnabled = /** @type {HTMLInputElement} */ (event.target).checked;
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).checked = this.loopEnabled;
       }
-    }, (element) => {
-      element.checked = this.qrsIndicatorEnabled;
-    });
+    );
 
-    this.setupElementListener("debug-checkbox", "change", (event) => {
-      this.toggleDebugView(event.target.checked);
-    }, (element) => {
-      element.checked = this.showDiagnostics;
-    });
+    this.setupElementListener(
+      "qrs-indicator-checkbox",
+      "change",
+      (event) => {
+        this.qrsIndicatorEnabled = /** @type {HTMLInputElement} */ (event.target).checked;
+        if (!this.qrsIndicatorEnabled && this.qrsFlashActive) {
+          this.qrsFlashActive = false;
+          if (this.qrsFlashTimeout) {
+            clearTimeout(this.qrsFlashTimeout);
+            this.qrsFlashTimeout = null;
+          }
+          this.clearQrsFlashArea();
+        }
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).checked = this.qrsIndicatorEnabled;
+      }
+    );
+
+    this.setupElementListener(
+      "debug-checkbox",
+      "change",
+      (event) => {
+        this.toggleDebugView(/** @type {HTMLInputElement} */ (event.target).checked);
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).checked = this.showDiagnostics;
+      }
+    );
   },
 
   setupScaleSliders() {
-    this.setupElementListener("grid-scale-slider", "input", (event) => {
-      this.gridScale = parseFloat(event.target.value);
-      this.updateGridScaleDisplay();
-      this.handleGridScaleChange();
-    }, (element) => {
-      element.value = this.gridScale;
-      this.updateGridScaleDisplay();
-    });
+    this.setupElementListener(
+      "grid-scale-slider",
+      "input",
+      (event) => {
+        this.gridScale = parseFloat(/** @type {HTMLInputElement} */ (event.target).value);
+        this.updateGridScaleDisplay();
+        this.handleGridScaleChange();
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).value = this.gridScale;
+        this.updateGridScaleDisplay();
+      }
+    );
 
-    this.setupElementListener("amplitude-scale-slider", "input", (event) => {
-      this.amplitudeScale = parseFloat(event.target.value);
-      this.updateAmplitudeScaleDisplay();
-      this.handleAmplitudeScaleChange();
-    }, (element) => {
-      element.value = this.amplitudeScale;
-      this.updateAmplitudeScaleDisplay();
-    });
+    this.setupElementListener(
+      "amplitude-scale-slider",
+      "input",
+      (event) => {
+        this.amplitudeScale = parseFloat(/** @type {HTMLInputElement} */ (event.target).value);
+        this.updateAmplitudeScaleDisplay();
+        this.handleAmplitudeScaleChange();
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).value = this.amplitudeScale;
+        this.updateAmplitudeScaleDisplay();
+      }
+    );
 
-    this.setupElementListener("height-scale-slider", "input", (event) => {
-      this.heightScale = parseFloat(event.target.value);
-      this.updateHeightScaleDisplay();
-      this.handleHeightScaleChange();
-    }, (element) => {
-      element.value = this.heightScale;
-      this.updateHeightScaleDisplay();
-    });
+    this.setupElementListener(
+      "height-scale-slider",
+      "input",
+      (event) => {
+        this.heightScale = parseFloat(/** @type {HTMLInputElement} */ (event.target).value);
+        this.updateHeightScaleDisplay();
+        this.handleHeightScaleChange();
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).value = this.heightScale;
+        this.updateHeightScaleDisplay();
+      }
+    );
   },
 
   setupSelectors() {
@@ -1808,9 +1791,7 @@ const ECGPlayback = {
    * @returns {void}
    */
   updateLeadSelectorVisibility(displayMode) {
-    const leadSelectorContainer = document.getElementById(
-      "lead-selector-container"
-    );
+    const leadSelectorContainer = document.getElementById("lead-selector-container");
     if (leadSelectorContainer) {
       if (displayMode === "multi") {
         leadSelectorContainer.style.display = "none";
@@ -1825,7 +1806,7 @@ const ECGPlayback = {
    * @returns {void}
    */
   updateLeadSelector() {
-    const leadSelector = document.getElementById("lead-selector");
+    const leadSelector = /** @type {HTMLSelectElement} */ (document.getElementById("lead-selector"));
     if (leadSelector) {
       leadSelector.value = this.currentLead;
     }
@@ -1851,8 +1832,7 @@ const ECGPlayback = {
 
       const currentTime = Date.now();
       const elapsedSeconds = (currentTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
 
       if (animationCycle !== this.animationCycle) {
@@ -1940,11 +1920,7 @@ const ECGPlayback = {
     context.lineWidth = 0.5;
     context.beginPath();
 
-    for (
-      let x = xOffset + smallSquareSize;
-      x < xOffset + width;
-      x += smallSquareSize
-    ) {
+    for (let x = xOffset + smallSquareSize; x < xOffset + width; x += smallSquareSize) {
       context.moveTo(x, yOffset);
       context.lineTo(x, yOffset + height);
     }
@@ -1962,11 +1938,7 @@ const ECGPlayback = {
     context.lineWidth = 1;
     context.beginPath();
 
-    for (
-      let x = xOffset + largeSquareSize;
-      x < xOffset + width;
-      x += largeSquareSize
-    ) {
+    for (let x = xOffset + largeSquareSize; x < xOffset + width; x += largeSquareSize) {
       context.moveTo(x, yOffset);
       context.lineTo(x, yOffset + height);
     }
@@ -2042,57 +2014,6 @@ const ECGPlayback = {
   // ==============================
 
   /**
-   * Transforms time and value arrays to canvas coordinates.
-   * @param {object} options - Transformation options.
-   * @param {Array<number>} options.times - Array of time points.
-   * @param {Array<number>} options.values - Array of millivolt values.
-   * @param {object} options.bounds - The drawing bounds.
-   * @param {number} options.bounds.xOffset - The horizontal starting position.
-   * @param {number} options.bounds.yOffset - The vertical starting position.
-   * @param {number} options.bounds.width - The width of the drawing area.
-   * @param {number} options.bounds.height - The height of the drawing area.
-   * @param {number} options.timeSpan - The total duration shown in this area (in seconds).
-   * @returns {Array<{x: number, y: number}>} Array of canvas coordinates.
-   */
-  transformCoordinates(options) {
-    if (!options || !options.times || !options.values || !options.bounds) {
-      console.warn('Invalid options provided to transformCoordinates');
-      return [];
-    }
-
-    const {
-      times,
-      values,
-      bounds: { xOffset, yOffset, width, height },
-      timeSpan,
-    } = options;
-
-    if (times.length !== values.length) {
-      console.warn('Times and values arrays must have the same length');
-      return [];
-    }
-
-    if (timeSpan <= 0 || width <= 0 || height <= 0) {
-      console.warn('Invalid dimensions provided to transformCoordinates');
-      return [];
-    }
-
-    const xScale = width / timeSpan;
-    const yScale = height / (this.yMax - this.yMin);
-
-    const coordinates = [];
-    for (let i = 0; i < times.length; i++) {
-      const x = xOffset + times[i] * xScale;
-      // Apply amplitude scale to the voltage values
-      const scaledValue = values[i] * this.amplitudeScale;
-      const y = yOffset + height - (scaledValue - this.yMin) * yScale;
-      coordinates.push({ x, y });
-    }
-
-    return coordinates;
-  },
-
-  /**
    * Sets up canvas context for waveform drawing.
    * @param {CanvasRenderingContext2D} context - The canvas context to setup.
    * @returns {void}
@@ -2161,12 +2082,7 @@ const ECGPlayback = {
 
     if (!times || times.length === 0) return;
 
-    const { clearX, clearWidth } = this.calculateClearBounds(
-      xOffset,
-      width,
-      cursorPosition,
-      cursorWidth
-    );
+    const { clearX, clearWidth } = this.calculateClearBounds(xOffset, width, cursorPosition, cursorWidth);
 
     if (clearWidth > 0) {
       this.clearCursorArea(clearX, clearWidth);
@@ -2203,8 +2119,7 @@ const ECGPlayback = {
    * @returns {void}
    */
   drawSingleLeadCursor() {
-    if (!this.activeCursorData || this.activeCursorData.times.length === 0)
-      return;
+    if (!this.activeCursorData || this.activeCursorData.times.length === 0) return;
 
     const cursorClearWidth = SINGLE_LEAD_CURSOR_WIDTH;
     const cursorData = {
@@ -2233,17 +2148,13 @@ const ECGPlayback = {
    * @returns {void}
    */
   drawMultiLeadCursor() {
-    if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0)
-      return;
+    if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0) return;
 
     for (const leadData of this.allLeadsCursorData) {
-      const { xOffset, yOffset, columnWidth } =
-        this.calculateLeadGridCoordinates(leadData.leadIndex);
+      const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(leadData.leadIndex);
 
       const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
-      const columnProgress =
-        (this.cursorPosition / this.chartWidth) *
-        (this.widthSeconds / columnTimeSpan);
+      const columnProgress = (this.cursorPosition / this.chartWidth) * (this.widthSeconds / columnTimeSpan);
       const localCursorPosition = xOffset + (columnProgress % 1) * columnWidth;
 
       const cursorClearWidth = MULTI_LEAD_CURSOR_WIDTH;
@@ -2284,14 +2195,7 @@ const ECGPlayback = {
    * @param {CanvasRenderingContext2D} context - The canvas context to draw on.
    * @returns {void}
    */
-  renderLeadBackground(
-    leadIndex,
-    xOffset,
-    yOffset,
-    width,
-    height,
-    context = this.waveformContext
-  ) {
+  renderLeadBackground(leadIndex, xOffset, yOffset, width, height, context = this.waveformContext) {
     this.drawLeadGrid({
       bounds: { xOffset, yOffset, width, height },
       context,
@@ -2365,16 +2269,8 @@ const ECGPlayback = {
     // Render grid directly to background context
     if (this.displayMode === "multi" && this.leadNames) {
       for (let i = 0; i < this.leadNames.length; i++) {
-        const { xOffset, yOffset, columnWidth } =
-          this.calculateLeadGridCoordinates(i);
-        this.renderLeadBackground(
-          i,
-          xOffset,
-          yOffset,
-          columnWidth,
-          this.leadHeight,
-          this.backgroundContext
-        );
+        const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(i);
+        this.renderLeadBackground(i, xOffset, yOffset, columnWidth, this.leadHeight, this.backgroundContext);
       }
     } else if (this.leadNames) {
       this.renderLeadBackground(
@@ -2431,24 +2327,6 @@ const ECGPlayback = {
     }
 
     this.waveformContext.stroke();
-  },
-
-  /**
-   * Draws the QRS flash indicator dot in the top right corner of the chart.
-   * @returns {void}
-   */
-  drawQrsFlashDot() {
-    if (!this.qrsFlashActive || !this.qrsFlashContext) return;
-
-    const dotRadius = 5;
-    const margin = 15;
-    const dotX = this.chartWidth - margin;
-    const dotY = margin;
-
-    this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
-    this.qrsFlashContext.beginPath();
-    this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
-    this.qrsFlashContext.fill();
   },
 };
 
