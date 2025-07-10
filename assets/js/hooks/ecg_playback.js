@@ -39,9 +39,7 @@ const ECGPlayback = {
     this.initializeECGChart();
 
     if (this.el.dataset.env !== "prod") {
-      this.showDiagnostics = true;
-      this.createDiagnosticsPanel();
-      this.updateDiagnostics();
+      this.showDiagnostics = false; // Hidden by default
       this.memoryInterval = setInterval(() => this.updateMemoryStats(), 2000);
     }
   },
@@ -242,7 +240,7 @@ const ECGPlayback = {
     this.currentLead = 1; // Lead II as default
     this.leadHeight = CHART_HEIGHT;
     this.memory = {};
-    this.loopEnabled = false;
+    this.loopEnabled = true;
 
     // QRS flash indicator
     this.qrsFlashActive = false;
@@ -398,6 +396,10 @@ const ECGPlayback = {
         cursorPosition: dynamicData.cursorPosition,
         localCursorPosition:
           this.displayMode === "multi" ? dynamicData.localCursorPosition : null,
+      },
+      "QRS Detection": {
+        totalQrsCount: this.qrsIndexes ? this.qrsIndexes.length : 0,
+        detectedCount: this.qrsDetectedCount || 0,
       },
       "Real-time Rendering": {
         activeSegments: this.activeSegments.length,
@@ -735,6 +737,7 @@ const ECGPlayback = {
       this.qrsIndexes = data.qrs || [];
       this.qrsTimestamps = this.qrsIndexes.map(index => index / this.samplingRate);
       this.lastQrsIndex = -1;
+      this.qrsDetectedCount = 0;
 
       this.ecgLeadDatasets = [];
 
@@ -1367,7 +1370,8 @@ const ECGPlayback = {
       const qrsTime = this.qrsTimestamps[i];
       
       if (qrsTime <= elapsedTime) {
-        console.log(`🫀 QRS Complex detected at ${qrsTime.toFixed(3)}s (index: ${this.qrsIndexes[i]})`);
+        this.qrsDetectedCount++;
+        console.log(`🫀 QRS Complex detected at ${qrsTime.toFixed(3)}s (index: ${this.qrsIndexes[i]}) - Total: ${this.qrsDetectedCount}`);
         this.triggerQrsFlash();
         this.lastQrsIndex = i;
       } else {
@@ -1589,6 +1593,7 @@ const ECGPlayback = {
 
     // Reset QRS tracking
     this.lastQrsIndex = -1;
+    this.qrsDetectedCount = 0;
 
     // Reset QRS flash state
     if (this.qrsFlashTimeout) {
@@ -1664,6 +1669,9 @@ const ECGPlayback = {
     // Loop checkbox
     const loopCheckbox = document.getElementById("loop-checkbox");
     if (loopCheckbox && !loopCheckbox.dataset.listenerAdded) {
+      // Set initial state to match default
+      loopCheckbox.checked = this.loopEnabled;
+      
       loopCheckbox.addEventListener("change", (event) => {
         this.loopEnabled = event.target.checked;
         console.log("Loop enabled:", this.loopEnabled);

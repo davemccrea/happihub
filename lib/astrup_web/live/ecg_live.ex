@@ -94,7 +94,8 @@ defmodule AstrupWeb.ECGLive do
                 id="loop-checkbox"
                 label="Loop playback"
                 name="loop"
-                value="false"
+                value="true"
+                checked={true}
               />
             </div>
 
