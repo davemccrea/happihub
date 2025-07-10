@@ -456,6 +456,29 @@ const ECGPlayback = {
     col3.innerHTML = formatGrouped(groupsCol3);
   },
 
+  /**
+   * Toggles the debug view on or off.
+   * @param {boolean} enabled - Whether to show or hide the debug view.
+   * @returns {void}
+   */
+  toggleDebugView(enabled) {
+    this.showDiagnostics = enabled;
+    
+    if (enabled) {
+      this.createDiagnosticsPanel();
+      this.updateDiagnostics();
+      if (!this.memoryInterval) {
+        this.memoryInterval = setInterval(() => this.updateMemoryStats(), 2000);
+      }
+    } else {
+      this.destroyDiagnosticsPanel();
+      if (this.memoryInterval) {
+        clearInterval(this.memoryInterval);
+        this.memoryInterval = null;
+      }
+    }
+  },
+
   // =========================
   // LEAD POSITIONING & LAYOUT
   // =========================
@@ -614,7 +637,7 @@ const ECGPlayback = {
       this.setupSelectors();
 
       // Set initial lead selector visibility
-      this.updateLeadSelectorVisibility("single");
+      this.updateLeadSelectorVisibility(this.displayMode);
 
       console.log("ECG data loaded successfully:", {
         samplingRate: this.samplingRate,
@@ -1392,6 +1415,18 @@ const ECGPlayback = {
         console.log("Loop enabled:", this.loopEnabled);
       });
       loopCheckbox.dataset.listenerAdded = "true";
+    }
+
+    // Debug checkbox
+    const debugCheckbox = document.getElementById("debug-checkbox");
+    if (debugCheckbox && !debugCheckbox.dataset.listenerAdded) {
+      // Set initial state based on current debug view
+      debugCheckbox.checked = this.showDiagnostics;
+      
+      debugCheckbox.addEventListener("change", (event) => {
+        this.toggleDebugView(event.target.checked);
+      });
+      debugCheckbox.dataset.listenerAdded = "true";
     }
   },
 
