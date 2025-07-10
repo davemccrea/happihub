@@ -33,7 +33,7 @@ defmodule AstrupWeb.ECGLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
-      <div class="space-y-12">
+      <div class="space-y-8">
         <div class="flex justify-between items-center">
           <h1 class="text-2xl font-bold">ECG Test</h1>
           <div class="flex gap-4 items-center">
@@ -43,74 +43,13 @@ defmodule AstrupWeb.ECGLive do
               </.button>
             <% end %>
 
-            <.button phx-click="load_random_ecg">
+            <.button variant="primary" phx-click="load_random_ecg">
               {if @ecg_loaded, do: "Load Different ECG", else: "Load Random ECG"}
             </.button>
           </div>
         </div>
-
-        <%= if @ecg_loaded do %>
-          <div class="flex gap-4">
-            <div>
-              <.input
-                type="select"
-                id="display-mode-selector"
-                label="Display Mode"
-                name="display-mode"
-                value="single"
-                options={[{"Single Lead", "single"}, {"All Leads", "multi"}]}
-              />
-            </div>
-
-            <div id="lead-selector-container">
-              <.input
-                type="select"
-                id="lead-selector"
-                label="Current Lead"
-                name="lead"
-                value={1}
-                options={
-                  for {name, index} <- Enum.with_index(@lead_names) do
-                    {"Lead #{name}", index}
-                  end
-                }
-              />
-            </div>
-
-            <div>
-              <.input
-                type="select"
-                id="grid-type-selector"
-                label="Grid Type"
-                name="grid-type"
-                value="simple"
-                options={[{"Medical Grid", "medical"}, {"Simple Grid", "simple"}]}
-              />
-            </div>
-
-            <div>
-              <.input
-                type="checkbox"
-                id="loop-checkbox"
-                label="Loop playback"
-                name="loop"
-                value="true"
-                checked={true}
-              />
-            </div>
-
-            <div>
-              <.input
-                type="checkbox"
-                id="debug-checkbox"
-                label="Show diagnostics"
-                name="debug"
-                value="false"
-              />
-            </div>
-          </div>
-        <% end %>
-
+        
+    <!-- ECG Chart - Top Priority -->
         <div class="space-y-4">
           <div class="relative">
             <div
@@ -157,6 +96,9 @@ defmodule AstrupWeb.ECGLive do
           <%= if @ecg_loaded do %>
             <div class="text-sm text-gray-500 flex items-center gap-2">
               <span>Use</span>
+              <kbd class="kbd kbd-sm">↑</kbd>
+              <kbd class="kbd kbd-sm">↓</kbd>
+              <span>or</span>
               <kbd class="kbd kbd-sm">k</kbd>
               <kbd class="kbd kbd-sm">j</kbd>
               <span>to switch leads,</span>
@@ -165,6 +107,149 @@ defmodule AstrupWeb.ECGLive do
             </div>
           <% end %>
         </div>
+        
+    <!-- Controls - Below ECG -->
+        <%= if @ecg_loaded do %>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Primary Controls - Left Section -->
+            <div class="lg:col-span-2">
+              <div class="bg-base-200 border border-base-300 rounded-lg p-4">
+                <h3 class="text-sm font-semibold text-base-content mb-3">ECG Controls</h3>
+                <div class="flex gap-4 items-end">
+                  <div class="flex-1">
+                    <.input
+                      type="select"
+                      id="display-mode-selector"
+                      label="Display Mode"
+                      name="display-mode"
+                      value="single"
+                      options={[{"Single Lead", "single"}, {"All Leads", "multi"}]}
+                    />
+                  </div>
+
+                  <div id="lead-selector-container" class="flex-1">
+                    <.input
+                      type="select"
+                      id="lead-selector"
+                      label="Current Lead"
+                      name="lead"
+                      value={1}
+                      options={
+                        for {name, index} <- Enum.with_index(@lead_names) do
+                          {"Lead #{name}", index}
+                        end
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+    <!-- Secondary Controls - Right Section -->
+            <div class="lg:col-span-1">
+              <div class="bg-base-200 border border-base-300 rounded-lg p-4">
+                <h3 class="text-sm font-semibold text-base-content mb-3">View Options</h3>
+                <div class="space-y-3">
+                  <div>
+                    <.input
+                      type="select"
+                      id="grid-type-selector"
+                      label="Grid Type"
+                      name="grid-type"
+                      value="simple"
+                      options={[{"Medical Grid", "medical"}, {"Simple Grid", "simple"}]}
+                    />
+                  </div>
+
+                  <div>
+                    <.input
+                      type="range"
+                      id="grid-scale-slider"
+                      label="Grid Scale"
+                      name="grid-scale"
+                      min="0.75"
+                      max="1.25"
+                      step="0.01"
+                      value="1.0"
+                      class="range range-sm w-full"
+                    />
+                    <div class="text-xs text-base-content/60 mt-1 text-center">
+                      <span id="grid-scale-value">1.0x</span> (25 mm/s → <span id="grid-scale-speed">25 mm/s</span>)
+                    </div>
+                  </div>
+
+                  <div>
+                    <.input
+                      type="range"
+                      id="amplitude-scale-slider"
+                      label="Amplitude Scale"
+                      name="amplitude-scale"
+                      min="0.75"
+                      max="1.25"
+                      step="0.01"
+                      value="1.0"
+                      class="range range-sm w-full"
+                    />
+                    <div class="text-xs text-base-content/60 mt-1 text-center">
+                      <span id="amplitude-scale-value">1.0x</span> (10 mm/mV → <span id="amplitude-scale-gain">10 mm/mV</span>)
+                    </div>
+                  </div>
+
+                  <div>
+                    <.input
+                      type="range"
+                      id="height-scale-slider"
+                      label="Height Scale"
+                      name="height-scale"
+                      min="0.95"
+                      max="1.45"
+                      step="0.01"
+                      value="1.2"
+                      class="range range-sm w-full"
+                    />
+                    <div class="text-xs text-base-content/60 mt-1 text-center">
+                      <span id="height-scale-value">1.2x</span> (Chart height: <span id="height-scale-pixels">180px</span>)
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                    <div>
+                      <.input
+                        type="checkbox"
+                        id="loop-checkbox"
+                        label="Loop playback"
+                        name="loop"
+                        value="true"
+                        checked={true}
+                      />
+                    </div>
+
+                    <div>
+                      <.input
+                        type="checkbox"
+                        id="qrs-indicator-checkbox"
+                        label="QRS pulse indicator"
+                        name="qrs-indicator"
+                        value="true"
+                        checked={true}
+                      />
+                    </div>
+
+                    <div>
+                      <.input
+                        type="checkbox"
+                        id="debug-checkbox"
+                        label="Show diagnostics"
+                        name="debug"
+                        value="false"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
     </Layouts.app>
     """
