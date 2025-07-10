@@ -437,6 +437,29 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Recreates canvas and restarts animation if it was playing
+   * @returns {void}
+   */
+  recreateCanvasAndRestart() {
+    this.withCanvasStatePreservation(() => {
+      this.recreateCanvas();
+      this.renderGridBackground();
+    });
+  },
+
+  /**
+   * Updates the display mode selector in the DOM
+   * @param {string} mode - The display mode ("single" or "multi")
+   * @returns {void}
+   */
+  updateDisplayModeSelector(mode) {
+    const displayModeSelector = /** @type {HTMLSelectElement} */ (document.getElementById("display-mode-selector"));
+    if (displayModeSelector) {
+      displayModeSelector.value = mode;
+    }
+  },
+
   calculateDataIndexForTime(leadData, targetTime) {
     if (!leadData || !leadData.times || leadData.times.length === 0) {
       console.warn("Invalid lead data provided to calculateDataIndexForTime");
@@ -644,35 +667,11 @@ const ECGPlayback = {
    * @returns {void}
    */
   switchToSingleLeadMode(leadIndex) {
-    // Update display mode
     this.displayMode = "single";
-
-    // Update the display mode selector
-    const displayModeSelector = /** @type {HTMLSelectElement} */ (document.getElementById("display-mode-selector"));
-    if (displayModeSelector) {
-      displayModeSelector.value = "single";
-    }
-
-    // Switch to the clicked lead
+    this.updateDisplayModeSelector("single");
     this.switchLead(leadIndex);
-
-    // Update lead selector visibility
     this.updateLeadSelectorVisibility("single");
-
-    // Recreate canvas with single lead layout
-    this.recreateCanvas();
-    this.renderGridBackground();
-
-    // If animation was playing, restart it
-    if (this.isPlaying) {
-      this.startAnimationLoop();
-    } else if (this.startTime && this.pausedTime) {
-      // If paused, render the current frame
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processAnimationFrame(cursorProgress, animationCycle);
-    }
+    this.recreateCanvasAndRestart();
   },
 
   /**
@@ -680,32 +679,10 @@ const ECGPlayback = {
    * @returns {void}
    */
   switchToMultiLeadMode() {
-    // Update display mode
     this.displayMode = "multi";
-
-    // Update the display mode selector
-    const displayModeSelector = /** @type {HTMLSelectElement} */ (document.getElementById("display-mode-selector"));
-    if (displayModeSelector) {
-      displayModeSelector.value = "multi";
-    }
-
-    // Update lead selector visibility
+    this.updateDisplayModeSelector("multi");
     this.updateLeadSelectorVisibility("multi");
-
-    // Recreate canvas with multi-lead layout
-    this.recreateCanvas();
-    this.renderGridBackground();
-
-    // If animation was playing, restart it
-    if (this.isPlaying) {
-      this.startAnimationLoop();
-    } else if (this.startTime && this.pausedTime) {
-      // If paused, render the current frame
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processAnimationFrame(cursorProgress, animationCycle);
-    }
+    this.recreateCanvasAndRestart();
   },
 
   // =========================
@@ -1020,23 +997,7 @@ const ECGPlayback = {
    * @returns {void}
    */
   handleResize() {
-    const wasPlaying = this.isPlaying;
-    if (wasPlaying) this.stopAnimation();
-
-    this.recreateCanvas();
-    this.renderGridBackground();
-
-    if (!wasPlaying && this.startTime && this.pausedTime) {
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processAnimationFrame(cursorProgress, animationCycle);
-    }
-
-    if (wasPlaying) {
-      this.isPlaying = true;
-      this.startAnimationLoop();
-    }
+    this.recreateCanvasAndRestart();
   },
 
   /**
@@ -1104,24 +1065,8 @@ const ECGPlayback = {
    */
   handleDisplayModeChange(displayMode) {
     if (displayMode === "single" || displayMode === "multi") {
-      const wasPlaying = this.isPlaying;
-      if (wasPlaying) this.stopAnimation();
-
       this.displayMode = displayMode;
-      this.recreateCanvas();
-      this.renderGridBackground();
-
-      if (!wasPlaying && this.startTime && this.pausedTime) {
-        const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-        const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-        const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.processAnimationFrame(cursorProgress, animationCycle);
-      }
-
-      if (wasPlaying) {
-        this.isPlaying = true;
-        this.startAnimationLoop();
-      }
+      this.recreateCanvasAndRestart();
     }
   },
 
