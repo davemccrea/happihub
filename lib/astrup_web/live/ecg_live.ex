@@ -28,7 +28,20 @@ defmodule AstrupWeb.ECGLive do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
       <div class="space-y-12">
-        <h1 class="text-2xl font-bold">ECG Test</h1>
+        <div class="flex justify-between items-center">
+          <h1 class="text-2xl font-bold">ECG Test</h1>
+          <div class="flex gap-4 items-center">
+            <%= if @ecg_loaded do %>
+              <.button id="play-pause-button" variant="primary">
+                Play
+              </.button>
+            <% end %>
+
+            <.button phx-click="load_random_ecg">
+              {if @ecg_loaded, do: "Load Different ECG", else: "Load Random ECG"}
+            </.button>
+          </div>
+        </div>
 
         <%= if @ecg_loaded do %>
           <div class="flex gap-4">
@@ -146,17 +159,6 @@ defmodule AstrupWeb.ECGLive do
           <% end %>
         </div>
 
-        <div class="flex gap-4 items-center">
-          <%= if @ecg_loaded do %>
-            <.button id="play-pause-button" variant="primary">
-              Play
-            </.button>
-          <% end %>
-
-          <.button phx-click="load_random_ecg">
-            {if @ecg_loaded, do: "Load Different ECG", else: "Load Random ECG"}
-          </.button>
-        </div>
       </div>
     </Layouts.app>
     """

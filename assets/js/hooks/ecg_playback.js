@@ -205,6 +205,9 @@ const ECGPlayback = {
     if (this.keydownHandler) {
       this.el.removeEventListener("keydown", this.keydownHandler);
     }
+    if (this.canvasClickHandler && this.backgroundCanvas) {
+      this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
+    }
 
     // Explicitly nullify large data objects to break references
     this.ecgLeadDatasets = null;
@@ -479,6 +482,132 @@ const ECGPlayback = {
     }
   },
 
+  /**
+   * Sets up click event handler for canvas to allow lead selection in multi-lead mode.
+   * @returns {void}
+   */
+  setupCanvasClickHandler() {
+    if (this.canvasClickHandler) {
+      this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
+    }
+
+    this.canvasClickHandler = (event) => {
+      const rect = this.backgroundCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      if (this.displayMode === "multi") {
+        const clickedLeadIndex = this.getLeadIndexFromClick(x, y);
+        if (clickedLeadIndex !== null) {
+          this.switchToSingleLeadMode(clickedLeadIndex);
+        }
+      } else if (this.displayMode === "single") {
+        // In single lead mode, any click on the grid switches to multi-lead mode
+        this.switchToMultiLeadMode();
+      }
+    };
+
+    this.backgroundCanvas.addEventListener("click", this.canvasClickHandler);
+  },
+
+  /**
+   * Determines which lead was clicked based on click coordinates.
+   * @param {number} x - The x coordinate of the click.
+   * @param {number} y - The y coordinate of the click.
+   * @returns {number|null} The index of the clicked lead, or null if no lead was clicked.
+   */
+  getLeadIndexFromClick(x, y) {
+    if (!this.leadNames || this.displayMode !== "multi") {
+      return null;
+    }
+
+    for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
+      const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(leadIndex);
+      
+      // Check if click is within this lead's bounds
+      if (
+        x >= xOffset &&
+        x <= xOffset + columnWidth &&
+        y >= yOffset &&
+        y <= yOffset + this.leadHeight
+      ) {
+        return leadIndex;
+      }
+    }
+
+    return null;
+  },
+
+  /**
+   * Switches from multi-lead mode to single-lead mode with the specified lead.
+   * @param {number} leadIndex - The index of the lead to switch to.
+   * @returns {void}
+   */
+  switchToSingleLeadMode(leadIndex) {
+    // Update display mode
+    this.displayMode = "single";
+    
+    // Update the display mode selector
+    const displayModeSelector = document.getElementById("display-mode-selector");
+    if (displayModeSelector) {
+      displayModeSelector.value = "single";
+    }
+
+    // Switch to the clicked lead
+    this.switchLead(leadIndex);
+    
+    // Update lead selector visibility
+    this.updateLeadSelectorVisibility("single");
+    
+    // Recreate canvas with single lead layout
+    this.recreateCanvas();
+    this.renderGridBackground();
+    
+    // If animation was playing, restart it
+    if (this.isPlaying) {
+      this.startAnimationLoop();
+    } else if (this.startTime && this.pausedTime) {
+      // If paused, render the current frame
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.processAnimationFrame(cursorProgress, animationCycle);
+    }
+  },
+
+  /**
+   * Switches from single-lead mode to multi-lead mode.
+   * @returns {void}
+   */
+  switchToMultiLeadMode() {
+    // Update display mode
+    this.displayMode = "multi";
+    
+    // Update the display mode selector
+    const displayModeSelector = document.getElementById("display-mode-selector");
+    if (displayModeSelector) {
+      displayModeSelector.value = "multi";
+    }
+    
+    // Update lead selector visibility
+    this.updateLeadSelectorVisibility("multi");
+    
+    // Recreate canvas with multi-lead layout
+    this.recreateCanvas();
+    this.renderGridBackground();
+    
+    // If animation was playing, restart it
+    if (this.isPlaying) {
+      this.startAnimationLoop();
+    } else if (this.startTime && this.pausedTime) {
+      // If paused, render the current frame
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.processAnimationFrame(cursorProgress, animationCycle);
+    }
+  },
+
   // =========================
   // LEAD POSITIONING & LAYOUT
   // =========================
@@ -714,6 +843,9 @@ const ECGPlayback = {
     this.backgroundContext = this.backgroundCanvas.getContext("2d");
     this.backgroundContext.scale(devicePixelRatio, devicePixelRatio);
 
+    // Add click event listener for lead selection in multi-lead mode
+    this.setupCanvasClickHandler();
+
     // Create foreground canvas for animated waveform (overlapping)
     this.waveformCanvas = document.createElement("canvas");
     this.waveformCanvas.width = this.chartWidth * devicePixelRatio;
@@ -735,6 +867,9 @@ const ECGPlayback = {
    */
   cleanupCanvases() {
     if (this.backgroundCanvas) {
+      if (this.canvasClickHandler) {
+        this.backgroundCanvas.removeEventListener("click", this.canvasClickHandler);
+      }
       this.backgroundCanvas.remove();
       this.backgroundCanvas = null;
       this.backgroundContext = null;
@@ -1121,6 +1256,7 @@ const ECGPlayback = {
         console.log("Stopping playback (loop disabled)");
         this.stopAnimation();
         this.resetPlayback();
+        this.updatePlayPauseButton();
       }
       return;
     }
