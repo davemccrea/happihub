@@ -7,7 +7,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
       <div class="space-y-4">
         <%= if @ecg_loaded do %>
           <div class="flex justify-end">
-            <div class="text-sm text-gray-500 flex items-center gap-2">
+            <div class="text-sm text-base-content/60 flex items-center gap-2">
               <span>Use</span>
               <kbd class="kbd kbd-sm">↑</kbd>
               <kbd class="kbd kbd-sm">↓</kbd>
@@ -20,7 +20,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
             </div>
           </div>
         <% end %>
-        
+
         <div class="relative py-8">
           <div
             id="ecg-playback"
@@ -37,14 +37,14 @@ defmodule AstrupWeb.Components.EcgPlayer do
           </div>
 
           <%= if not @ecg_loaded do %>
-            <div class="absolute inset-0 flex items-center justify-center bg-base-100 bg-opacity-90">
+            <div class="absolute inset-0 flex items-center justify-center bg-base-100/90">
               <div class="text-center space-y-4">
                 <div class="text-6xl opacity-30">
                   <.icon name="hero-heart" class="w-16 h-16 mx-auto" />
                 </div>
                 <div class="space-y-2">
                   <p class="text-lg font-medium">No ECG Data Loaded</p>
-                  <p class="text-sm text-gray-500">Click "Load Random ECG" to begin</p>
+                  <p class="text-sm text-base-content/60">Click "Load Random ECG" to begin</p>
                 </div>
               </div>
             </div>
@@ -52,152 +52,114 @@ defmodule AstrupWeb.Components.EcgPlayer do
         </div>
       </div>
 
-
       <%= if @ecg_loaded do %>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <%= if @database_record do %>
-            <div class="space-y-6">
-              <div>
-                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+            <div class="card bg-base-200 shadow">
+              <div class="card-body space-y-3">
+                <h2 class="card-title">
                   <.icon name="hero-document-text" class="w-5 h-5" /> Clinical Information
                 </h2>
 
                 <%= if Map.get(@metadata, :report) && Map.get(@metadata, :report) != "" do %>
-                  <div class="mb-6">
-                    <h3 class="font-semibold mb-3 flex items-center gap-1">
+                  <div class="space-y-3">
+                    <h3 class="font-semibold">
                       Medical Report
                     </h3>
-                    
+
                     <%= if @translated_report do %>
-                      <div class="space-y-3">
-                        <div class="bg-success/10 p-4 rounded-lg text-sm border border-success/20">
-                          <div class="flex items-center gap-2 mb-2">
-                            <.icon name="hero-language" class="w-4 h-4 text-success" />
-                            <span class="text-xs font-medium text-success">English Translation</span>
-                          </div>
-                          {String.capitalize(@translated_report)}
+                      <div class="collapse collapse-arrow bg-base-100">
+                        <input type="checkbox" checked="checked" />
+                        <div class="collapse-title text-sm font-medium flex items-center gap-2">
+                          <.icon name="hero-language" class="w-4 h-4 text-success" />
+                          English Translation
                         </div>
-                        <div class="bg-info/10 p-4 rounded-lg text-sm border border-info/20">
-                          <div class="flex items-center gap-2 mb-2">
-                            <.icon name="hero-document-text" class="w-4 h-4 text-info" />
-                            <span class="text-xs font-medium text-info">Original Report</span>
+                        <div class="collapse-content">
+                          <div class="prose prose-sm max-w-none">
+                            <p class="leading-relaxed">{String.capitalize(@translated_report)}</p>
                           </div>
-                          <div class="italic text-gray-600">
-                            {String.capitalize(Map.get(@metadata, :report, ""))}
+                        </div>
+                      </div>
+
+                      <div class="collapse collapse-arrow bg-base-100">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-sm font-medium flex items-center gap-2">
+                          <.icon name="hero-globe-alt" class="w-4 h-4 text-neutral" /> Original Report
+                        </div>
+                        <div class="collapse-content">
+                          <div class="prose prose-sm max-w-none">
+                            <p class="italic leading-relaxed text-base-content/80">
+                              {String.capitalize(Map.get(@metadata, :report, ""))}
+                            </p>
                           </div>
                         </div>
                       </div>
                     <% else %>
-                      <div class="bg-info/10 p-4 rounded-lg text-sm border border-info/20">
-                        {String.capitalize(Map.get(@metadata, :report, ""))}
+                      <div class="bg-base-100 rounded-lg p-4 border border-base-300">
+                        <div class="prose prose-sm max-w-none">
+                          <p class="leading-relaxed m-0">
+                            {String.capitalize(Map.get(@metadata, :report, ""))}
+                          </p>
+                        </div>
                       </div>
                     <% end %>
                   </div>
                 <% end %>
 
                 <%= if length(Map.get(@metadata, :scp_codes, [])) > 0 do %>
-                  <% # Group SCP codes by category
-                  grouped_codes = Enum.group_by(Map.get(@metadata, :scp_codes, []), & &1.kind)
-                  diagnostic_codes = Map.get(grouped_codes, :diagnostic, [])
-                  form_codes = Map.get(grouped_codes, :form, [])
-                  rhythm_codes = Map.get(grouped_codes, :rhythm, []) %>
-
-                  <div class="space-y-6">
-                    <!-- Diagnostic Codes -->
-                    <%= if length(diagnostic_codes) > 0 do %>
-                      <div>
-                        <h4 class="text-sm font-semibold mb-3 text-error flex items-center gap-2">
-                          <div class="w-2 h-2 bg-error rounded-full"></div>
-                          Diagnosis
-                        </h4>
-                        <div class="space-y-2">
-                          <%= for scp <- diagnostic_codes do %>
-                            <div class="bg-error/5 border border-error/20 rounded-lg p-3 hover:bg-error/10 transition-colors">
-                              <div class="flex justify-between items-start mb-2">
-                                <div class="flex items-center gap-2">
-                                  <span class="badge badge-error font-mono text-xs">
-                                    {scp.code}
-                                  </span>
-                                </div>
-                                <span class="text-sm font-semibold text-error">
-                                  {trunc(scp.confidence)}%
+                  <div class="space-y-3">
+                    <h3 class="font-semibold mb-3">
+                      Clinical Findings
+                    </h3>
+                    <div class="overflow-x-auto">
+                      <table class="table table-sm">
+                        <thead>
+                          <tr>
+                            <th>Code</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th class="text-right">Confidence</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <%= for scp <- Map.get(@metadata, :scp_codes, []) do %>
+                            <tr class="hover">
+                              <td>
+                                <span class="badge badge-outline font-mono text-xs">
+                                  {scp.code}
                                 </span>
-                              </div>
-                              <p class="text-sm text-base-content/80 mb-2 leading-relaxed">
-                                {String.capitalize(scp.description)}
-                              </p>
-                              <%= if scp.diagnostic_class do %>
-                                <div class="text-xs text-base-content/60">
-                                  Classification: {scp.diagnostic_class}
-                                </div>
-                              <% end %>
-                            </div>
-                          <% end %>
-                        </div>
-                      </div>
-                    <% end %>
-                    
-    <!-- Form Codes -->
-                    <%= if length(form_codes) > 0 do %>
-                      <div>
-                        <h4 class="text-sm font-semibold mb-3 text-info flex items-center gap-2">
-                          <div class="w-2 h-2 bg-info rounded-full"></div>
-                          Waveform Characteristics
-                        </h4>
-                        <div class="space-y-2">
-                          <%= for scp <- form_codes do %>
-                            <div class="bg-info/5 border border-info/20 rounded-lg p-3 hover:bg-info/10 transition-colors">
-                              <div class="flex justify-between items-start mb-2">
-                                <div class="flex items-center gap-2">
-                                  <span class="badge badge-info font-mono text-xs">
-                                    {scp.code}
+                              </td>
+                              <td>
+                                <%= case scp.kind do %>
+                                  <% :diagnostic -> %>
+                                    <span class="badge badge-error badge-sm">Diagnosis</span>
+                                  <% :form -> %>
+                                    <span class="badge badge-warning badge-sm">Waveform</span>
+                                  <% :rhythm -> %>
+                                    <span class="badge badge-success badge-sm">Rhythm</span>
+                                  <% _ -> %>
+                                    <span class="badge badge-neutral badge-sm">Other</span>
+                                <% end %>
+                              </td>
+                              <td class="max-w-xs">
+                                <span class="text-sm leading-relaxed">
+                                  {String.capitalize(scp.description)}
+                                </span>
+                              </td>
+                              <td class="text-right">
+                                <%= if scp.kind == :diagnostic do %>
+                                  <span class="font-medium">
+                                    {trunc(scp.confidence)}%
                                   </span>
-                                </div>
-                              </div>
-                              <p class="text-sm text-base-content/80 mb-2 leading-relaxed">
-                                {String.capitalize(scp.description)}
-                              </p>
-                              <%= if scp.diagnostic_class do %>
-                                <div class="text-xs text-base-content/60">
-                                  Classification: {scp.diagnostic_class}
-                                </div>
-                              <% end %>
-                            </div>
+                                <% else %>
+                                  <.icon name="hero-check" class="w-4 h-4 text-success" />
+                                <% end %>
+                              </td>
+                            </tr>
                           <% end %>
-                        </div>
-                      </div>
-                    <% end %>
-                    
-    <!-- Rhythm Codes -->
-                    <%= if length(rhythm_codes) > 0 do %>
-                      <div>
-                        <h4 class="text-sm font-semibold mb-3 text-success flex items-center gap-2">
-                          <div class="w-2 h-2 bg-success rounded-full"></div>
-                          Heart Rhythm
-                        </h4>
-                        <div class="space-y-2">
-                          <%= for scp <- rhythm_codes do %>
-                            <div class="bg-success/5 border border-success/20 rounded-lg p-3 hover:bg-success/10 transition-colors">
-                              <div class="flex justify-between items-start mb-2">
-                                <div class="flex items-center gap-2">
-                                  <span class="badge badge-success font-mono text-xs">
-                                    {scp.code}
-                                  </span>
-                                </div>
-                              </div>
-                              <p class="text-sm text-base-content/80 mb-2 leading-relaxed">
-                                {String.capitalize(scp.description)}
-                              </p>
-                              <%= if scp.diagnostic_class do %>
-                                <div class="text-xs text-base-content/60">
-                                  Classification: {scp.diagnostic_class}
-                                </div>
-                              <% end %>
-                            </div>
-                          <% end %>
-                        </div>
-                      </div>
-                    <% end %>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 <% end %>
               </div>
@@ -206,7 +168,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
 
           <div class={if @database_record, do: "", else: "lg:col-span-2"}>
             <div class="space-y-6">
-              <div class="card bg-base-200 shadow-xl">
+              <div class="card bg-base-200 shadow">
                 <div class="card-body">
                   <h2 class="card-title">
                     <.icon name="hero-adjustments-horizontal" class="w-5 h-5" /> ECG Controls
@@ -241,7 +203,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
                 </div>
               </div>
 
-              <div class="card bg-base-200 shadow-xl">
+              <div class="card bg-base-200 shadow">
                 <div class="card-body">
                   <h2 class="card-title">
                     <.icon name="hero-cog-6-tooth" class="w-5 h-5" /> View Options
@@ -258,7 +220,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
                       />
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="space-y-4 w-1/2">
                       <h3 class="text-sm font-medium text-base-content/70">Scale Adjustments</h3>
 
                       <div class="space-y-3">
