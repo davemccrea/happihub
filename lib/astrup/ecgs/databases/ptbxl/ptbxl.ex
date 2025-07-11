@@ -1,7 +1,7 @@
-defmodule Astrup.EcgDatabases.Ptbxl do
+defmodule Astrup.Ecgs.Databases.Ptbxl do
   use GenServer
 
-  alias Astrup.EcgDatabases.Ptbxl.Parser
+  alias Astrup.Ecgs.Databases.Ptbxl.Parser
 
   @impl true
   def init(_opts) do

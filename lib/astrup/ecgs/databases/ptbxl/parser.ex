@@ -1,4 +1,4 @@
-defmodule Astrup.EcgDatabases.Ptbxl.Parser do
+defmodule Astrup.Ecgs.Databases.Ptbxl.Parser do
   import NimbleParsec
 
   @moduledoc """

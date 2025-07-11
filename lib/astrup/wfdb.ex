@@ -22,9 +22,9 @@ defmodule Astrup.Wfdb do
         db_name = db_name.decode('utf-8')
         file_path = file_path.decode('utf-8')
 
-        sig, fields = wfdb.rdsamp(dataset_path + "/" + db_name + "/" + file_path, channels=[1])
+        sig, fields = wfdb.rdsamp(dataset_path + "/" + db_name + "/" + file_path, channels=[0])
         xqrs = processing.XQRS(sig=sig[:,0], fs=fields['fs'])
-        xqrs.detect()
+        xqrs.detect(learn=True)
 
         {
           'qrs_inds': xqrs.qrs_inds.tolist(),

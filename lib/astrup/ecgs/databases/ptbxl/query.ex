@@ -1,4 +1,4 @@
-defmodule Astrup.EcgDatabases.Ptbxl.Query do
+defmodule Astrup.Ecgs.Databases.Ptbxl.Query do
   alias Astrup.Wfdb
 
   def get_record_data(record) do

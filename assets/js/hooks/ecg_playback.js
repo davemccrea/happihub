@@ -45,6 +45,9 @@ const ECGPlayback = {
     this.setupEventListeners();
     this.initializeECGChart();
 
+    // Get the target for push events (component ID)
+    this.targetComponent = this.el.getAttribute('phx-target');
+
     if (this.el.dataset.env !== "prod") {
       this.showDiagnostics = false; // Hidden by default
       this.memoryInterval = setInterval(() => this.updateMemoryStats(), MEMORY_UPDATE_INTERVAL_MS);
@@ -1211,7 +1214,7 @@ const ECGPlayback = {
       const nextLead = this.currentLead + 1;
       this.switchLead(nextLead);
 
-      this.pushEvent("lead_changed", { lead: nextLead });
+      this.pushEventTo(this.targetComponent, "lead_changed", { lead: nextLead });
     }
   },
 
@@ -1226,7 +1229,7 @@ const ECGPlayback = {
       const prevLead = this.currentLead - 1;
       this.switchLead(prevLead);
 
-      this.pushEvent("lead_changed", { lead: prevLead });
+      this.pushEventTo(this.targetComponent, "lead_changed", { lead: prevLead });
     }
   },
 
@@ -1242,7 +1245,7 @@ const ECGPlayback = {
     const newPlayingState = !this.isPlaying;
     this.isPlaying = newPlayingState;
 
-    this.pushEvent("playback_changed", { is_playing: newPlayingState });
+    this.pushEventTo(this.targetComponent, "playback_changed", { is_playing: newPlayingState });
 
     if (newPlayingState) {
       this.resumeAnimation();
@@ -1254,7 +1257,7 @@ const ECGPlayback = {
   },
 
   handlePlaybackEnd() {
-    this.pushEvent("playback_ended", {});
+    this.pushEventTo(this.targetComponent, "playback_ended", {});
     const loopCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("loop-checkbox"));
     const currentLoopState = loopCheckbox ? loopCheckbox.checked : false;
     if (this.loopEnabled || currentLoopState) {
