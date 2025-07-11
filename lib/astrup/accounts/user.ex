@@ -2,6 +2,8 @@ defmodule Astrup.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Astrup.Accounts.UserSettings
+
   schema "users" do
     field :email, :string
     field :password, :string, virtual: true, redact: true
@@ -10,6 +12,8 @@ defmodule Astrup.Accounts.User do
     field :authenticated_at, :utc_datetime, virtual: true
     field :laboratory, :string, default: "Astrup.Lab.Fimlab"
     field :analyzer, :string, default: "Astrup.Analyzer.RadiometerAbl90FlexPlus"
+
+    has_one :settings, UserSettings
 
     timestamps(type: :utc_datetime)
   end
