@@ -4,6 +4,7 @@ defmodule AstrupWeb.ECGViewerLive do
   alias Astrup.Ecgs
   alias Astrup.Ecgs.Databases.Ptbxl
   alias Astrup.Ecgs.Databases.Ptbxl.Query
+  alias Astrup.ClaudeAPI
 
   def mount(params, _session, socket) do
     socket =
@@ -13,7 +14,8 @@ defmodule AstrupWeb.ECGViewerLive do
         ecg_loaded: false,
         ecg_saved: false,
         ptbxl_record: nil,
-        scp_codes_with_descriptions: []
+        scp_codes_with_descriptions: [],
+        translated_report: nil
       )
 
     socket =
@@ -72,6 +74,7 @@ defmodule AstrupWeb.ECGViewerLive do
           lead_names={@lead_names}
           ptbxl_record={@ptbxl_record}
           scp_codes_with_descriptions={@scp_codes_with_descriptions}
+          translated_report={@translated_report}
         />
       </div>
     </Layouts.app>
@@ -112,7 +115,7 @@ defmodule AstrupWeb.ECGViewerLive do
     case get_random_ptbxl_record() do
       {:ok, filename} ->
         socket = load_ecg_from_params(socket, "ptbxl", filename)
-        {:noreply, put_flash(socket, :info, "Random ECG loaded successfully!")}
+        {:noreply, socket}
       
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to load random ECG: #{reason}")}
@@ -129,10 +132,10 @@ defmodule AstrupWeb.ECGViewerLive do
     ecg_saved = Ecgs.is_ecg_saved?(socket.assigns.current_scope, db_name, filename)
 
     # Load PTB-XL record data if available
-    {ptbxl_record, scp_codes_with_descriptions} = 
+    {ptbxl_record, scp_codes_with_descriptions, translated_report} = 
       if db_name == "ptbxl" do
         case Ptbxl.get_by_filename(filename) do
-          nil -> {nil, []}
+          nil -> {nil, [], nil}
           ptbxl_record -> 
             scp_codes_with_descriptions = 
               ptbxl_record.scp_codes
@@ -158,10 +161,21 @@ defmodule AstrupWeb.ECGViewerLive do
               end)
               |> Enum.sort_by(& &1.confidence, :desc)
             
-            {ptbxl_record, scp_codes_with_descriptions}
+            # Translate the report if it exists and is not empty
+            translated_report = 
+              if ptbxl_record.report && ptbxl_record.report != "" do
+                case ClaudeAPI.translate_text(ptbxl_record.report, "English") do
+                  {:ok, translation} -> translation
+                  {:error, _} -> nil
+                end
+              else
+                nil
+              end
+            
+            {ptbxl_record, scp_codes_with_descriptions, translated_report}
         end
       else
-        {nil, []}
+        {nil, [], nil}
       end
 
     socket
@@ -172,6 +186,7 @@ defmodule AstrupWeb.ECGViewerLive do
     |> assign(ecg_saved: ecg_saved)
     |> assign(ptbxl_record: ptbxl_record)
     |> assign(scp_codes_with_descriptions: scp_codes_with_descriptions)
+    |> assign(translated_report: translated_report)
     |> push_event("ecg_data_pushed", %{data: record})
   end
 

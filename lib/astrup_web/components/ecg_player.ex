@@ -3,50 +3,55 @@ defmodule AstrupWeb.Components.EcgPlayer do
 
   def render(assigns) do
     ~H"""
-    <div class="space-y-8">
-      <div class="relative">
-        <div
-          id="ecg-playback"
-          phx-hook="ECGPlayback"
-          phx-update="ignore"
-          phx-target={@myself}
-          class="w-full"
-          data-env={@env}
-          data-initial-lead="1"
-          data-initial-display-mode="single"
-          data-initial-grid-type="simple"
-        >
-          <div data-ecg-chart class="w-full"></div>
-        </div>
-
-        <%= if not @ecg_loaded do %>
-          <div class="absolute inset-0 flex items-center justify-center bg-base-100 bg-opacity-90">
-            <div class="text-center space-y-4">
-              <div class="text-6xl opacity-30">
-                <.icon name="hero-heart" class="w-16 h-16 mx-auto" />
-              </div>
-              <div class="space-y-2">
-                <p class="text-lg font-medium">No ECG Data Loaded</p>
-                <p class="text-sm text-gray-500">Click "Load Random ECG" to begin</p>
-              </div>
+    <div class="space-y-12">
+      <div class="space-y-4">
+        <%= if @ecg_loaded do %>
+          <div class="flex justify-end">
+            <div class="text-sm text-gray-500 flex items-center gap-2">
+              <span>Use</span>
+              <kbd class="kbd kbd-sm">↑</kbd>
+              <kbd class="kbd kbd-sm">↓</kbd>
+              <span>or</span>
+              <kbd class="kbd kbd-sm">k</kbd>
+              <kbd class="kbd kbd-sm">j</kbd>
+              <span>to switch leads,</span>
+              <kbd class="kbd kbd-sm">Space</kbd>
+              <span>to play/pause</span>
             </div>
           </div>
         <% end %>
+        
+        <div class="relative py-8">
+          <div
+            id="ecg-playback"
+            phx-hook="ECGPlayback"
+            phx-update="ignore"
+            phx-target={@myself}
+            class="w-full"
+            data-env={@env}
+            data-initial-lead="1"
+            data-initial-display-mode="single"
+            data-initial-grid-type="simple"
+          >
+            <div data-ecg-chart class="w-full"></div>
+          </div>
+
+          <%= if not @ecg_loaded do %>
+            <div class="absolute inset-0 flex items-center justify-center bg-base-100 bg-opacity-90">
+              <div class="text-center space-y-4">
+                <div class="text-6xl opacity-30">
+                  <.icon name="hero-heart" class="w-16 h-16 mx-auto" />
+                </div>
+                <div class="space-y-2">
+                  <p class="text-lg font-medium">No ECG Data Loaded</p>
+                  <p class="text-sm text-gray-500">Click "Load Random ECG" to begin</p>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
       </div>
 
-      <%= if @ecg_loaded do %>
-        <div class="text-sm text-gray-500 flex items-center gap-2 pb-4 border-b border-base-300">
-          <span>Use</span>
-          <kbd class="kbd kbd-sm">↑</kbd>
-          <kbd class="kbd kbd-sm">↓</kbd>
-          <span>or</span>
-          <kbd class="kbd kbd-sm">k</kbd>
-          <kbd class="kbd kbd-sm">j</kbd>
-          <span>to switch leads,</span>
-          <kbd class="kbd kbd-sm">Space</kbd>
-          <span>to play/pause</span>
-        </div>
-      <% end %>
 
       <%= if @ecg_loaded do %>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -62,21 +67,41 @@ defmodule AstrupWeb.Components.EcgPlayer do
                     <h3 class="font-semibold mb-3 flex items-center gap-1">
                       Medical Report
                     </h3>
-                    <div class="bg-info/10 p-4 rounded-lg text-sm italic border border-info/20">
-                      "{String.capitalize(@ptbxl_record.report)}"
-                    </div>
+                    
+                    <%= if @translated_report do %>
+                      <div class="space-y-3">
+                        <div class="bg-success/10 p-4 rounded-lg text-sm border border-success/20">
+                          <div class="flex items-center gap-2 mb-2">
+                            <.icon name="hero-language" class="w-4 h-4 text-success" />
+                            <span class="text-xs font-medium text-success">English Translation</span>
+                          </div>
+                          {String.capitalize(@translated_report)}
+                        </div>
+                        <div class="bg-info/10 p-4 rounded-lg text-sm border border-info/20">
+                          <div class="flex items-center gap-2 mb-2">
+                            <.icon name="hero-document-text" class="w-4 h-4 text-info" />
+                            <span class="text-xs font-medium text-info">Original Report</span>
+                          </div>
+                          <div class="italic text-gray-600">
+                            {String.capitalize(@ptbxl_record.report)}
+                          </div>
+                        </div>
+                      </div>
+                    <% else %>
+                      <div class="bg-info/10 p-4 rounded-lg text-sm border border-info/20">
+                        {String.capitalize(@ptbxl_record.report)}
+                      </div>
+                    <% end %>
                   </div>
                 <% end %>
 
                 <%= if length(@scp_codes_with_descriptions) > 0 do %>
-                  <%
-                    # Group SCP codes by category
-                    grouped_codes = Enum.group_by(@scp_codes_with_descriptions, & &1.kind)
-                    diagnostic_codes = Map.get(grouped_codes, :diagnostic, [])
-                    form_codes = Map.get(grouped_codes, :form, [])
-                    rhythm_codes = Map.get(grouped_codes, :rhythm, [])
-                  %>
-                  
+                  <% # Group SCP codes by category
+                  grouped_codes = Enum.group_by(@scp_codes_with_descriptions, & &1.kind)
+                  diagnostic_codes = Map.get(grouped_codes, :diagnostic, [])
+                  form_codes = Map.get(grouped_codes, :form, [])
+                  rhythm_codes = Map.get(grouped_codes, :rhythm, []) %>
+
                   <div class="space-y-6">
                     <!-- Diagnostic Codes -->
                     <%= if length(diagnostic_codes) > 0 do %>
@@ -111,8 +136,8 @@ defmodule AstrupWeb.Components.EcgPlayer do
                         </div>
                       </div>
                     <% end %>
-
-                    <!-- Form Codes -->
+                    
+    <!-- Form Codes -->
                     <%= if length(form_codes) > 0 do %>
                       <div>
                         <h4 class="text-sm font-semibold mb-3 text-info flex items-center gap-2">
@@ -142,8 +167,8 @@ defmodule AstrupWeb.Components.EcgPlayer do
                         </div>
                       </div>
                     <% end %>
-
-                    <!-- Rhythm Codes -->
+                    
+    <!-- Rhythm Codes -->
                     <%= if length(rhythm_codes) > 0 do %>
                       <div>
                         <h4 class="text-sm font-semibold mb-3 text-success flex items-center gap-2">

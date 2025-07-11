@@ -33,6 +33,25 @@ defmodule Astrup.ClaudeAPI do
     end
   end
 
+  def translate_text(text, target_language \\ "English") do
+    prompt = """
+    Please translate the following medical text to #{target_language}. 
+    Preserve all medical terminology and maintain the clinical accuracy.
+    Only return the translated text, no additional commentary.
+
+    Text to translate:
+    #{text}
+    """
+
+    case send_prompt(prompt) do
+      {:ok, translated_text} ->
+        {:ok, String.trim(translated_text)}
+      
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   defp extract_text_content(response) do
     case response do
       %{"content" => [%{"text" => text_content}]} ->
