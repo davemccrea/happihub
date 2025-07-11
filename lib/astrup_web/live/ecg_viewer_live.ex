@@ -2,7 +2,7 @@ defmodule AstrupWeb.ECGViewerLive do
   use AstrupWeb, :live_view
 
   alias Astrup.ECG
-  alias Astrup.ECG.DatabaseRegistry
+  alias Astrup.ECG.DatasetRegistry
 
   def mount(params, _session, socket) do
     socket =
@@ -11,7 +11,7 @@ defmodule AstrupWeb.ECGViewerLive do
         env: Application.get_env(:astrup, :env),
         ecg_loaded: false,
         ecg_saved: false,
-        database_record: nil,
+        dataset_record: nil,
         metadata: %{},
         translated_report: nil
       )
@@ -65,7 +65,7 @@ defmodule AstrupWeb.ECGViewerLive do
           ecg_loaded={@ecg_loaded}
           env={@env}
           lead_names={@lead_names}
-          database_record={@database_record}
+          dataset_record={@dataset_record}
           metadata={@metadata}
           translated_report={@translated_report}
         />
@@ -124,8 +124,8 @@ defmodule AstrupWeb.ECGViewerLive do
     # Check if ECG is already saved
     ecg_saved = ECG.is_ecg_saved?(socket.assigns.current_scope, db_name, filename)
 
-    # Load database metadata if available
-    {database_record, metadata, translated_report} = load_database_metadata(db_name, filename)
+    # Load dataset metadata if available
+    {dataset_record, metadata, translated_report} = load_dataset_metadata(db_name, filename)
 
     socket
     |> assign(ecg_loaded: true)
@@ -133,24 +133,24 @@ defmodule AstrupWeb.ECGViewerLive do
     |> assign(db_name: db_name)
     |> assign(filename: filename)
     |> assign(ecg_saved: ecg_saved)
-    |> assign(database_record: database_record)
+    |> assign(dataset_record: dataset_record)
     |> assign(metadata: metadata)
     |> assign(translated_report: translated_report)
     |> push_event("ecg_data_pushed", %{data: record})
   end
 
-  defp load_database_metadata(db_name, filename) do
-    case DatabaseRegistry.get_database(db_name) do
+  defp load_dataset_metadata(db_name, filename) do
+    case DatasetRegistry.get_dataset(db_name) do
       nil ->
         {nil, %{}, nil}
 
-      database_module ->
-        case database_module.get_by_filename(filename) do
+      dataset_module ->
+        case dataset_module.get_by_filename(filename) do
           nil ->
             {nil, %{}, nil}
 
           record ->
-            metadata = database_module.get_metadata(record)
+            metadata = dataset_module.get_metadata(record)
             translated_report = maybe_translate_report(metadata)
             {record, metadata, translated_report}
         end
@@ -165,11 +165,11 @@ defmodule AstrupWeb.ECGViewerLive do
   defp maybe_translate_report(_metadata), do: nil
 
   defp get_random_record(db_name) do
-    case DatabaseRegistry.get_database(db_name) do
+    case DatasetRegistry.get_dataset(db_name) do
       nil -> 
         {:error, "Database #{db_name} not found"}
-      database_module -> 
-        case database_module.get_random_record() do
+      dataset_module -> 
+        case dataset_module.get_random_record() do
           nil -> {:error, "No records available"}
           record -> {:ok, record.filename_lr}
         end

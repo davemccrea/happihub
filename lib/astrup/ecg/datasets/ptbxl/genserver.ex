@@ -14,6 +14,7 @@ defmodule Astrup.ECG.Datasets.Ptbxl.GenServer do
           data.rows
           |> Query.filter_signal_quality()
           |> Query.filter_high_quality()
+          |> Query.filter_human_validated()
           |> Query.filter_confidence_100()
           |> Query.take_per_scp_code(10)
 

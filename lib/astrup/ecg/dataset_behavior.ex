@@ -21,7 +21,14 @@ defmodule Astrup.ECG.DatasetBehavior do
           type: atom(),
           scp_codes: [scp_code()],
           report: String.t() | nil,
-          raw_record: record()
+          age: integer() | nil,
+          sex: :male | :female | nil,
+          height: integer() | nil,
+          weight: integer() | nil,
+          recording_date: String.t() | nil,
+          device: String.t() | nil,
+          heart_axis: String.t() | nil,
+          validated_by_human: boolean() | nil
         }
 
   @callback get_by_filename(filename) :: record | nil

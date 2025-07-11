@@ -48,6 +48,16 @@ defmodule Astrup.ECG.Datasets.Ptbxl.Query do
   end
 
   @doc """
+  Filter records to only include those that have been validated by a human.
+  """
+  def filter_human_validated(records) do
+    records
+    |> Enum.filter(fn record ->
+      record.validated_by_human == true
+    end)
+  end
+
+  @doc """
   Filter records to only include those with at least one diagnosis confidence of 100.
   """
   def filter_confidence_100(records) do
@@ -316,6 +326,22 @@ defmodule Astrup.ECG.Datasets.Ptbxl.Query do
   end
 
   @doc """
+  Get the primary rhythm from SCP codes. Since rhythm confidence is always 0 in PTB-XL,
+  returns the first rhythm code found.
+  """
+  def get_rhythm_from_scp_codes([]), do: nil
+
+  def get_rhythm_from_scp_codes(scp_codes) do
+    scp_codes
+    |> Enum.filter(&(&1.kind == :rhythm))
+    |> List.first()
+    |> case do
+      nil -> nil
+      %{description: description} -> description
+    end
+  end
+
+  @doc """
   Extracts metadata from a PTB-XL record in standardized format.
   """
   def get_metadata(record) do
@@ -328,7 +354,14 @@ defmodule Astrup.ECG.Datasets.Ptbxl.Query do
       type: :ptbxl,
       scp_codes: scp_codes_with_descriptions,
       report: record.report,
-      raw_record: record
+      age: record.age,
+      sex: record.sex,
+      height: record.height,
+      weight: record.weight,
+      recording_date: record.recording_date,
+      device: record.device,
+      heart_axis: record.heart_axis,
+      validated_by_human: record.validated_by_human
     }
   end
 
