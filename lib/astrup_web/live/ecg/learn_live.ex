@@ -12,7 +12,7 @@ defmodule AstrupWeb.Ecg.LearnLive do
         <h1 class="text-3xl font-bold text-base-content mb-8">
           {gettext("Learn ECG")}
         </h1>
-        
+
         <div class="bg-base-200 rounded-lg p-8 text-center">
           <div class="mb-4">
             <.icon name="hero-heart" class="h-16 w-16 mx-auto text-primary" />

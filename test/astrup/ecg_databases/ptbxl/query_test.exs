@@ -127,9 +127,6 @@ defmodule Astrup.EcgDatabases.Ptbxl.QueryTest do
     end
   end
 
-
-
-
   describe "lookup_scp_code/1" do
     test "returns diagnostic codes with correct classifications" do
       assert Query.lookup_scp_code("NORM") == {:diagnostic, "normal ECG", "NORM"}

@@ -1,4 +1,4 @@
-defmodule Astrup.Ecgs.Databases.Ptbxl.Query do
+defmodule Astrup.ECG.Datasets.Ptbxl.Query do
   @doc """
   Get ECGs by specific SCP code.
   """
@@ -275,6 +275,45 @@ defmodule Astrup.Ecgs.Databases.Ptbxl.Query do
 
       _ ->
         nil
+    end
+  end
+
+  @doc """
+  Extracts metadata from a PTB-XL record in standardized format.
+  """
+  def get_metadata(record) do
+    scp_codes_with_descriptions =
+      record.scp_codes
+      |> Enum.map(&build_scp_code_metadata/1)
+      |> Enum.sort_by(& &1.confidence, :desc)
+
+    %{
+      type: :ptbxl,
+      scp_codes: scp_codes_with_descriptions,
+      report: record.report,
+      raw_record: record
+    }
+  end
+
+  defp build_scp_code_metadata({code, confidence}) do
+    case lookup_scp_code(code) do
+      {kind, description, diagnostic_class} ->
+        %{
+          code: code,
+          confidence: confidence,
+          kind: kind,
+          description: description,
+          diagnostic_class: diagnostic_class
+        }
+
+      nil ->
+        %{
+          code: code,
+          confidence: confidence,
+          kind: :unknown,
+          description: "Unknown SCP code",
+          diagnostic_class: nil
+        }
     end
   end
 end

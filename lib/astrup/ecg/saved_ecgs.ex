@@ -1,4 +1,4 @@
-defmodule Astrup.Ecgs.SavedEcgs do
+defmodule Astrup.ECG.SavedEcgs do
   use Ecto.Schema
   import Ecto.Changeset
 

@@ -7,11 +7,11 @@ defmodule Astrup.Translation do
 
   @doc """
   Translates medical text to the target language using Claude API.
-  
+
   Preserves medical terminology and maintains clinical accuracy.
-  
+
   ## Examples
-  
+
       iex> Translation.translate_medical_text("Sinusrhythmus", "English")
       {:ok, "Sinus rhythm"}
       
@@ -21,6 +21,7 @@ defmodule Astrup.Translation do
   @spec translate_medical_text(String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
   def translate_medical_text(text, target_language \\ "English")
   def translate_medical_text("", _target_language), do: {:ok, ""}
+
   def translate_medical_text(text, target_language) when is_binary(text) do
     prompt = """
     Please translate the following medical text to #{target_language}. 
@@ -34,7 +35,7 @@ defmodule Astrup.Translation do
     case ClaudeAPI.send_prompt(prompt) do
       {:ok, translated_text} ->
         {:ok, String.trim(translated_text)}
-      
+
       {:error, reason} ->
         {:error, reason}
     end

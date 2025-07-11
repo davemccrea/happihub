@@ -1,10 +1,10 @@
-defmodule Astrup.Ecgs.Databases.Ptbxl.Parser do
+defmodule Astrup.ECG.Datasets.Ptbxl.Parser do
   import NimbleParsec
 
   @moduledoc """
-  Parser for PTB-XL database CSV files using NimbleParsec.
+  Parser for PTB-XL dataset CSV files using NimbleParsec.
 
-  The PTB-XL database contains ECG data with 28 columns including:
+  The PTB-XL dataset contains ECG data with 28 columns including:
   - Basic patient info (id, age, sex, height, weight)
   - Recording metadata (nurse, site, device, date)
   - Medical reports and SCP codes (parsed from Python dict format)
@@ -60,7 +60,7 @@ defmodule Astrup.Ecgs.Databases.Ptbxl.Parser do
 
   ## Examples
 
-      iex> Astrup.EcgDatabases.Ptbxl.Parser.parse_file("ptbxl_database.csv")
+      iex> Astrup.ECG.Datasets.Ptbxl.Parser.parse_file("ptbxl_database.csv")
       {:ok, %{
         header: [:ecg_id, :patient_id, :age, :sex, ...],
         rows: [%{ecg_id: 1, scp_codes: %{"NORM" => 100.0}, ...}, ...]

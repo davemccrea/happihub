@@ -33,7 +33,6 @@ defmodule Astrup.ClaudeAPI do
     end
   end
 
-
   defp extract_text_content(response) do
     case response do
       %{"content" => [%{"text" => text_content}]} ->

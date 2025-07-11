@@ -1,9 +1,8 @@
 defmodule AstrupWeb.ECGViewerLive do
   use AstrupWeb, :live_view
 
-  alias Astrup.Ecgs
-  alias Astrup.Ecgs.DatabaseRegistry
-  alias Astrup.Translation
+  alias Astrup.ECG
+  alias Astrup.ECG.DatabaseRegistry
 
   def mount(params, _session, socket) do
     socket =
@@ -36,13 +35,8 @@ defmodule AstrupWeb.ECGViewerLive do
         <div class="flex justify-between items-center">
           <h1 class="text-2xl font-bold">{gettext("ECG Viewer")}</h1>
           <div class="flex gap-4 items-center">
-            <.button
-              phx-click="load_random_ecg"
-              class="btn btn-primary"
-              id="load-random-ecg-button"
-            >
-              <.icon class="h-5 w-5" name="hero-arrow-path" />
-              Load Random ECG
+            <.button phx-click="load_random_ecg" class="btn btn-primary" id="load-random-ecg-button">
+              <.icon class="h-5 w-5" name="hero-arrow-path" /> Load Random ECG
             </.button>
 
             <%= if @ecg_loaded do %>
@@ -81,7 +75,7 @@ defmodule AstrupWeb.ECGViewerLive do
   end
 
   def handle_event("save_ecg", _params, socket) do
-    case Ecgs.save_ecg(socket.assigns.current_scope, %{
+    case ECG.save_ecg(socket.assigns.current_scope, %{
            db_name: socket.assigns.db_name,
            filename: socket.assigns.filename
          }) do
@@ -96,7 +90,7 @@ defmodule AstrupWeb.ECGViewerLive do
 
   def handle_event("unsave_ecg", _params, socket) do
     {count, _} =
-      Ecgs.unsave_ecg(
+      ECG.unsave_ecg(
         socket.assigns.current_scope,
         socket.assigns.db_name,
         socket.assigns.filename
@@ -115,7 +109,7 @@ defmodule AstrupWeb.ECGViewerLive do
       {:ok, filename} ->
         socket = load_ecg_from_params(socket, "ptbxl", filename)
         {:noreply, socket}
-      
+
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to load random ECG: #{reason}")}
     end
@@ -128,7 +122,7 @@ defmodule AstrupWeb.ECGViewerLive do
     lead_names = Map.get(record, "sig_name", [])
 
     # Check if ECG is already saved
-    ecg_saved = Ecgs.is_ecg_saved?(socket.assigns.current_scope, db_name, filename)
+    ecg_saved = ECG.is_ecg_saved?(socket.assigns.current_scope, db_name, filename)
 
     # Load database metadata if available
     {database_record, metadata, translated_report} = load_database_metadata(db_name, filename)
@@ -147,11 +141,15 @@ defmodule AstrupWeb.ECGViewerLive do
 
   defp load_database_metadata(db_name, filename) do
     case DatabaseRegistry.get_database(db_name) do
-      nil -> {nil, %{}, nil}
+      nil ->
+        {nil, %{}, nil}
+
       database_module ->
         case database_module.get_by_filename(filename) do
-          nil -> {nil, %{}, nil}
-          record -> 
+          nil ->
+            {nil, %{}, nil}
+
+          record ->
             metadata = database_module.get_metadata(record)
             translated_report = maybe_translate_report(metadata)
             {record, metadata, translated_report}
@@ -160,18 +158,21 @@ defmodule AstrupWeb.ECGViewerLive do
   end
 
   defp maybe_translate_report(%{report: report}) when is_binary(report) and report != "" do
-    case Translation.translate_medical_text(report, "English") do
-      {:ok, translation} -> translation
-      {:error, _} -> nil
-    end
+    # Translation temporarily disabled
+    nil
   end
 
   defp maybe_translate_report(_metadata), do: nil
 
   defp get_random_record(db_name) do
     case DatabaseRegistry.get_database(db_name) do
-      nil -> {:error, "Database #{db_name} not found"}
-      database_module -> database_module.get_random_record()
+      nil -> 
+        {:error, "Database #{db_name} not found"}
+      database_module -> 
+        case database_module.get_random_record() do
+          nil -> {:error, "No records available"}
+          record -> {:ok, record.filename_lr}
+        end
     end
   end
 end

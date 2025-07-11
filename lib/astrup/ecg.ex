@@ -1,8 +1,8 @@
-defmodule Astrup.Ecgs do
+defmodule Astrup.ECG do
   alias Astrup.Repo
   alias Astrup.Accounts.User
   alias Astrup.Accounts.Scope
-  alias Astrup.Ecgs.SavedEcgs
+  alias Astrup.ECG.SavedEcgs
 
   import Ecto.Query
 
@@ -17,12 +17,20 @@ defmodule Astrup.Ecgs do
   end
 
   def is_ecg_saved?(%Scope{user: %User{id: user_id}}, db_name, filename) do
-    query = from(s in SavedEcgs, where: s.user_id == ^user_id and s.db_name == ^db_name and s.filename == ^filename)
+    query =
+      from(s in SavedEcgs,
+        where: s.user_id == ^user_id and s.db_name == ^db_name and s.filename == ^filename
+      )
+
     Repo.exists?(query)
   end
 
   def unsave_ecg(%Scope{user: %User{id: user_id}}, db_name, filename) do
-    query = from(s in SavedEcgs, where: s.user_id == ^user_id and s.db_name == ^db_name and s.filename == ^filename)
+    query =
+      from(s in SavedEcgs,
+        where: s.user_id == ^user_id and s.db_name == ^db_name and s.filename == ^filename
+      )
+
     Repo.delete_all(query)
   end
 end
