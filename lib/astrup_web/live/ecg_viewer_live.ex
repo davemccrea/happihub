@@ -35,6 +35,15 @@ defmodule AstrupWeb.ECGViewerLive do
         <div class="flex justify-between items-center">
           <h1 class="text-2xl font-bold">{gettext("ECG Viewer")}</h1>
           <div class="flex gap-4 items-center">
+            <.button
+              phx-click="load_random_ecg"
+              class="btn btn-primary"
+              id="load-random-ecg-button"
+            >
+              <.icon class="h-5 w-5" name="hero-arrow-path" />
+              Load Random ECG
+            </.button>
+
             <%= if @ecg_loaded do %>
               <.button
                 phx-click={if @ecg_saved, do: "unsave_ecg", else: "save_ecg"}
@@ -99,6 +108,17 @@ defmodule AstrupWeb.ECGViewerLive do
     end
   end
 
+  def handle_event("load_random_ecg", _params, socket) do
+    case get_random_ptbxl_record() do
+      {:ok, filename} ->
+        socket = load_ecg_from_params(socket, "ptbxl", filename)
+        {:noreply, put_flash(socket, :info, "Random ECG loaded successfully!")}
+      
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to load random ECG: #{reason}")}
+    end
+  end
+
   defp load_ecg_from_params(socket, db_name, filename) do
     ecg_data = Astrup.Wfdb.read(db_name, filename)
     qrs = Astrup.Wfdb.detect_qrs(db_name, filename)
@@ -153,5 +173,20 @@ defmodule AstrupWeb.ECGViewerLive do
     |> assign(ptbxl_record: ptbxl_record)
     |> assign(scp_codes_with_descriptions: scp_codes_with_descriptions)
     |> push_event("ecg_data_pushed", %{data: record})
+  end
+
+  defp get_random_ptbxl_record() do
+    try do
+      records = Ptbxl.get_all_records()
+      
+      if length(records) > 0 do
+        random_record = Enum.random(records)
+        {:ok, random_record.filename_lr}
+      else
+        {:error, "No PTB-XL records available"}
+      end
+    rescue
+      e -> {:error, "Error accessing PTB-XL database: #{Exception.message(e)}"}
+    end
   end
 end
