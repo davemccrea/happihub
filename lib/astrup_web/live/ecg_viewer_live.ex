@@ -34,7 +34,16 @@ defmodule AstrupWeb.ECGViewerLive do
       <div class="space-y-8">
         <div class="flex justify-between items-center">
           <h1 class="text-2xl font-bold">{gettext("ECG Viewer")}</h1>
-          <div class="flex gap-4 items-center">
+        </div>
+
+        <.live_component
+          module={AstrupWeb.Components.EcgPlayer}
+          id="ecg-player"
+          ecg_loaded={@ecg_loaded}
+          env={@env}
+          lead_names={@lead_names}
+        >
+          <:actions>
             <.button phx-click="load_random_ecg" class="btn btn-primary" id="load-random-ecg-button">
               <.icon class="h-5 w-5" name="hero-arrow-path" /> Load Random ECG
             </.button>
@@ -56,19 +65,20 @@ defmodule AstrupWeb.ECGViewerLive do
                 Play
               </.button>
             <% end %>
-          </div>
-        </div>
+          </:actions>
 
-        <.live_component
-          module={AstrupWeb.Components.EcgPlayer}
-          id="ecg-player"
-          ecg_loaded={@ecg_loaded}
-          env={@env}
-          lead_names={@lead_names}
-          dataset_record={@dataset_record}
-          metadata={@metadata}
-          translated_report={@translated_report}
-        />
+          <:sidebar :if={@dataset_record}>
+            <AstrupWeb.Components.ClinicalInfoPanel.clinical_info_panel
+              dataset_record={@dataset_record}
+              metadata={@metadata}
+              translated_report={@translated_report}
+            />
+          </:sidebar>
+
+          <:instructions>
+            <AstrupWeb.Components.EcgInstructions.default_instructions />
+          </:instructions>
+        </.live_component>
       </div>
     </Layouts.app>
     """
