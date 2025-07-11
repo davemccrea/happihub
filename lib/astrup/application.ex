@@ -13,7 +13,7 @@ defmodule Astrup.Application do
       {DNSCluster, query: Application.get_env(:astrup, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Astrup.PubSub},
       # Start PTB-XL data cache
-      Astrup.ECG.Datasets.Ptbxl,
+      Astrup.ECG.Datasets.Ptbxl.GenServer,
       # Start a worker by calling: Astrup.Worker.start_link(arg)
       # {Astrup.Worker, arg},
       # Start to serve requests, typically the last entry
