@@ -22,9 +22,14 @@ defmodule Astrup.Ecgs.Databases.Ptbxl do
 
   @impl true
   def handle_call({:get_by_filename, filename}, _from, state) do
-    record = Enum.find(state.records, fn record ->
-      record.filename_lr == filename || record.filename_hr == filename
-    end)
+    record =
+      Enum.find(state.records, fn record ->
+        record.filename_lr == filename
+        # record.filename_lr == filename || record.filename_hr == filename
+      end)
+
+    dbg(record)
+
     {:reply, record, state}
   end
 

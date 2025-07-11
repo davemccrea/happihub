@@ -12,7 +12,9 @@ defmodule AstrupWeb.SavedEcgsLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
-      <div class="overflow-x-auto max-w-xl m-auto">
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <h1 class="text-2xl font-bold mb-6">Saved ECGs</h1>
+        <div class="overflow-x-auto">
         <table class="table">
           <thead>
             <tr>
@@ -37,6 +39,7 @@ defmodule AstrupWeb.SavedEcgsLive do
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </Layouts.app>
     """

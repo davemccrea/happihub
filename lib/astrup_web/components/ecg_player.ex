@@ -3,7 +3,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
 
   def render(assigns) do
     ~H"""
-    <div class="space-y-4">
+    <div class="space-y-8">
       <div class="relative">
         <div
           id="ecg-playback"
@@ -23,15 +23,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
           <div class="absolute inset-0 flex items-center justify-center bg-base-100 bg-opacity-90">
             <div class="text-center space-y-4">
               <div class="text-6xl opacity-30">
-                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  >
-                  </path>
-                </svg>
+                <.icon name="hero-heart" class="w-16 h-16 mx-auto" />
               </div>
               <div class="space-y-2">
                 <p class="text-lg font-medium">No ECG Data Loaded</p>
@@ -43,7 +35,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
       </div>
 
       <%= if @ecg_loaded do %>
-        <div class="text-sm text-gray-500 flex items-center gap-2">
+        <div class="text-sm text-gray-500 flex items-center gap-2 pb-4 border-b border-base-300">
           <span>Use</span>
           <kbd class="kbd kbd-sm">↑</kbd>
           <kbd class="kbd kbd-sm">↓</kbd>
@@ -57,90 +49,67 @@ defmodule AstrupWeb.Components.EcgPlayer do
       <% end %>
 
       <%= if @ecg_loaded do %>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Clinical Information Section - Left Column -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <%= if @ptbxl_record do %>
-            <div>
-              <div class="card bg-base-200 shadow-xl">
-                <div class="card-body">
-                  <h2 class="card-title">
-                    <.icon name="hero-document-text" class="w-5 h-5" /> Clinical Information
-                  </h2>
-                  
-    <!-- Report Section -->
-                  <%= if @ptbxl_record.report && @ptbxl_record.report != "" do %>
-                    <div class="mb-6">
-                      <h3 class="text-lg font-semibold mb-2 flex items-center gap-1">
-                        <.icon name="hero-clipboard-document-list" class="w-4 h-4" /> Medical Report
-                      </h3>
-                      <div class="alert alert-info">
-                        <div class="text-sm italic">
-                          "{@ptbxl_record.report}"
-                        </div>
-                      </div>
+            <div class="space-y-6">
+              <div>
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <.icon name="hero-document-text" class="w-5 h-5" /> Clinical Information
+                </h2>
+
+                <%= if @ptbxl_record.report && @ptbxl_record.report != "" do %>
+                  <div class="mb-6">
+                    <h3 class="font-semibold mb-3 flex items-center gap-1">
+                      Medical Report
+                    </h3>
+                    <div class="bg-info/10 p-4 rounded-lg text-sm italic border border-info/20">
+                      "{@ptbxl_record.report}"
                     </div>
-                  <% end %>
-                  
-    <!-- SCP Codes Section -->
-                  <%= if length(@scp_codes_with_descriptions) > 0 do %>
-                    <div>
-                      <h3 class="text-lg font-semibold mb-3 flex items-center gap-1">
-                        <.icon name="hero-check-circle" class="w-4 h-4" />
-                        SCP Codes ({length(@scp_codes_with_descriptions)})
-                      </h3>
-                      <div class="space-y-3 max-h-80 overflow-y-auto">
-                        <%= for scp <- @scp_codes_with_descriptions do %>
-                          <div class="card bg-base-100 shadow-sm">
-                            <div class="card-body p-4">
-                              <div class="flex justify-between items-start mb-2">
-                                <div class="flex items-center gap-2">
-                                  <div class="badge badge-primary font-mono font-bold">
-                                    {scp.code}
-                                  </div>
-                                  <div class={"badge " <>
-                                    case scp.kind do
-                                      :diagnostic -> "badge-error"
-                                      :form -> "badge-info"
-                                      :rhythm -> "badge-success"
-                                      _ -> "badge-neutral"
-                                    end
-                                  }>
-                                    {String.upcase(to_string(scp.kind))}
-                                  </div>
-                                </div>
-                                <div class="text-right">
-                                  <div class="text-lg font-bold">
-                                    {trunc(scp.confidence)}%
-                                  </div>
-                                  <div class="text-xs opacity-60">confidence</div>
-                                </div>
-                              </div>
-                              <p class="text-sm leading-relaxed mb-2">
-                                {scp.description}
-                              </p>
-                              <%= if scp.diagnostic_class do %>
-                                <div class="flex items-center gap-1">
-                                  <span class="text-xs opacity-60">Classification:</span>
-                                  <div class="badge badge-outline badge-sm">
-                                    {scp.diagnostic_class}
-                                  </div>
-                                </div>
-                              <% end %>
-                            </div>
+                  </div>
+                <% end %>
+
+                <%= if length(@scp_codes_with_descriptions) > 0 do %>
+                  <div class="space-y-3 max-h-80 overflow-y-auto">
+                    <%= for scp <- @scp_codes_with_descriptions do %>
+                      <div class="bg-base-50 border border-base-300 rounded-lg p-4 hover:bg-base-100 transition-colors">
+                        <div class="flex justify-between items-start mb-2">
+                          <div class="flex items-center gap-2">
+                            <span class="badge badge-primary font-mono text-xs">
+                              {scp.code}
+                            </span>
+                            <span class={"badge badge-xs " <>
+                                case scp.kind do
+                                  :diagnostic -> "badge-error"
+                                  :form -> "badge-info"
+                                  :rhythm -> "badge-success"
+                                  _ -> "badge-neutral"
+                                end
+                              }>
+                              {String.upcase(to_string(scp.kind))}
+                            </span>
+                          </div>
+                          <span class="text-sm font-semibold text-primary">
+                            {trunc(scp.confidence)}%
+                          </span>
+                        </div>
+                        <p class="text-sm text-base-content/80 mb-2 leading-relaxed">
+                          {scp.description}
+                        </p>
+                        <%= if scp.diagnostic_class do %>
+                          <div class="text-xs text-base-content/60">
+                            Classification: {scp.diagnostic_class}
                           </div>
                         <% end %>
                       </div>
-                    </div>
-                  <% end %>
-                </div>
+                    <% end %>
+                  </div>
+                <% end %>
               </div>
             </div>
           <% end %>
-          
-    <!-- Controls and Options - Right Column -->
+
           <div class={if @ptbxl_record, do: "", else: "lg:col-span-2"}>
             <div class="space-y-6">
-              <!-- ECG Controls Section -->
               <div class="card bg-base-200 shadow-xl">
                 <div class="card-body">
                   <h2 class="card-title">
@@ -175,14 +144,13 @@ defmodule AstrupWeb.Components.EcgPlayer do
                   </div>
                 </div>
               </div>
-              
-    <!-- View Options Section -->
+
               <div class="card bg-base-200 shadow-xl">
                 <div class="card-body">
                   <h2 class="card-title">
                     <.icon name="hero-cog-6-tooth" class="w-5 h-5" /> View Options
                   </h2>
-                  <div class="space-y-3">
+                  <div class="space-y-6">
                     <div>
                       <.input
                         type="select"
@@ -194,50 +162,88 @@ defmodule AstrupWeb.Components.EcgPlayer do
                       />
                     </div>
 
-                    <div class="flex flex-col">
-                      <span class="label text-sm mb-1">Grid Scale (mm/s)</span>
-                      <input
-                        type="range"
-                        id="grid-scale-slider"
-                        name="grid-scale"
-                        min="0.75"
-                        max="1.25"
-                        step="0.01"
-                        value="1.0"
-                        class="range range-xs w-1/2"
-                      />
+                    <div class="space-y-4">
+                      <h3 class="text-sm font-medium text-base-content/70">Scale Adjustments</h3>
+
+                      <div class="space-y-3">
+                        <div class="flex flex-col space-y-2">
+                          <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium">Grid Scale</span>
+                            <div class="flex items-center gap-2">
+                              <span id="grid-scale-value" class="text-xs text-base-content/70">
+                                1.00x
+                              </span>
+                              <span id="grid-scale-speed" class="text-xs text-base-content/50">
+                                25.0 mm/s
+                              </span>
+                            </div>
+                          </div>
+                          <input
+                            type="range"
+                            id="grid-scale-slider"
+                            name="grid-scale"
+                            min="0.75"
+                            max="1.25"
+                            step="0.01"
+                            value="1.0"
+                            class="range range-xs w-full"
+                          />
+                        </div>
+
+                        <div class="flex flex-col space-y-2">
+                          <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium">Amplitude Scale</span>
+                            <div class="flex items-center gap-2">
+                              <span id="amplitude-scale-value" class="text-xs text-base-content/70">
+                                1.00x
+                              </span>
+                              <span id="amplitude-scale-gain" class="text-xs text-base-content/50">
+                                10.0 mm/mV
+                              </span>
+                            </div>
+                          </div>
+                          <input
+                            type="range"
+                            id="amplitude-scale-slider"
+                            name="amplitude-scale"
+                            min="0.75"
+                            max="1.25"
+                            step="0.01"
+                            value="1.0"
+                            class="range range-xs w-full"
+                          />
+                        </div>
+
+                        <div class="flex flex-col space-y-2">
+                          <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium">Height Scale</span>
+                            <div class="flex items-center gap-2">
+                              <span id="height-scale-value" class="text-xs text-base-content/70">
+                                1.20x
+                              </span>
+                              <span id="height-scale-pixels" class="text-xs text-base-content/50">
+                                180px
+                              </span>
+                            </div>
+                          </div>
+                          <input
+                            type="range"
+                            id="height-scale-slider"
+                            name="height-scale"
+                            min="0.95"
+                            max="1.45"
+                            step="0.01"
+                            value="1.2"
+                            class="range range-xs w-full"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div class="flex flex-col">
-                      <span class="label text-sm mb-1">Amplitude Scale (mm/mV)</span>
-                      <input
-                        type="range"
-                        id="amplitude-scale-slider"
-                        name="amplitude-scale"
-                        min="0.75"
-                        max="1.25"
-                        step="0.01"
-                        value="1.0"
-                        class="range range-xs w-1/2"
-                      />
-                    </div>
+                    <div class="space-y-3">
+                      <h3 class="text-sm font-medium text-base-content/70">Playback Options</h3>
 
-                    <div class="flex flex-col">
-                      <span class="label text-sm mb-1">Height Scale (px)</span>
-                      <input
-                        type="range"
-                        id="height-scale-slider"
-                        name="height-scale"
-                        min="0.95"
-                        max="1.45"
-                        step="0.01"
-                        value="1.2"
-                        class="range range-xs w-1/2"
-                      />
-                    </div>
-
-                    <div class="flex flex-col gap-1">
-                      <div>
+                      <div class="space-y-2">
                         <.input
                           type="checkbox"
                           id="loop-checkbox"
@@ -246,9 +252,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
                           value="true"
                           checked={true}
                         />
-                      </div>
 
-                      <div>
                         <.input
                           type="checkbox"
                           id="qrs-indicator-checkbox"
@@ -257,9 +261,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
                           value="true"
                           checked={true}
                         />
-                      </div>
 
-                      <div>
                         <.input
                           type="checkbox"
                           id="debug-checkbox"
