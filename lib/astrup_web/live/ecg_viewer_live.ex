@@ -3,7 +3,7 @@ defmodule AstrupWeb.ECGViewerLive do
 
   alias Astrup.Ecgs
   alias Astrup.Ecgs.DatabaseRegistry
-  alias Astrup.ClaudeAPI
+  alias Astrup.Translation
 
   def mount(params, _session, socket) do
     socket =
@@ -160,7 +160,7 @@ defmodule AstrupWeb.ECGViewerLive do
   end
 
   defp maybe_translate_report(%{report: report}) when is_binary(report) and report != "" do
-    case ClaudeAPI.translate_text(report, "English") do
+    case Translation.translate_medical_text(report, "English") do
       {:ok, translation} -> translation
       {:error, _} -> nil
     end
