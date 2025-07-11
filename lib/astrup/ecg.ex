@@ -33,4 +33,13 @@ defmodule Astrup.ECG do
 
     Repo.delete_all(query)
   end
+
+  def delete_saved_ecg(%Scope{user: %User{id: user_id}}, ecg_id) do
+    query =
+      from(s in SavedEcgs,
+        where: s.user_id == ^user_id and s.id == ^ecg_id
+      )
+
+    Repo.delete_all(query)
+  end
 end
