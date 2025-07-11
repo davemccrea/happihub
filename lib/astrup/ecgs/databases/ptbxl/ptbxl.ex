@@ -20,8 +20,17 @@ defmodule Astrup.Ecgs.Databases.Ptbxl do
   @impl true
   def handle_call(:get_all_records, _from, state), do: {:reply, state.records, state}
 
+  @impl true
+  def handle_call({:get_by_filename, filename}, _from, state) do
+    record = Enum.find(state.records, fn record ->
+      record.filename_lr == filename || record.filename_hr == filename
+    end)
+    {:reply, record, state}
+  end
+
   # Client API
 
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   def get_all_records, do: GenServer.call(__MODULE__, :get_all_records)
+  def get_by_filename(filename), do: GenServer.call(__MODULE__, {:get_by_filename, filename})
 end

@@ -57,140 +57,218 @@ defmodule AstrupWeb.Components.EcgPlayer do
       <% end %>
 
       <%= if @ecg_loaded do %>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-2">
-            <div class="bg-base-200 border border-base-300 rounded-lg p-4">
-              <h3 class="text-sm font-semibold text-base-content mb-3">ECG Controls</h3>
-              <div class="flex gap-4 items-end">
-                <div class="flex-1">
-                  <.input
-                    type="select"
-                    id="display-mode-selector"
-                    label="Display Mode"
-                    name="display-mode"
-                    value="single"
-                    options={[{"Single Lead", "single"}, {"All Leads", "multi"}]}
-                  />
-                </div>
-
-                <div id="lead-selector-container" class="flex-1">
-                  <.input
-                    type="select"
-                    id="lead-selector"
-                    label="Current Lead"
-                    name="lead"
-                    value={1}
-                    options={
-                      for {name, index} <- Enum.with_index(@lead_names) do
-                        {"Lead #{name}", index}
-                      end
-                    }
-                  />
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Clinical Information Section - Left Column -->
+          <%= if @ptbxl_record do %>
+            <div>
+              <div class="card bg-base-200 shadow-xl">
+                <div class="card-body">
+                  <h2 class="card-title">
+                    <.icon name="hero-document-text" class="w-5 h-5" /> Clinical Information
+                  </h2>
+                  
+    <!-- Report Section -->
+                  <%= if @ptbxl_record.report && @ptbxl_record.report != "" do %>
+                    <div class="mb-6">
+                      <h3 class="text-lg font-semibold mb-2 flex items-center gap-1">
+                        <.icon name="hero-clipboard-document-list" class="w-4 h-4" /> Medical Report
+                      </h3>
+                      <div class="alert alert-info">
+                        <div class="text-sm italic">
+                          "{@ptbxl_record.report}"
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                  
+    <!-- SCP Codes Section -->
+                  <%= if length(@scp_codes_with_descriptions) > 0 do %>
+                    <div>
+                      <h3 class="text-lg font-semibold mb-3 flex items-center gap-1">
+                        <.icon name="hero-check-circle" class="w-4 h-4" />
+                        SCP Codes ({length(@scp_codes_with_descriptions)})
+                      </h3>
+                      <div class="space-y-3 max-h-80 overflow-y-auto">
+                        <%= for scp <- @scp_codes_with_descriptions do %>
+                          <div class="card bg-base-100 shadow-sm">
+                            <div class="card-body p-4">
+                              <div class="flex justify-between items-start mb-2">
+                                <div class="flex items-center gap-2">
+                                  <div class="badge badge-primary font-mono font-bold">
+                                    {scp.code}
+                                  </div>
+                                  <div class={"badge " <>
+                                    case scp.kind do
+                                      :diagnostic -> "badge-error"
+                                      :form -> "badge-info"
+                                      :rhythm -> "badge-success"
+                                      _ -> "badge-neutral"
+                                    end
+                                  }>
+                                    {String.upcase(to_string(scp.kind))}
+                                  </div>
+                                </div>
+                                <div class="text-right">
+                                  <div class="text-lg font-bold">
+                                    {trunc(scp.confidence)}%
+                                  </div>
+                                  <div class="text-xs opacity-60">confidence</div>
+                                </div>
+                              </div>
+                              <p class="text-sm leading-relaxed mb-2">
+                                {scp.description}
+                              </p>
+                              <%= if scp.diagnostic_class do %>
+                                <div class="flex items-center gap-1">
+                                  <span class="text-xs opacity-60">Classification:</span>
+                                  <div class="badge badge-outline badge-sm">
+                                    {scp.diagnostic_class}
+                                  </div>
+                                </div>
+                              <% end %>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
                 </div>
               </div>
             </div>
-          </div>
+          <% end %>
+          
+    <!-- Controls and Options - Right Column -->
+          <div class={if @ptbxl_record, do: "", else: "lg:col-span-2"}>
+            <div class="space-y-6">
+              <!-- ECG Controls Section -->
+              <div class="card bg-base-200 shadow-xl">
+                <div class="card-body">
+                  <h2 class="card-title">
+                    <.icon name="hero-adjustments-horizontal" class="w-5 h-5" /> ECG Controls
+                  </h2>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <.input
+                        type="select"
+                        id="display-mode-selector"
+                        label="Display Mode"
+                        name="display-mode"
+                        value="single"
+                        options={[{"Single Lead", "single"}, {"All Leads", "multi"}]}
+                      />
+                    </div>
 
-          <div class="lg:col-span-1">
-            <div class="bg-base-200 border border-base-300 rounded-lg p-4">
-              <h3 class="text-sm font-semibold text-base-content mb-3">View Options</h3>
-              <div class="space-y-3">
-                <div>
-                  <.input
-                    type="select"
-                    id="grid-type-selector"
-                    label="Grid Type"
-                    name="grid-type"
-                    value="simple"
-                    options={[{"Medical Grid", "medical"}, {"Simple Grid", "simple"}]}
-                  />
-                </div>
-
-                <div>
-                  <.input
-                    type="range"
-                    id="grid-scale-slider"
-                    label="Grid Scale"
-                    name="grid-scale"
-                    min="0.75"
-                    max="1.25"
-                    step="0.01"
-                    value="1.0"
-                    class="range range-sm w-full"
-                  />
-                  <div class="text-xs text-base-content/60 mt-1 text-center">
-                    <span id="grid-scale-value">1.0x</span>
-                    (25 mm/s → <span id="grid-scale-speed">25 mm/s</span>)
+                    <div id="lead-selector-container">
+                      <.input
+                        type="select"
+                        id="lead-selector"
+                        label="Current Lead"
+                        name="lead"
+                        value={1}
+                        options={
+                          for {name, index} <- Enum.with_index(@lead_names) do
+                            {"Lead #{name}", index}
+                          end
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
+              </div>
+              
+    <!-- View Options Section -->
+              <div class="card bg-base-200 shadow-xl">
+                <div class="card-body">
+                  <h2 class="card-title">
+                    <.icon name="hero-cog-6-tooth" class="w-5 h-5" /> View Options
+                  </h2>
+                  <div class="space-y-3">
+                    <div>
+                      <.input
+                        type="select"
+                        id="grid-type-selector"
+                        label="Grid Type"
+                        name="grid-type"
+                        value="simple"
+                        options={[{"Medical Grid", "medical"}, {"Simple Grid", "simple"}]}
+                      />
+                    </div>
 
-                <div>
-                  <.input
-                    type="range"
-                    id="amplitude-scale-slider"
-                    label="Amplitude Scale"
-                    name="amplitude-scale"
-                    min="0.75"
-                    max="1.25"
-                    step="0.01"
-                    value="1.0"
-                    class="range range-sm w-full"
-                  />
-                  <div class="text-xs text-base-content/60 mt-1 text-center">
-                    <span id="amplitude-scale-value">1.0x</span>
-                    (10 mm/mV → <span id="amplitude-scale-gain">10 mm/mV</span>)
-                  </div>
-                </div>
+                    <div class="flex flex-col">
+                      <span class="label text-sm mb-1">Grid Scale (mm/s)</span>
+                      <input
+                        type="range"
+                        id="grid-scale-slider"
+                        name="grid-scale"
+                        min="0.75"
+                        max="1.25"
+                        step="0.01"
+                        value="1.0"
+                        class="range range-xs w-1/2"
+                      />
+                    </div>
 
-                <div>
-                  <.input
-                    type="range"
-                    id="height-scale-slider"
-                    label="Height Scale"
-                    name="height-scale"
-                    min="0.95"
-                    max="1.45"
-                    step="0.01"
-                    value="1.2"
-                    class="range range-sm w-full"
-                  />
-                  <div class="text-xs text-base-content/60 mt-1 text-center">
-                    <span id="height-scale-value">1.2x</span>
-                    (Chart height: <span id="height-scale-pixels">180px</span>)
-                  </div>
-                </div>
+                    <div class="flex flex-col">
+                      <span class="label text-sm mb-1">Amplitude Scale (mm/mV)</span>
+                      <input
+                        type="range"
+                        id="amplitude-scale-slider"
+                        name="amplitude-scale"
+                        min="0.75"
+                        max="1.25"
+                        step="0.01"
+                        value="1.0"
+                        class="range range-xs w-1/2"
+                      />
+                    </div>
 
-                <div class="flex flex-col gap-1">
-                  <div>
-                    <.input
-                      type="checkbox"
-                      id="loop-checkbox"
-                      label="Loop playback"
-                      name="loop"
-                      value="true"
-                      checked={true}
-                    />
-                  </div>
+                    <div class="flex flex-col">
+                      <span class="label text-sm mb-1">Height Scale (px)</span>
+                      <input
+                        type="range"
+                        id="height-scale-slider"
+                        name="height-scale"
+                        min="0.95"
+                        max="1.45"
+                        step="0.01"
+                        value="1.2"
+                        class="range range-xs w-1/2"
+                      />
+                    </div>
 
-                  <div>
-                    <.input
-                      type="checkbox"
-                      id="qrs-indicator-checkbox"
-                      label="QRS pulse indicator"
-                      name="qrs-indicator"
-                      value="true"
-                      checked={true}
-                    />
-                  </div>
+                    <div class="flex flex-col gap-1">
+                      <div>
+                        <.input
+                          type="checkbox"
+                          id="loop-checkbox"
+                          label="Loop playback"
+                          name="loop"
+                          value="true"
+                          checked={true}
+                        />
+                      </div>
 
-                  <div>
-                    <.input
-                      type="checkbox"
-                      id="debug-checkbox"
-                      label="Show diagnostics"
-                      name="debug"
-                      value="false"
-                    />
+                      <div>
+                        <.input
+                          type="checkbox"
+                          id="qrs-indicator-checkbox"
+                          label="QRS pulse indicator"
+                          name="qrs-indicator"
+                          value="true"
+                          checked={true}
+                        />
+                      </div>
+
+                      <div>
+                        <.input
+                          type="checkbox"
+                          id="debug-checkbox"
+                          label="Show diagnostics"
+                          name="debug"
+                          value="false"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

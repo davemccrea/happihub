@@ -1,10 +1,4 @@
 defmodule Astrup.Ecgs.Databases.Ptbxl.Query do
-  alias Astrup.Wfdb
-
-  def get_record_data(record) do
-    Wfdb.read("ptbxl", record.filename_lr)
-  end
-
   @doc """
   Get ECGs by specific SCP code.
   """
@@ -18,74 +12,6 @@ defmodule Astrup.Ecgs.Databases.Ptbxl.Query do
   end
 
   @doc """
-  Get available diagnosis categories and their counts from high-quality records.
-  """
-  def get_available_diagnoses(records) do
-    records
-    |> filter_high_quality()
-    |> filter_signal_quality()
-    |> Enum.group_by(&get_primary_diagnosis/1)
-    |> Enum.map(fn {diagnosis, records} -> {diagnosis, length(records)} end)
-    |> Enum.sort_by(fn {_diagnosis, count} -> count end, :desc)
-  end
-
-  @doc """
-  Get all unique SCP codes with their frequencies.
-  Filter levels: :all_records, :high_quality, :clean_signal
-  """
-  def get_all_scp_codes(records, filter_level \\ :all_records) do
-    filtered_records =
-      case filter_level do
-        :all_records -> records
-        :high_quality -> records |> filter_high_quality()
-        :clean_signal -> records |> filter_high_quality() |> filter_signal_quality()
-      end
-
-    filtered_records
-    |> Enum.flat_map(fn record ->
-      Map.keys(record.scp_codes)
-    end)
-    |> Enum.frequencies()
-    |> Enum.sort_by(fn {_code, count} -> count end, :desc)
-  end
-
-  @doc """
-  Get detailed SCP code statistics with confidence values.
-  """
-  def get_scp_code_details(records, filter_level \\ :all_records) do
-    filtered_records =
-      case filter_level do
-        :all_records -> records
-        :high_quality -> records |> filter_high_quality()
-        :clean_signal -> records |> filter_high_quality() |> filter_signal_quality()
-      end
-
-    filtered_records
-    |> Enum.flat_map(fn record ->
-      Enum.map(record.scp_codes, fn {code, confidence} ->
-        %{
-          code: code,
-          confidence: confidence,
-          ecg_id: record.ecg_id
-        }
-      end)
-    end)
-    |> Enum.group_by(& &1.code)
-    |> Enum.map(fn {code, entries} ->
-      confidences = Enum.map(entries, & &1.confidence)
-
-      %{
-        code: code,
-        count: length(entries),
-        avg_confidence: Enum.sum(confidences) / length(confidences),
-        min_confidence: Enum.min(confidences),
-        max_confidence: Enum.max(confidences)
-      }
-    end)
-    |> Enum.sort_by(& &1.count, :desc)
-  end
-
-  @doc """
   Get the primary diagnosis for a record based on highest confidence SCP code.
   """
   def get_primary_diagnosis(record) do
@@ -94,72 +20,12 @@ defmodule Astrup.Ecgs.Databases.Ptbxl.Query do
         "OTHER"
 
       codes ->
-        # TODO: what if there are two diagnoses with 100 confidence?
         {primary_code, _confidence} =
-          Enum.max_by(codes, fn {_code, confidence} -> confidence end) |> dbg()
+          Enum.max_by(codes, fn {_code, confidence} -> confidence end)
 
-        case primary_code do
-          "NORM" ->
-            "NORM"
-
-          code
-          when code in [
-                 "AMI",
-                 "IMI",
-                 "ALMI",
-                 "ASMI",
-                 "ILMI",
-                 "INJAL",
-                 "INJAS",
-                 "INJIL",
-                 "INJIN",
-                 "INJLA",
-                 "IPLMI",
-                 "IPMI",
-                 "LMI",
-                 "PMI"
-               ] ->
-            "MI"
-
-          code
-          when code in [
-                 "NST_",
-                 "NDT",
-                 "DIG",
-                 "LNGQT",
-                 "ANEUR",
-                 "EL",
-                 "ISC_",
-                 "ISCAL",
-                 "ISCAS",
-                 "ISCIL",
-                 "ISCIN",
-                 "ISCLA",
-                 "ISCAN"
-               ] ->
-            "STTC"
-
-          code
-          when code in [
-                 "1AVB",
-                 "2AVB",
-                 "3AVB",
-                 "IRBBB",
-                 "CLBBB",
-                 "CRBBB",
-                 "ILBBB",
-                 "IVCD",
-                 "LAFB",
-                 "LPFB",
-                 "WPW"
-               ] ->
-            "CD"
-
-          code when code in ["LVH", "RVH", "LAO/LAE", "RAO/RAE", "SEHYP"] ->
-            "HYP"
-
-          _ ->
-            "OTHER"
+        case lookup_scp_code(primary_code) do
+          {:diagnostic, _description, diagnostic_class} -> diagnostic_class
+          _ -> "OTHER"
         end
     end
   end
@@ -183,5 +49,232 @@ defmodule Astrup.Ecgs.Databases.Ptbxl.Query do
 
   defp has_scp_code(record, scp_code) do
     Map.has_key?(record.scp_codes, scp_code)
+  end
+
+  @doc """
+  Look up SCP code information from the PTB-XL database.
+  Returns {:kind, :description, :diagnostic_class} where:
+  - :kind is one of :diagnostic, :form, or :rhythm
+  - :description is the human-readable description
+  - :diagnostic_class is the diagnostic class (only for diagnostic codes, nil otherwise)
+  """
+  def lookup_scp_code(scp_code) do
+    case scp_code do
+      "NDT" ->
+        {:diagnostic, "non-diagnostic T abnormalities", "STTC"}
+
+      "NST_" ->
+        {:diagnostic, "non-specific ST changes", "STTC"}
+
+      "DIG" ->
+        {:diagnostic, "digitalis-effect", "STTC"}
+
+      "LNGQT" ->
+        {:diagnostic, "long QT-interval", "STTC"}
+
+      "NORM" ->
+        {:diagnostic, "normal ECG", "NORM"}
+
+      "IMI" ->
+        {:diagnostic, "inferior myocardial infarction", "MI"}
+
+      "ASMI" ->
+        {:diagnostic, "anteroseptal myocardial infarction", "MI"}
+
+      "LVH" ->
+        {:diagnostic, "left ventricular hypertrophy", "HYP"}
+
+      "LAFB" ->
+        {:diagnostic, "left anterior fascicular block", "CD"}
+
+      "ISC_" ->
+        {:diagnostic, "non-specific ischemic", "STTC"}
+
+      "IRBBB" ->
+        {:diagnostic, "incomplete right bundle branch block", "CD"}
+
+      "1AVB" ->
+        {:diagnostic, "first degree AV block", "CD"}
+
+      "IVCD" ->
+        {:diagnostic, "non-specific intraventricular conduction disturbance (block)", "CD"}
+
+      "ISCAL" ->
+        {:diagnostic, "ischemic in anterolateral leads", "STTC"}
+
+      "CRBBB" ->
+        {:diagnostic, "complete right bundle branch block", "CD"}
+
+      "CLBBB" ->
+        {:diagnostic, "complete left bundle branch block", "CD"}
+
+      "ILMI" ->
+        {:diagnostic, "inferolateral myocardial infarction", "MI"}
+
+      "LAO/LAE" ->
+        {:diagnostic, "left atrial overload/enlargement", "HYP"}
+
+      "AMI" ->
+        {:diagnostic, "anterior myocardial infarction", "MI"}
+
+      "ALMI" ->
+        {:diagnostic, "anterolateral myocardial infarction", "MI"}
+
+      "ISCIN" ->
+        {:diagnostic, "ischemic in inferior leads", "STTC"}
+
+      "INJAS" ->
+        {:diagnostic, "subendocardial injury in anteroseptal leads", "MI"}
+
+      "LMI" ->
+        {:diagnostic, "lateral myocardial infarction", "MI"}
+
+      "ISCIL" ->
+        {:diagnostic, "ischemic in inferolateral leads", "STTC"}
+
+      "LPFB" ->
+        {:diagnostic, "left posterior fascicular block", "CD"}
+
+      "ISCAS" ->
+        {:diagnostic, "ischemic in anteroseptal leads", "STTC"}
+
+      "INJAL" ->
+        {:diagnostic, "subendocardial injury in anterolateral leads", "MI"}
+
+      "ISCLA" ->
+        {:diagnostic, "ischemic in lateral leads", "STTC"}
+
+      "RVH" ->
+        {:diagnostic, "right ventricular hypertrophy", "HYP"}
+
+      "ANEUR" ->
+        {:diagnostic, "ST-T changes compatible with ventricular aneurysm", "STTC"}
+
+      "RAO/RAE" ->
+        {:diagnostic, "right atrial overload/enlargement", "HYP"}
+
+      "EL" ->
+        {:diagnostic, "electrolytic disturbance or drug (former EDIS)", "STTC"}
+
+      "WPW" ->
+        {:diagnostic, "Wolf-Parkinson-White syndrome", "CD"}
+
+      "ILBBB" ->
+        {:diagnostic, "incomplete left bundle branch block", "CD"}
+
+      "IPLMI" ->
+        {:diagnostic, "inferoposterolateral myocardial infarction", "MI"}
+
+      "ISCAN" ->
+        {:diagnostic, "ischemic in anterior leads", "STTC"}
+
+      "IPMI" ->
+        {:diagnostic, "inferoposterior myocardial infarction", "MI"}
+
+      "SEHYP" ->
+        {:diagnostic, "septal hypertrophy", "HYP"}
+
+      "INJIN" ->
+        {:diagnostic, "subendocardial injury in inferior leads", "MI"}
+
+      "INJLA" ->
+        {:diagnostic, "subendocardial injury in lateral leads", "MI"}
+
+      "PMI" ->
+        {:diagnostic, "posterior myocardial infarction", "MI"}
+
+      "3AVB" ->
+        {:diagnostic, "third degree AV block", "CD"}
+
+      "INJIL" ->
+        {:diagnostic, "subendocardial injury in inferolateral leads", "MI"}
+
+      "2AVB" ->
+        {:diagnostic, "second degree AV block", "CD"}
+
+      "ABQRS" ->
+        {:form, "abnormal QRS", nil}
+
+      "PVC" ->
+        {:form, "ventricular premature complex", nil}
+
+      "STD_" ->
+        {:form, "non-specific ST depression", nil}
+
+      "VCLVH" ->
+        {:form, "voltage criteria (QRS) for left ventricular hypertrophy", nil}
+
+      "QWAVE" ->
+        {:form, "Q waves present", nil}
+
+      "LOWT" ->
+        {:form, "low amplitude T-waves", nil}
+
+      "NT_" ->
+        {:form, "non-specific T-wave changes", nil}
+
+      "PAC" ->
+        {:form, "atrial premature complex", nil}
+
+      "LPR" ->
+        {:form, "prolonged PR interval", nil}
+
+      "INVT" ->
+        {:form, "inverted T-waves", nil}
+
+      "LVOLT" ->
+        {:form, "low QRS voltages in the frontal and horizontal leads", nil}
+
+      "HVOLT" ->
+        {:form, "high QRS voltage", nil}
+
+      "TAB_" ->
+        {:form, "T-wave abnormality", nil}
+
+      "STE_" ->
+        {:form, "non-specific ST elevation", nil}
+
+      "PRC(S)" ->
+        {:form, "premature complex(es)", nil}
+
+      "SR" ->
+        {:rhythm, "sinus rhythm", nil}
+
+      "AFIB" ->
+        {:rhythm, "atrial fibrillation", nil}
+
+      "STACH" ->
+        {:rhythm, "sinus tachycardia", nil}
+
+      "SARRH" ->
+        {:rhythm, "sinus arrhythmia", nil}
+
+      "SBRAD" ->
+        {:rhythm, "sinus bradycardia", nil}
+
+      "PACE" ->
+        {:rhythm, "normal functioning artificial pacemaker", nil}
+
+      "SVARR" ->
+        {:rhythm, "supraventricular arrhythmia", nil}
+
+      "BIGU" ->
+        {:rhythm, "bigeminal pattern (unknown origin, SV or Ventricular)", nil}
+
+      "AFLT" ->
+        {:rhythm, "atrial flutter", nil}
+
+      "SVTAC" ->
+        {:rhythm, "supraventricular tachycardia", nil}
+
+      "PSVT" ->
+        {:rhythm, "paroxysmal supraventricular tachycardia", nil}
+
+      "TRIGU" ->
+        {:rhythm, "trigeminal pattern (unknown origin, SV or Ventricular)", nil}
+
+      _ ->
+        nil
+    end
   end
 end

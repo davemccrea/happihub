@@ -2,6 +2,8 @@ defmodule AstrupWeb.ECGViewerLive do
   use AstrupWeb, :live_view
 
   alias Astrup.Ecgs
+  alias Astrup.Ecgs.Databases.Ptbxl
+  alias Astrup.Ecgs.Databases.Ptbxl.Query
 
   def mount(params, _session, socket) do
     socket =
@@ -9,7 +11,9 @@ defmodule AstrupWeb.ECGViewerLive do
         lead_names: [],
         env: Application.get_env(:astrup, :env),
         ecg_loaded: false,
-        ecg_saved: false
+        ecg_saved: false,
+        ptbxl_record: nil,
+        scp_codes_with_descriptions: []
       )
 
     socket =
@@ -57,6 +61,8 @@ defmodule AstrupWeb.ECGViewerLive do
           ecg_loaded={@ecg_loaded}
           env={@env}
           lead_names={@lead_names}
+          ptbxl_record={@ptbxl_record}
+          scp_codes_with_descriptions={@scp_codes_with_descriptions}
         />
       </div>
     </Layouts.app>
@@ -102,12 +108,50 @@ defmodule AstrupWeb.ECGViewerLive do
     # Check if ECG is already saved
     ecg_saved = Ecgs.is_ecg_saved?(socket.assigns.current_scope, db_name, filename)
 
+    # Load PTB-XL record data if available
+    {ptbxl_record, scp_codes_with_descriptions} = 
+      if db_name == "ptbxl" do
+        case Ptbxl.get_by_filename(filename) do
+          nil -> {nil, []}
+          ptbxl_record -> 
+            scp_codes_with_descriptions = 
+              ptbxl_record.scp_codes
+              |> Enum.map(fn {code, confidence} ->
+                case Query.lookup_scp_code(code) do
+                  {kind, description, diagnostic_class} ->
+                    %{
+                      code: code,
+                      confidence: confidence,
+                      kind: kind,
+                      description: description,
+                      diagnostic_class: diagnostic_class
+                    }
+                  nil ->
+                    %{
+                      code: code,
+                      confidence: confidence,
+                      kind: :unknown,
+                      description: "Unknown SCP code",
+                      diagnostic_class: nil
+                    }
+                end
+              end)
+              |> Enum.sort_by(& &1.confidence, :desc)
+            
+            {ptbxl_record, scp_codes_with_descriptions}
+        end
+      else
+        {nil, []}
+      end
+
     socket
     |> assign(ecg_loaded: true)
     |> assign(lead_names: lead_names)
     |> assign(db_name: db_name)
     |> assign(filename: filename)
     |> assign(ecg_saved: ecg_saved)
+    |> assign(ptbxl_record: ptbxl_record)
+    |> assign(scp_codes_with_descriptions: scp_codes_with_descriptions)
     |> push_event("ecg_data_pushed", %{data: record})
   end
 end
