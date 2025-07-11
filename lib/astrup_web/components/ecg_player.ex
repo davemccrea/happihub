@@ -54,7 +54,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
 
       <%= if @ecg_loaded do %>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <%= if @database_record do %>
+          <%= if @dataset_record do %>
             <div class="card bg-base-200 shadow">
               <div class="card-body space-y-3">
                 <h2 class="card-title">
@@ -166,7 +166,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
             </div>
           <% end %>
 
-          <div class={if @database_record, do: "", else: "lg:col-span-2"}>
+          <div class={if @dataset_record, do: "", else: "lg:col-span-2"}>
             <div class="space-y-6">
               <div class="card bg-base-200 shadow">
                 <div class="card-body">
