@@ -47,6 +47,43 @@ defmodule Astrup.ECG.Datasets.Ptbxl.Query do
     end)
   end
 
+  @doc """
+  Filter records to only include those with at least one diagnosis confidence of 100.
+  """
+  def filter_confidence_100(records) do
+    records
+    |> Enum.filter(fn record ->
+      Enum.any?(record.scp_codes, fn {_code, confidence} -> confidence == 100.0 end)
+    end)
+  end
+
+  @doc """
+  Take a specified number of records from each SCP code.
+  Groups records by their highest confidence SCP code and takes up to `count` records per code.
+  """
+  def take_per_scp_code(records, count) do
+    records
+    |> Enum.group_by(&get_primary_scp_code/1)
+    |> Enum.flat_map(fn {_code, records_for_code} ->
+      records_for_code
+      |> Enum.shuffle()
+      |> Enum.take(count)
+    end)
+  end
+
+  defp get_primary_scp_code(record) do
+    case record.scp_codes do
+      codes when map_size(codes) == 0 ->
+        "OTHER"
+
+      codes ->
+        {primary_code, _confidence} =
+          Enum.max_by(codes, fn {_code, confidence} -> confidence end)
+
+        primary_code
+    end
+  end
+
   defp has_scp_code(record, scp_code) do
     Map.has_key?(record.scp_codes, scp_code)
   end

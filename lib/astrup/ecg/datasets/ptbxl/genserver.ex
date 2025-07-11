@@ -1,7 +1,7 @@
 defmodule Astrup.ECG.Datasets.Ptbxl.GenServer do
   use GenServer
 
-  alias Astrup.ECG.Datasets.Ptbxl.Parser
+  alias Astrup.ECG.Datasets.Ptbxl.{Parser, Query}
 
   @impl true
   def init(_opts) do
@@ -10,7 +10,14 @@ defmodule Astrup.ECG.Datasets.Ptbxl.GenServer do
 
     case Parser.parse_file(csv_file) do
       {:ok, data} ->
-        {:ok, %{records: data.rows, csv_file: csv_file}}
+        filtered_records =
+          data.rows
+          |> Query.filter_signal_quality()
+          |> Query.filter_high_quality()
+          |> Query.filter_confidence_100()
+          |> Query.take_per_scp_code(10)
+
+        {:ok, %{records: filtered_records, csv_file: csv_file}}
 
       {:error, reason} ->
         {:stop, {:error, "Failed to load PTB-XL data: #{reason}"}}
