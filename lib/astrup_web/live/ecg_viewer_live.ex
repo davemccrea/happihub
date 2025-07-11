@@ -2,8 +2,7 @@ defmodule AstrupWeb.ECGViewerLive do
   use AstrupWeb, :live_view
 
   alias Astrup.Ecgs
-  alias Astrup.Ecgs.Databases.Ptbxl
-  alias Astrup.Ecgs.Databases.Ptbxl.Query
+  alias Astrup.Ecgs.DatabaseRegistry
   alias Astrup.ClaudeAPI
 
   def mount(params, _session, socket) do
@@ -13,8 +12,8 @@ defmodule AstrupWeb.ECGViewerLive do
         env: Application.get_env(:astrup, :env),
         ecg_loaded: false,
         ecg_saved: false,
-        ptbxl_record: nil,
-        scp_codes_with_descriptions: [],
+        database_record: nil,
+        metadata: %{},
         translated_report: nil
       )
 
@@ -72,8 +71,8 @@ defmodule AstrupWeb.ECGViewerLive do
           ecg_loaded={@ecg_loaded}
           env={@env}
           lead_names={@lead_names}
-          ptbxl_record={@ptbxl_record}
-          scp_codes_with_descriptions={@scp_codes_with_descriptions}
+          database_record={@database_record}
+          metadata={@metadata}
           translated_report={@translated_report}
         />
       </div>
@@ -112,7 +111,7 @@ defmodule AstrupWeb.ECGViewerLive do
   end
 
   def handle_event("load_random_ecg", _params, socket) do
-    case get_random_ptbxl_record() do
+    case get_random_record("ptbxl") do
       {:ok, filename} ->
         socket = load_ecg_from_params(socket, "ptbxl", filename)
         {:noreply, socket}
@@ -131,52 +130,8 @@ defmodule AstrupWeb.ECGViewerLive do
     # Check if ECG is already saved
     ecg_saved = Ecgs.is_ecg_saved?(socket.assigns.current_scope, db_name, filename)
 
-    # Load PTB-XL record data if available
-    {ptbxl_record, scp_codes_with_descriptions, translated_report} = 
-      if db_name == "ptbxl" do
-        case Ptbxl.get_by_filename(filename) do
-          nil -> {nil, [], nil}
-          ptbxl_record -> 
-            scp_codes_with_descriptions = 
-              ptbxl_record.scp_codes
-              |> Enum.map(fn {code, confidence} ->
-                case Query.lookup_scp_code(code) do
-                  {kind, description, diagnostic_class} ->
-                    %{
-                      code: code,
-                      confidence: confidence,
-                      kind: kind,
-                      description: description,
-                      diagnostic_class: diagnostic_class
-                    }
-                  nil ->
-                    %{
-                      code: code,
-                      confidence: confidence,
-                      kind: :unknown,
-                      description: "Unknown SCP code",
-                      diagnostic_class: nil
-                    }
-                end
-              end)
-              |> Enum.sort_by(& &1.confidence, :desc)
-            
-            # Translate the report if it exists and is not empty
-            translated_report = 
-              if ptbxl_record.report && ptbxl_record.report != "" do
-                case ClaudeAPI.translate_text(ptbxl_record.report, "English") do
-                  {:ok, translation} -> translation
-                  {:error, _} -> nil
-                end
-              else
-                nil
-              end
-            
-            {ptbxl_record, scp_codes_with_descriptions, translated_report}
-        end
-      else
-        {nil, [], nil}
-      end
+    # Load database metadata if available
+    {database_record, metadata, translated_report} = load_database_metadata(db_name, filename)
 
     socket
     |> assign(ecg_loaded: true)
@@ -184,24 +139,39 @@ defmodule AstrupWeb.ECGViewerLive do
     |> assign(db_name: db_name)
     |> assign(filename: filename)
     |> assign(ecg_saved: ecg_saved)
-    |> assign(ptbxl_record: ptbxl_record)
-    |> assign(scp_codes_with_descriptions: scp_codes_with_descriptions)
+    |> assign(database_record: database_record)
+    |> assign(metadata: metadata)
     |> assign(translated_report: translated_report)
     |> push_event("ecg_data_pushed", %{data: record})
   end
 
-  defp get_random_ptbxl_record() do
-    try do
-      records = Ptbxl.get_all_records()
-      
-      if length(records) > 0 do
-        random_record = Enum.random(records)
-        {:ok, random_record.filename_lr}
-      else
-        {:error, "No PTB-XL records available"}
-      end
-    rescue
-      e -> {:error, "Error accessing PTB-XL database: #{Exception.message(e)}"}
+  defp load_database_metadata(db_name, filename) do
+    case DatabaseRegistry.get_database(db_name) do
+      nil -> {nil, %{}, nil}
+      database_module ->
+        case database_module.get_by_filename(filename) do
+          nil -> {nil, %{}, nil}
+          record -> 
+            metadata = database_module.get_metadata(record)
+            translated_report = maybe_translate_report(metadata)
+            {record, metadata, translated_report}
+        end
+    end
+  end
+
+  defp maybe_translate_report(%{report: report}) when is_binary(report) and report != "" do
+    case ClaudeAPI.translate_text(report, "English") do
+      {:ok, translation} -> translation
+      {:error, _} -> nil
+    end
+  end
+
+  defp maybe_translate_report(_metadata), do: nil
+
+  defp get_random_record(db_name) do
+    case DatabaseRegistry.get_database(db_name) do
+      nil -> {:error, "Database #{db_name} not found"}
+      database_module -> database_module.get_random_record()
     end
   end
 end

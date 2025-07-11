@@ -55,14 +55,14 @@ defmodule AstrupWeb.Components.EcgPlayer do
 
       <%= if @ecg_loaded do %>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <%= if @ptbxl_record do %>
+          <%= if @database_record do %>
             <div class="space-y-6">
               <div>
                 <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
                   <.icon name="hero-document-text" class="w-5 h-5" /> Clinical Information
                 </h2>
 
-                <%= if @ptbxl_record.report && @ptbxl_record.report != "" do %>
+                <%= if Map.get(@metadata, :report) && Map.get(@metadata, :report) != "" do %>
                   <div class="mb-6">
                     <h3 class="font-semibold mb-3 flex items-center gap-1">
                       Medical Report
@@ -83,21 +83,21 @@ defmodule AstrupWeb.Components.EcgPlayer do
                             <span class="text-xs font-medium text-info">Original Report</span>
                           </div>
                           <div class="italic text-gray-600">
-                            {String.capitalize(@ptbxl_record.report)}
+                            {String.capitalize(Map.get(@metadata, :report, ""))}
                           </div>
                         </div>
                       </div>
                     <% else %>
                       <div class="bg-info/10 p-4 rounded-lg text-sm border border-info/20">
-                        {String.capitalize(@ptbxl_record.report)}
+                        {String.capitalize(Map.get(@metadata, :report, ""))}
                       </div>
                     <% end %>
                   </div>
                 <% end %>
 
-                <%= if length(@scp_codes_with_descriptions) > 0 do %>
+                <%= if length(Map.get(@metadata, :scp_codes, [])) > 0 do %>
                   <% # Group SCP codes by category
-                  grouped_codes = Enum.group_by(@scp_codes_with_descriptions, & &1.kind)
+                  grouped_codes = Enum.group_by(Map.get(@metadata, :scp_codes, []), & &1.kind)
                   diagnostic_codes = Map.get(grouped_codes, :diagnostic, [])
                   form_codes = Map.get(grouped_codes, :form, [])
                   rhythm_codes = Map.get(grouped_codes, :rhythm, []) %>
@@ -204,7 +204,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
             </div>
           <% end %>
 
-          <div class={if @ptbxl_record, do: "", else: "lg:col-span-2"}>
+          <div class={if @database_record, do: "", else: "lg:col-span-2"}>
             <div class="space-y-6">
               <div class="card bg-base-200 shadow-xl">
                 <div class="card-body">

@@ -1,7 +1,9 @@
 defmodule Astrup.Ecgs.Databases.Ptbxl do
   use GenServer
+  @behaviour Astrup.Ecgs.DatabaseBehavior
 
   alias Astrup.Ecgs.Databases.Ptbxl.Parser
+  alias Astrup.Ecgs.Databases.Ptbxl.Query
 
   @impl true
   def init(_opts) do
@@ -36,6 +38,60 @@ defmodule Astrup.Ecgs.Databases.Ptbxl do
   # Client API
 
   def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+
+  @impl Astrup.Ecgs.DatabaseBehavior
   def get_all_records, do: GenServer.call(__MODULE__, :get_all_records)
+
+  @impl Astrup.Ecgs.DatabaseBehavior
   def get_by_filename(filename), do: GenServer.call(__MODULE__, {:get_by_filename, filename})
+
+  @impl Astrup.Ecgs.DatabaseBehavior
+  def get_random_record do
+    try do
+      records = get_all_records()
+      
+      if length(records) > 0 do
+        random_record = Enum.random(records)
+        {:ok, random_record.filename_lr}
+      else
+        {:error, "No PTB-XL records available"}
+      end
+    rescue
+      e -> {:error, "Error accessing PTB-XL database: #{Exception.message(e)}"}
+    end
+  end
+
+  @impl Astrup.Ecgs.DatabaseBehavior
+  def get_metadata(record) do
+    scp_codes_with_descriptions = 
+      record.scp_codes
+      |> Enum.map(fn {code, confidence} ->
+        case Query.lookup_scp_code(code) do
+          {kind, description, diagnostic_class} ->
+            %{
+              code: code,
+              confidence: confidence,
+              kind: kind,
+              description: description,
+              diagnostic_class: diagnostic_class
+            }
+          nil ->
+            %{
+              code: code,
+              confidence: confidence,
+              kind: :unknown,
+              description: "Unknown SCP code",
+              diagnostic_class: nil
+            }
+        end
+      end)
+      |> Enum.sort_by(& &1.confidence, :desc)
+
+    %{
+      type: :ptbxl,
+      scp_codes: scp_codes_with_descriptions,
+      report: record.report,
+      raw_record: record
+    }
+  end
 end
