@@ -8,7 +8,7 @@ const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 6;
 const HEIGHT_MILLIVOLTS = 2.5;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
-const WAVEFORM_LINE_WIDTH = 1.15;
+const WAVEFORM_LINE_WIDTH = 1.3;
 const DOT_RADIUS = 1.2;
 
 // ===============
@@ -46,7 +46,7 @@ const ECGPlayback = {
     this.initializeECGChart();
 
     // Get the target for push events (component ID)
-    this.targetComponent = this.el.getAttribute('phx-target');
+    this.targetComponent = this.el.getAttribute("phx-target");
 
     if (this.el.dataset.env !== "prod") {
       this.showDiagnostics = false; // Hidden by default
@@ -1953,6 +1953,10 @@ const ECGPlayback = {
   setupWaveformDrawing(context = this.waveformContext) {
     context.strokeStyle = this.colors.waveform;
     context.lineWidth = WAVEFORM_LINE_WIDTH;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
     context.beginPath();
   },
 
@@ -2030,13 +2034,29 @@ const ECGPlayback = {
     });
 
     let hasMovedTo = false;
-    for (const { x, y } of coordinates) {
+    let prevPoint = null;
+    
+    for (let i = 0; i < coordinates.length; i++) {
+      const { x, y } = coordinates[i];
       if (x <= cursorPosition) {
         if (!hasMovedTo) {
           this.waveformContext.moveTo(x, y);
           hasMovedTo = true;
+          prevPoint = { x, y };
+        } else if (prevPoint && i < coordinates.length - 1) {
+          // Use quadratic curves for smoother lines
+          const nextPoint = coordinates[i + 1];
+          if (nextPoint && nextPoint.x <= cursorPosition) {
+            const cpX = (prevPoint.x + x) / 2;
+            const cpY = (prevPoint.y + y) / 2;
+            this.waveformContext.quadraticCurveTo(cpX, cpY, x, y);
+          } else {
+            this.waveformContext.lineTo(x, y);
+          }
+          prevPoint = { x, y };
         } else {
           this.waveformContext.lineTo(x, y);
+          prevPoint = { x, y };
         }
       }
     }
@@ -2242,12 +2262,28 @@ const ECGPlayback = {
     });
 
     let hasMovedTo = false;
-    for (const { x, y } of coordinates) {
+    let prevPoint = null;
+    
+    for (let i = 0; i < coordinates.length; i++) {
+      const { x, y } = coordinates[i];
       if (!hasMovedTo) {
         this.waveformContext.moveTo(x, y);
         hasMovedTo = true;
+        prevPoint = { x, y };
+      } else if (prevPoint && i < coordinates.length - 1) {
+        // Use quadratic curves for smoother lines
+        const nextPoint = coordinates[i + 1];
+        if (nextPoint) {
+          const cpX = (prevPoint.x + x) / 2;
+          const cpY = (prevPoint.y + y) / 2;
+          this.waveformContext.quadraticCurveTo(cpX, cpY, x, y);
+        } else {
+          this.waveformContext.lineTo(x, y);
+        }
+        prevPoint = { x, y };
       } else {
         this.waveformContext.lineTo(x, y);
+        prevPoint = { x, y };
       }
     }
 
