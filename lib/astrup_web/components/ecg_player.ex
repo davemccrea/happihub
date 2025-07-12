@@ -2,10 +2,18 @@ defmodule AstrupWeb.Components.EcgPlayer do
   use AstrupWeb, :live_component
 
   def update(%{ecg_data: ecg_data} = assigns, socket) when not is_nil(ecg_data) do
+    current_ecg = socket.assigns[:ecg_data]
+    
     socket =
       socket
       |> assign(assigns)
-      |> push_event("load_ecg_data", %{data: ecg_data})
+      
+    socket = 
+      if current_ecg != ecg_data do
+        push_event(socket, "load_ecg_data", %{data: ecg_data})
+      else
+        socket
+      end
 
     {:ok, socket}
   end
@@ -20,6 +28,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
   slot :actions, doc: "Action buttons displayed in the header"
   slot :sidebar, doc: "Content displayed in the sidebar panel"
   slot :instructions, doc: "Help text displayed when ECG is loaded"
+  slot :empty_state, doc: "Content displayed when no ECG data is loaded"
 
   def render(assigns) do
     lead_names =
@@ -43,17 +52,9 @@ defmodule AstrupWeb.Components.EcgPlayer do
             <div data-ecg-chart></div>
           </div>
 
-          <%= if is_nil(@ecg_data) do %>
-            <div class="absolute inset-0 flex items-center justify-center bg-base-100/90">
-              <div class="text-center space-y-4">
-                <div class="text-6xl opacity-30">
-                  <.icon name="hero-heart" class="w-16 h-16 mx-auto" />
-                </div>
-                <div class="space-y-2">
-                  <p class="text-lg font-medium">No ECG Data Loaded</p>
-                  <p class="text-sm text-base-content/60">Click "Load Random ECG" to begin</p>
-                </div>
-              </div>
+          <%= if is_nil(@ecg_data) and @empty_state != [] do %>
+            <div class="absolute inset-0 flex items-center justify-center">
+              {render_slot(@empty_state)}
             </div>
           <% end %>
 

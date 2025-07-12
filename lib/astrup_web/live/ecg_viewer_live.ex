@@ -63,6 +63,20 @@ defmodule AstrupWeb.ECGViewerLive do
           <:instructions>
             <AstrupWeb.Components.EcgInstructions.default_instructions />
           </:instructions>
+
+          <:empty_state>
+            <div class="bg-base-100/90 rounded-lg p-8">
+              <div class="text-center space-y-4">
+                <div class="text-6xl opacity-30">
+                  <.icon name="hero-heart" class="w-16 h-16 mx-auto" />
+                </div>
+                <div class="space-y-2">
+                  <p class="text-lg font-medium">No ECG Data Loaded</p>
+                  <p class="text-sm text-base-content/60">Click "Load Random ECG" to begin</p>
+                </div>
+              </div>
+            </div>
+          </:empty_state>
         </.live_component>
       </div>
     </Layouts.app>
