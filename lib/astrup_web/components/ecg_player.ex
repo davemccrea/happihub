@@ -37,8 +37,8 @@ defmodule AstrupWeb.Components.EcgPlayer do
 
         <div class="relative py-8">
           <div
-            id="ecg-playback"
-            phx-hook="ECGPlayback"
+            id="ecg-player"
+            phx-hook="ECGPlayer"
             phx-update="ignore"
             phx-target={@myself}
             class="w-full"

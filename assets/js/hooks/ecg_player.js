@@ -33,7 +33,7 @@ const QRS_FLASH_DURATION_MS = 100; // Duration of QRS indicator flash in millise
 const SEGMENT_DURATION_SECONDS = 0.1; // Pre-computed data segment size for performance
 const MEMORY_UPDATE_INTERVAL_MS = 2000; // Diagnostic memory update frequency
 
-const ECGPlayback = {
+const ECGPlayer = {
   // ==========================
   // INITIALIZATION & LIFECYCLE
   // ==========================
@@ -2305,4 +2305,4 @@ const ECGPlayback = {
   },
 };
 
-export default ECGPlayback;
+export default ECGPlayer;
