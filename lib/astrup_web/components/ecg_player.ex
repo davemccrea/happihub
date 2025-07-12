@@ -39,17 +39,8 @@ defmodule AstrupWeb.Components.EcgPlayer do
         <% end %>
 
         <div class="relative py-8">
-          <div
-            id="ecg-player"
-            phx-hook="ECGPlayer"
-            phx-update="ignore"
-            phx-target={@myself}
-            data-env={@env}
-            data-initial-lead="1"
-            data-initial-display-mode="single"
-            data-initial-grid-type="telemetry"
-          >
-            <div data-ecg-chart class="w-full"></div>
+          <div id="ecg-player" phx-hook="ECGPlayer" phx-update="ignore" phx-target={@myself}>
+            <div data-ecg-chart></div>
           </div>
 
           <%= if is_nil(@ecg_data) do %>
