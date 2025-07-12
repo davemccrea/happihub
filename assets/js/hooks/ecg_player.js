@@ -204,7 +204,7 @@ const ECGPlayer = {
     this.cursorWidth = SINGLE_LEAD_CURSOR_WIDTH;
     this.activeCursorData = null;
     this.allLeadsCursorData = null;
-    this.gridType = "simple";
+    this.gridType = "telemetry";
     this.displayMode = "single";
     this.currentLead = 1; // Lead II as default
     this.leadHeight = CHART_HEIGHT * this.heightScale;
@@ -1067,12 +1067,12 @@ const ECGPlayer = {
   },
 
   /**
-   * Responds to `grid_changed` events to toggle between medical and simple grid styles.
-   * @param {string} gridType - The new grid type ("medical" or "simple").
+   * Responds to `grid_changed` events to toggle between graph paper and telemetry grid styles.
+   * @param {string} gridType - The new grid type ("graph_paper" or "telemetry").
    * @returns {void}
    */
   handleGridChange(gridType) {
-    if (gridType === "medical" || gridType === "simple") {
+    if (gridType === "graph_paper" || gridType === "telemetry") {
       this.gridType = gridType;
       this.renderGridBackground();
     }
@@ -1820,7 +1820,7 @@ const ECGPlayer = {
   // =================
 
   /**
-   * Draws the grid for a single lead, dispatching to either the medical or simple grid style.
+   * Draws the grid for a single lead, dispatching to either the graph paper or telemetry grid style.
    * @param {object} options - Grid drawing options.
    * @param {object} options.bounds - The drawing bounds.
    * @param {number} options.bounds.xOffset - The horizontal starting position.
@@ -1836,7 +1836,7 @@ const ECGPlayer = {
       context = this.waveformContext,
     } = options;
 
-    if (this.gridType === "medical") {
+    if (this.gridType === "graph_paper") {
       this.drawMedicalGrid({
         bounds: { xOffset, yOffset, width, height },
         context,
@@ -1866,7 +1866,7 @@ const ECGPlayer = {
   },
 
   /**
-   * Draws a standard medical ECG grid with major and minor lines.
+   * Draws a standard graph paper ECG grid with major and minor lines.
    * @param {object} options - Grid drawing options.
    * @param {object} options.bounds - The drawing bounds.
    * @param {number} options.bounds.xOffset - The horizontal starting position.

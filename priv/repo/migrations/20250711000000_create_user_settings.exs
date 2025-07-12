@@ -9,7 +9,7 @@ defmodule Astrup.Repo.Migrations.CreateUserSettings do
       add :grid_scale, :float, default: 1.0
       add :amplitude_scale, :float, default: 1.0
       add :height_scale, :float, default: 1.2
-      add :grid_type, :string, default: "simple"
+      add :grid_type, :string, default: "telemetry"
       add :loop_playback, :boolean, default: true
       add :qrs_indicator, :boolean, default: true
       add :show_diagnostics, :boolean, default: false

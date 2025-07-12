@@ -10,7 +10,7 @@ defmodule Astrup.Accounts.UserSettings do
     field :grid_scale, :float, default: 1.0
     field :amplitude_scale, :float, default: 1.0
     field :height_scale, :float, default: 1.2
-    field :grid_type, :string, default: "simple"
+    field :grid_type, :string, default: "telemetry"
     field :loop_playback, :boolean, default: true
     field :qrs_indicator, :boolean, default: true
     field :show_diagnostics, :boolean, default: false
@@ -36,7 +36,7 @@ defmodule Astrup.Accounts.UserSettings do
     ])
     |> validate_required([])
     |> validate_inclusion(:display_mode, ["single", "multi"])
-    |> validate_inclusion(:grid_type, ["simple", "medical"])
+    |> validate_inclusion(:grid_type, ["telemetry", "graph_paper"])
     |> validate_number(:current_lead, greater_than_or_equal_to: 0)
     |> validate_number(:grid_scale, greater_than: 0.5, less_than: 2.0)
     |> validate_number(:amplitude_scale, greater_than: 0.5, less_than: 2.0)

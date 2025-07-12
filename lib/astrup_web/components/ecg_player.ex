@@ -21,11 +21,14 @@ defmodule AstrupWeb.Components.EcgPlayer do
   slot :sidebar, doc: "Content displayed in the sidebar panel"
   slot :instructions, doc: "Help text displayed when ECG is loaded"
 
-
   def render(assigns) do
-    lead_names = if is_nil(assigns.ecg_data), do: [], else: Map.get(assigns.ecg_data, "sig_name", [])
+    lead_names =
+      if is_nil(assigns.ecg_data),
+        do: [],
+        else: Map.get(assigns.ecg_data, "sig_name", [])
+
     assigns = assign(assigns, :lead_names, lead_names)
-    
+
     ~H"""
     <div class="space-y-12 w-full">
       <div class="space-y-4 w-full">
@@ -41,11 +44,10 @@ defmodule AstrupWeb.Components.EcgPlayer do
             phx-hook="ECGPlayer"
             phx-update="ignore"
             phx-target={@myself}
-            class="w-full"
             data-env={@env}
             data-initial-lead="1"
             data-initial-display-mode="single"
-            data-initial-grid-type="simple"
+            data-initial-grid-type="telemetry"
           >
             <div data-ecg-chart class="w-full"></div>
           </div>
@@ -140,8 +142,8 @@ defmodule AstrupWeb.Components.EcgPlayer do
                         id="grid-type-selector"
                         label="Grid Type"
                         name="grid-type"
-                        value="simple"
-                        options={[{"Medical Grid", "medical"}, {"Simple Grid", "simple"}]}
+                        value="telemetry"
+                        options={[{"Graph Paper", "graph_paper"}, {"Telemetry", "telemetry"}]}
                       />
                     </div>
 
