@@ -7,7 +7,7 @@ defmodule Astrup.ECG.SavedEcgs do
     field :filename, :string
     belongs_to :user, Astrup.Accounts.User
 
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @required_attrs [:db_name, :filename, :user_id]

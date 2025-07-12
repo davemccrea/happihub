@@ -38,7 +38,7 @@ defmodule Astrup.Repo.Migrations.CreatePatientCases do
       # Tracking fields
       add :checked_at, :utc_datetime
 
-      timestamps()
+      timestamps(type: :utc_datetime)
     end
 
     # Create indexes for better query performance
