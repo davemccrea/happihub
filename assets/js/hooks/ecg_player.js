@@ -1,5 +1,7 @@
 // @ts-check
 
+import { ECGDiagnostics } from './ecg_diagnostics.js';
+
 // ==================
 // RENDERING CONSTANTS
 // ==================
@@ -31,7 +33,6 @@ const MULTI_LEAD_CURSOR_WIDTH = 8;
 const MULTI_LEAD_HEIGHT_SCALE = 0.8; // Reduces individual lead height in multi-lead view
 const QRS_FLASH_DURATION_MS = 100; // Duration of QRS indicator flash in milliseconds
 const SEGMENT_DURATION_SECONDS = 0.1; // Pre-computed data segment size for performance
-const MEMORY_UPDATE_INTERVAL_MS = 2000; // Diagnostic memory update frequency
 
 const ECGPlayer = {
   // ==========================
@@ -49,8 +50,8 @@ const ECGPlayer = {
     this.targetComponent = this.el.getAttribute("phx-target");
 
     if (this.el.dataset.env !== "prod") {
-      this.showDiagnostics = false; // Hidden by default
-      this.memoryInterval = setInterval(() => this.updateMemoryStats(), MEMORY_UPDATE_INTERVAL_MS);
+      this.diagnostics.showDiagnostics = false; // Hidden by default
+      this.diagnostics.memoryInterval = setInterval(() => this.diagnostics.updateMemory(), 2000);
     }
   },
 
@@ -158,8 +159,8 @@ const ECGPlayer = {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
     }
-    if (this.memoryInterval) {
-      clearInterval(this.memoryInterval);
+    if (this.diagnostics) {
+      this.diagnostics.cleanup();
     }
     if (this.qrsFlashTimeout) {
       clearTimeout(this.qrsFlashTimeout);
@@ -186,6 +187,7 @@ const ECGPlayer = {
     this.allLeadsCursorData = null;
     this.activeCursorData = null;
     this.eventHandlers = null;
+    this.diagnostics = null;
   },
 
   // =================
@@ -194,8 +196,6 @@ const ECGPlayer = {
 
   initializeState() {
     this.isPlaying = false;
-    this.showDiagnostics = false;
-    this.lastDynamicData = {};
     this.activeSegments = [];
     this.startTime = null;
     this.pausedTime = 0;
@@ -209,7 +209,9 @@ const ECGPlayer = {
     this.displayMode = "single";
     this.currentLead = 1; // Lead II as default
     this.leadHeight = CHART_HEIGHT * this.heightScale;
-    this.memory = {};
+    
+    // Initialize diagnostics
+    this.diagnostics = new ECGDiagnostics(this);
     this.loopEnabled = true;
 
     // QRS flash indicator
@@ -235,189 +237,6 @@ const ECGPlayer = {
     this.qrsFlashContext = null;
   },
 
-  // =================
-  // DIAGNOSTICS
-  // =================
-
-  /**
-   * Asynchronously updates memory statistics using available performance APIs.
-   * It first tries the modern `measureUserAgentSpecificMemory` for a comprehensive,
-   * cross-origin-isolated measurement. If unavailable, it falls back to the
-   * deprecated `performance.memory` API, which is less accurate but still useful
-   * for basic diagnostics in supporting browsers.
-   *
-   * The results are stored in `this.memory` and the diagnostics panel is updated.
-   * @returns {Promise<void>}
-   */
-  async updateMemoryStats() {
-    if (window.crossOriginIsolated && "measureUserAgentSpecificMemory" in performance) {
-      try {
-        const measurement = await /** @type {any} */ (performance).measureUserAgentSpecificMemory();
-        this.memory = {
-          usedJSHeapSize: measurement.bytes,
-          // The new API doesn't provide total or limit, so we leave them undefined.
-        };
-      } catch (error) {
-        console.error("Failed to measure memory:", error);
-        this.memory = { error: "Measurement failed" };
-      }
-    } else if ("memory" in performance) {
-      const perfMemory = /** @type {any} */ (performance).memory;
-      this.memory = {
-        usedJSHeapSize: perfMemory.usedJSHeapSize,
-        totalJSHeapSize: perfMemory.totalJSHeapSize,
-        jsHeapSizeLimit: perfMemory.jsHeapSizeLimit,
-      };
-    } else {
-      this.memory = { error: "Not supported" };
-    }
-    this.updateDiagnostics();
-  },
-
-  createDiagnosticsPanel() {
-    const existingPanel = document.getElementById("diagnostics-panel");
-    if (existingPanel) return;
-
-    const panel = document.createElement("div");
-    panel.id = "diagnostics-panel";
-    panel.className = "mt-4 mb-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
-    panel.innerHTML = `
-      <div id="diagnostics-col1" class="col-span-1"></div>
-      <div id="diagnostics-col2" class="col-span-1"></div>
-      <div id="diagnostics-col3" class="col-span-1"></div>
-    `;
-
-    const chartContainer = this.el.querySelector("[data-ecg-chart]");
-    this.el.insertBefore(panel, chartContainer);
-  },
-
-  destroyDiagnosticsPanel() {
-    const panel = document.getElementById("diagnostics-panel");
-    if (panel) {
-      panel.remove();
-    }
-  },
-
-  updateDiagnostics(dynamicData = this.lastDynamicData) {
-    if (!this.showDiagnostics) return;
-
-    const col1 = document.querySelector("#diagnostics-col1");
-    const col2 = document.querySelector("#diagnostics-col2");
-    const col3 = document.querySelector("#diagnostics-col3");
-
-    if (!col1 || !col2 || !col3) return;
-
-    const groupsCol1 = {
-      Configuration: {
-        displayMode: this.displayMode,
-        gridType: this.gridType,
-      },
-      "ECG Paper Standards": {
-        mmPerSecond: (MM_PER_SECOND * this.gridScale).toFixed(1),
-        mmPerMillivolt: (MM_PER_MILLIVOLT * this.amplitudeScale).toFixed(1),
-        pixelsPerMm: (PIXELS_PER_MM * this.gridScale).toFixed(1),
-      },
-    };
-
-    const groupsCol2 = {
-      "Data & Dimensions": {
-        chartWidth: this.chartWidth,
-        widthSeconds: this.widthSeconds,
-        totalDuration: this.totalDuration,
-        samplingRate: this.samplingRate,
-        totalSegments: this.precomputedSegments.get(this.currentLead)?.size || 0,
-      },
-    };
-
-    if (this.memory) {
-      const memoryData = {};
-      if (this.memory.error) {
-        memoryData.status = this.memory.error;
-      } else {
-        if (this.memory.usedJSHeapSize) {
-          memoryData.usedJSHeapSize = `${(this.memory.usedJSHeapSize / 1048576).toFixed(2)} MB`;
-        }
-        if (this.memory.totalJSHeapSize) {
-          memoryData.totalJSHeapSize = `${(this.memory.totalJSHeapSize / 1048576).toFixed(2)} MB`;
-        }
-        if (this.memory.jsHeapSizeLimit) {
-          memoryData.jsHeapSizeLimit = `${(this.memory.jsHeapSizeLimit / 1048576).toFixed(2)} MB`;
-        }
-      }
-      groupsCol2["Memory"] = memoryData;
-    }
-
-    const groupsCol3 = {
-      "Playback & Animation": {
-        isPlaying: this.isPlaying,
-        currentLead: this.leadNames ? this.leadNames[this.currentLead] : "N/A",
-        animationCycle: dynamicData.animationCycle,
-        elapsedTime: dynamicData.elapsedTime,
-        cursorProgress: dynamicData.cursorProgress,
-        cursorPosition: dynamicData.cursorPosition,
-        localCursorPosition: this.displayMode === "multi" ? dynamicData.localCursorPosition : null,
-      },
-      "QRS Detection": {
-        totalQrsCount: this.qrsIndexes ? this.qrsIndexes.length : 0,
-        detectedCount: this.qrsDetectedCount || 0,
-      },
-      "Real-time Rendering": {
-        activeSegments: this.activeSegments.length,
-        activePoints: dynamicData.activePoints,
-        totalActiveLeads: dynamicData.totalActiveLeads,
-        activePointsPerLead: dynamicData.activePointsPerLead,
-      },
-    };
-
-    const units = {
-      chartWidth: "px",
-      widthSeconds: "s",
-      totalDuration: "s",
-      samplingRate: "Hz",
-      elapsedTime: "s",
-      cursorPosition: "px",
-      localCursorPosition: "px",
-      mmPerSecond: "mm/s",
-      mmPerMillivolt: "mm/mV",
-      pixelsPerMm: "px/mm",
-    };
-
-    const formatGrouped = (groups) => {
-      return Object.entries(groups)
-        .map(([groupName, values]) => {
-          const valueHTML = Object.entries(values)
-            .filter(([_, value]) => value !== undefined && value !== null)
-            .map(([key, value]) => {
-              let displayValue;
-              if (key === "cursorProgress") {
-                displayValue = `${((value || 0) * 100).toFixed(0)}%`;
-              } else if (typeof value === "string" && (value.endsWith("MB") || !isNaN(parseFloat(value)))) {
-                displayValue = value;
-              } else if (typeof value === "number") {
-                displayValue = `${value.toFixed(2)}${units[key] ? ` ${units[key]}` : ""}`;
-              } else {
-                displayValue = value;
-              }
-              return `<div><strong class="opacity-70">${key}:</strong> ${displayValue}</div>`;
-            })
-            .join("");
-
-          if (valueHTML.trim() === "") return "";
-
-          return `
-            <div class="mt-4">
-              <h4 class="font-bold text-xs uppercase tracking-wider">${groupName}</h4>
-              ${valueHTML}
-            </div>
-          `;
-        })
-        .join("");
-    };
-
-    col1.innerHTML = formatGrouped(groupsCol1);
-    col2.innerHTML = formatGrouped(groupsCol2);
-    col3.innerHTML = formatGrouped(groupsCol3);
-  },
 
   // =================
   // UTILITY FUNCTIONS
@@ -536,14 +355,14 @@ const ECGPlayer = {
       this.renderGridBackground();
       this.clearWaveform();
     });
-    this.updateDiagnostics();
+    this.diagnostics.render();
   },
 
   handleAmplitudeScaleChange() {
     this.withCanvasStatePreservation(() => {
       this.clearWaveform();
     });
-    this.updateDiagnostics();
+    this.diagnostics.render();
   },
 
   handleHeightScaleChange() {
@@ -552,7 +371,7 @@ const ECGPlayer = {
       this.renderGridBackground();
       this.clearWaveform();
     });
-    this.updateDiagnostics();
+    this.diagnostics.render();
   },
 
   updateGridScaleDisplay() {
@@ -598,21 +417,7 @@ const ECGPlayer = {
   },
 
   toggleDebugView(enabled) {
-    this.showDiagnostics = enabled;
-
-    if (enabled) {
-      this.createDiagnosticsPanel();
-      this.updateDiagnostics();
-      if (!this.memoryInterval) {
-        this.memoryInterval = setInterval(() => this.updateMemoryStats(), MEMORY_UPDATE_INTERVAL_MS);
-      }
-    } else {
-      this.destroyDiagnosticsPanel();
-      if (this.memoryInterval) {
-        clearInterval(this.memoryInterval);
-        this.memoryInterval = null;
-      }
-    }
+    this.diagnostics.toggle(enabled);
   },
 
   // ============================
@@ -827,11 +632,11 @@ const ECGPlayer = {
       this.qrsDetectedCount = 0;
 
       // Clear diagnostics data for new ECG
-      this.lastDynamicData = {};
+      this.diagnostics.lastDynamicData = {};
 
       // Immediately update diagnostics if they're visible
-      if (this.showDiagnostics) {
-        this.updateDiagnostics();
+      if (this.diagnostics.showDiagnostics) {
+        this.diagnostics.render();
       }
 
       this.ecgLeadDatasets = [];
@@ -1081,7 +886,7 @@ const ECGPlayer = {
     if (gridType === "graph_paper" || gridType === "telemetry") {
       this.gridType = gridType;
       this.renderGridBackground();
-      this.updateDiagnostics();
+      this.diagnostics.render();
     }
   },
 
@@ -1095,7 +900,7 @@ const ECGPlayer = {
       this.displayMode = displayMode;
       this.recreateCanvasAndRestart();
       this.updateCursorStyle();
-      this.updateDiagnostics();
+      this.diagnostics.render();
     }
   },
 
@@ -1309,28 +1114,7 @@ const ECGPlayer = {
   },
 
   updateDiagnosticsData(elapsedTime, cursorProgress, animationCycle) {
-    if (!this.showDiagnostics) return;
-
-    let segmentsInfo = {};
-    if (this.displayMode === "single") {
-      segmentsInfo = {
-        activePoints: this.activeCursorData?.values.length || 0,
-      };
-    } else {
-      segmentsInfo = {
-        activePointsPerLead: this.allLeadsCursorData?.[0]?.values.length || 0,
-        totalActiveLeads: this.allLeadsCursorData?.length || 0,
-      };
-    }
-
-    this.lastDynamicData = {
-      elapsedTime,
-      cursorProgress,
-      animationCycle,
-      cursorPosition: this.cursorPosition,
-      ...segmentsInfo,
-    };
-    this.updateDiagnostics();
+    this.diagnostics.captureMetrics(elapsedTime, cursorProgress, animationCycle);
   },
 
   processAnimationFrame(cursorProgress, animationCycle) {
@@ -1707,7 +1491,7 @@ const ECGPlayer = {
         this.toggleDebugView(/** @type {HTMLInputElement} */ (event.target).checked);
       },
       (element) => {
-        /** @type {HTMLInputElement} */ (element).checked = this.showDiagnostics;
+        /** @type {HTMLInputElement} */ (element).checked = this.diagnostics.showDiagnostics;
       }
     );
   },
