@@ -122,7 +122,9 @@ defmodule AstrupWeb.Interpretation.InterpreterLive do
           <div class="w-full lg:flex-1">
             <%= if @state == :interpreted && @interpretation do %>
               <div class="border border-base-content/20 shadow p-4">
-                <h3 class="text-lg font-semibold mb-6 text-primary">{gettext("Interpretation")}</h3>
+                <h3 class="text-lg font-semibold mb-6 text-primary">
+                  {gettext("ABG Interpreation")}
+                </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div class="card bg-base-200 shadow-sm">

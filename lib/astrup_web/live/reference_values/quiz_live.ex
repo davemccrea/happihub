@@ -61,7 +61,7 @@ defmodule AstrupWeb.ReferenceValues.QuizLive do
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div class="mb-8">
           <h1 class="text-2xl sm:text-3xl font-bold mb-4">
-            {gettext("Reference Values Quiz")}
+            {gettext("ABG Reference Values Quiz")}
           </h1>
           <p class="text-base-content/70 mb-6">
             {gettext("Test your knowledge of ABG parameter reference ranges")}

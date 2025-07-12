@@ -30,7 +30,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
       <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div class="mb-8">
           <h1 class="text-2xl sm:text-3xl font-bold mb-4">
-            {gettext("Interpretation Quiz")}
+            {gettext("ABG Interpreation Quiz")}
           </h1>
           <p class="text-base-content/70 mb-6">
             {gettext("Practice interpreting ABG results with clinical cases")}
@@ -92,7 +92,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
                 <.input
                   type="checkbox"
                   name="show_reference_values"
-                  label={gettext("Show reference values")}
+                  label={gettext("Show ABG Reference Values")}
                   checked={@show_reference_values}
                   class="checkbox checkbox-sm"
                 />
@@ -144,10 +144,10 @@ defmodule AstrupWeb.Interpretation.QuizLive do
 
               <div class="divider"></div>
               
-    <!-- Interpretation -->
+    <!-- ABG Interpreation -->
               <div>
                 <h2 class="text-lg font-semibold mb-4 text-primary">
-                  {gettext("Interpretation")}
+                  {gettext("ABG Interpreation")}
                 </h2>
                 <div class="flex items-center gap-3 mb-4">
                   <div class="badge badge-primary badge-lg font-bold">1</div>
@@ -506,7 +506,7 @@ defmodule AstrupWeb.Interpretation.QuizLive do
 
         <div class="card-actions justify-start mt-4">
           <div class="text-xs">
-            {gettext("Reference Values")}
+            {gettext("ABG Reference Values")}
           </div>
         </div>
       </div>

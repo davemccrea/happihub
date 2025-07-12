@@ -11,10 +11,10 @@ defmodule AstrupWeb.HomeLive do
       <div class="min-h-screen flex items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
         <div class="w-full max-w-4xl">
           
-    <!-- Reference Values Section -->
+    <!-- ABG Reference Values Section -->
           <div class="mb-12">
             <h2 class="text-2xl font-semibold text-base-content mb-6">
-              {gettext("Reference Values")}
+              {gettext("ABG Reference Values")}
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <.link
@@ -39,10 +39,10 @@ defmodule AstrupWeb.HomeLive do
             </div>
           </div>
           
-    <!-- Interpretation Section -->
+    <!-- ABG Interpreation Section -->
           <div class="mb-12">
             <h2 class="text-2xl font-semibold text-base-content mb-6">
-              {gettext("Interpretation")}
+              {gettext("ABG Interpreation")}
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <.link
