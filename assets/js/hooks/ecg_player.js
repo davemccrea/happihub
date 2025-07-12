@@ -86,6 +86,7 @@ const ECGPlayer = {
   handleThemeChange() {
     this.updateThemeColors();
     this.renderGridBackground();
+    this.clearWaveform();
     if (!this.isPlaying && this.startTime && this.pausedTime) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
       const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
@@ -279,13 +280,15 @@ const ECGPlayer = {
 
     const panel = document.createElement("div");
     panel.id = "diagnostics-panel";
-    panel.className = "mt-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
+    panel.className = "mt-4 mb-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
     panel.innerHTML = `
       <div id="diagnostics-col1" class="col-span-1"></div>
       <div id="diagnostics-col2" class="col-span-1"></div>
       <div id="diagnostics-col3" class="col-span-1"></div>
     `;
-    this.el.appendChild(panel);
+
+    const chartContainer = this.el.querySelector("[data-ecg-chart]");
+    this.el.insertBefore(panel, chartContainer);
   },
 
   destroyDiagnosticsPanel() {
@@ -310,9 +313,9 @@ const ECGPlayer = {
         gridType: this.gridType,
       },
       "ECG Paper Standards": {
-        mmPerSecond: MM_PER_SECOND,
-        mmPerMillivolt: MM_PER_MILLIVOLT,
-        pixelsPerMm: PIXELS_PER_MM,
+        mmPerSecond: (MM_PER_SECOND * this.gridScale).toFixed(1),
+        mmPerMillivolt: (MM_PER_MILLIVOLT * this.amplitudeScale).toFixed(1),
+        pixelsPerMm: (PIXELS_PER_MM * this.gridScale).toFixed(1),
       },
     };
 
@@ -533,12 +536,14 @@ const ECGPlayer = {
       this.renderGridBackground();
       this.clearWaveform();
     });
+    this.updateDiagnostics();
   },
 
   handleAmplitudeScaleChange() {
     this.withCanvasStatePreservation(() => {
       this.clearWaveform();
     });
+    this.updateDiagnostics();
   },
 
   handleHeightScaleChange() {
@@ -547,6 +552,7 @@ const ECGPlayer = {
       this.renderGridBackground();
       this.clearWaveform();
     });
+    this.updateDiagnostics();
   },
 
   updateGridScaleDisplay() {
@@ -950,7 +956,7 @@ const ECGPlayer = {
 
     // Add click event listener for lead selection in multi-lead mode
     this.setupCanvasClickHandler();
-    
+
     // Set initial cursor based on display mode
     this.updateCursorStyle();
 
@@ -1075,6 +1081,7 @@ const ECGPlayer = {
     if (gridType === "graph_paper" || gridType === "telemetry") {
       this.gridType = gridType;
       this.renderGridBackground();
+      this.updateDiagnostics();
     }
   },
 
@@ -1088,6 +1095,7 @@ const ECGPlayer = {
       this.displayMode = displayMode;
       this.recreateCanvasAndRestart();
       this.updateCursorStyle();
+      this.updateDiagnostics();
     }
   },
 
@@ -1592,18 +1600,19 @@ const ECGPlayer = {
     const button = document.getElementById("play-pause-button");
     if (button) {
       // Update icon
-      const iconClass = this.isPlaying ? 'hero-pause' : 'hero-play';
+      const iconClass = this.isPlaying ? "hero-pause" : "hero-play";
       const iconHtml = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24">
-        ${this.isPlaying ? 
-          '<path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />' :
-          '<path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />'
+        ${
+          this.isPlaying
+            ? '<path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />'
+            : '<path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />'
         }
       </svg>`;
-      
+
       // Update text
-      const buttonText = this.isPlaying ? 'Pause' : 'Play';
+      const buttonText = this.isPlaying ? "Pause" : "Play";
       const textHtml = `<span class="ml-1">${buttonText}</span>`;
-      
+
       // Replace button content with icon + text
       button.innerHTML = iconHtml + textHtml;
     }
@@ -1989,10 +1998,10 @@ const ECGPlayer = {
   setupWaveformDrawing(context = this.waveformContext) {
     context.strokeStyle = this.colors.waveform;
     context.lineWidth = WAVEFORM_LINE_WIDTH;
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
+    context.lineCap = "round";
+    context.lineJoin = "round";
     context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = 'high';
+    context.imageSmoothingQuality = "high";
     context.beginPath();
   },
 
@@ -2071,7 +2080,7 @@ const ECGPlayer = {
 
     let hasMovedTo = false;
     let prevPoint = null;
-    
+
     for (let i = 0; i < coordinates.length; i++) {
       const { x, y } = coordinates[i];
       if (x <= cursorPosition) {
@@ -2299,7 +2308,7 @@ const ECGPlayer = {
 
     let hasMovedTo = false;
     let prevPoint = null;
-    
+
     for (let i = 0; i < coordinates.length; i++) {
       const { x, y } = coordinates[i];
       if (!hasMovedTo) {
