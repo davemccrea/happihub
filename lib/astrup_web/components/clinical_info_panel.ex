@@ -1,9 +1,7 @@
 defmodule AstrupWeb.Components.ClinicalInfoPanel do
   use AstrupWeb, :html
 
-  attr :dataset_record, :map, required: true
   attr :metadata, :map, required: true
-  attr :translated_report, :string, default: nil
 
   def clinical_info_panel(assigns) do
     ~H"""
@@ -19,42 +17,13 @@ defmodule AstrupWeb.Components.ClinicalInfoPanel do
               Medical Report
             </h3>
 
-            <%= if @translated_report do %>
-              <div class="collapse collapse-arrow bg-base-100">
-                <input type="checkbox" checked="checked" />
-                <div class="collapse-title text-sm font-medium flex items-center gap-2">
-                  <.icon name="hero-language" class="w-4 h-4 text-success" />
-                  English Translation
-                </div>
-                <div class="collapse-content">
-                  <div class="prose prose-sm max-w-none">
-                    <p class="leading-relaxed">{String.capitalize(@translated_report)}</p>
-                  </div>
-                </div>
+            <div class="bg-base-100 rounded-lg p-4 border border-base-300">
+              <div class="prose prose-sm max-w-none">
+                <p class="leading-relaxed m-0">
+                  {String.capitalize(Map.get(@metadata, :report, ""))}
+                </p>
               </div>
-
-              <div class="collapse collapse-arrow bg-base-100">
-                <input type="checkbox" />
-                <div class="collapse-title text-sm font-medium flex items-center gap-2">
-                  <.icon name="hero-globe-alt" class="w-4 h-4 text-neutral" /> Original Report
-                </div>
-                <div class="collapse-content">
-                  <div class="prose prose-sm max-w-none">
-                    <p class="italic leading-relaxed text-base-content/80">
-                      {String.capitalize(Map.get(@metadata, :report, ""))}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            <% else %>
-              <div class="bg-base-100 rounded-lg p-4 border border-base-300">
-                <div class="prose prose-sm max-w-none">
-                  <p class="leading-relaxed m-0">
-                    {String.capitalize(Map.get(@metadata, :report, ""))}
-                  </p>
-                </div>
-              </div>
-            <% end %>
+            </div>
           </div>
         <% end %>
 

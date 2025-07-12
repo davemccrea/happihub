@@ -1,30 +1,38 @@
 defmodule AstrupWeb.Components.EcgPlayer do
   use AstrupWeb, :live_component
 
+  def update(%{ecg_data: ecg_data} = assigns, socket) when not is_nil(ecg_data) do
+    socket =
+      socket
+      |> assign(assigns)
+      |> push_event("load_ecg_data", %{data: ecg_data})
+
+    {:ok, socket}
+  end
+
+  def update(assigns, socket) do
+    {:ok, assign(socket, assigns)}
+  end
+
+  attr :env, :string, required: true, doc: "Application environment"
+  attr :ecg_data, :map, default: nil, doc: "ECG data to be pushed to the hook"
+
   slot :actions, doc: "Action buttons displayed in the header"
   slot :sidebar, doc: "Content displayed in the sidebar panel"
   slot :instructions, doc: "Help text displayed when ECG is loaded"
 
+
   def render(assigns) do
+    lead_names = if is_nil(assigns.ecg_data), do: [], else: Map.get(assigns.ecg_data, "sig_name", [])
+    assigns = assign(assigns, :lead_names, lead_names)
+    
     ~H"""
     <div class="space-y-12 w-full">
       <div class="space-y-4 w-full">
         <%= if @actions != [] do %>
           <div class="flex justify-end gap-4">
-            <%= render_slot(@actions) %>
+            {render_slot(@actions)}
           </div>
-        <% end %>
-
-        <%= if @ecg_loaded and @instructions != [] do %>
-          <div class="flex justify-end">
-            <%= render_slot(@instructions) %>
-          </div>
-        <% else %>
-          <%= if @ecg_loaded do %>
-            <div class="flex justify-end">
-              <AstrupWeb.Components.EcgInstructions.default_instructions />
-            </div>
-          <% end %>
         <% end %>
 
         <div class="relative py-8">
@@ -42,7 +50,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
             <div data-ecg-chart class="w-full"></div>
           </div>
 
-          <%= if not @ecg_loaded do %>
+          <%= if is_nil(@ecg_data) do %>
             <div class="absolute inset-0 flex items-center justify-center bg-base-100/90">
               <div class="text-center space-y-4">
                 <div class="text-6xl opacity-30">
@@ -55,14 +63,31 @@ defmodule AstrupWeb.Components.EcgPlayer do
               </div>
             </div>
           <% end %>
+
+          <%= if not is_nil(@ecg_data) do %>
+            <div class="absolute bottom-2 left-2">
+              <.button id="play-pause-button" class="btn btn-sm">
+                <.icon name="hero-play" class="w-4 h-4" />
+                <span class="ml-1">Play</span>
+              </.button>
+            </div>
+
+            <div class="absolute bottom-2 right-2">
+              <%= if @instructions != [] do %>
+                {render_slot(@instructions)}
+              <% else %>
+                <AstrupWeb.Components.EcgInstructions.default_instructions />
+              <% end %>
+            </div>
+          <% end %>
         </div>
       </div>
 
-      <%= if @ecg_loaded do %>
+      <%= if not is_nil(@ecg_data) do %>
         <div class={if @sidebar != [], do: "grid grid-cols-1 lg:grid-cols-2 gap-8", else: "w-full"}>
           <%= if @sidebar != [] do %>
             <div>
-              <%= render_slot(@sidebar) %>
+              {render_slot(@sidebar)}
             </div>
           <% end %>
 

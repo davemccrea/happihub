@@ -1,16 +1,16 @@
 defmodule Astrup.Wfdb do
-  def read(db_name, file_path) do
+  def read(dataset_name, file_path) do
     dataset_path = Application.get_env(:astrup, :ecg_databases_path)
-    read(dataset_path, db_name, file_path)
+    read(dataset_path, dataset_name, file_path)
   end
 
-  def detect_qrs(db_name, file_path) do
+  def detect_qrs(dataset_name, file_path) do
     dataset_path = Application.get_env(:astrup, :ecg_databases_path)
-    detect_qrs(dataset_path, db_name, file_path)
+    detect_qrs(dataset_path, dataset_name, file_path)
   end
 
-  def detect_qrs(dataset_path, db_name, file_path) do
-    args = %{"dataset_path" => dataset_path, "db_name" => db_name, "file_path" => file_path}
+  def detect_qrs(dataset_path, dataset_name, file_path) do
+    args = %{"dataset_path" => dataset_path, "db_name" => dataset_name, "file_path" => file_path}
 
     {result, _globals} =
       Pythonx.eval(
@@ -38,8 +38,8 @@ defmodule Astrup.Wfdb do
     result["qrs_inds"]
   end
 
-  def read(dataset_path, db_name, file_path) do
-    args = %{"dataset_path" => dataset_path, "db_name" => db_name, "file_path" => file_path}
+  def read(dataset_path, dataset_name, file_path) do
+    args = %{"dataset_path" => dataset_path, "db_name" => dataset_name, "file_path" => file_path}
 
     {result, _globals} =
       Pythonx.eval(

@@ -6,23 +6,17 @@ defmodule AstrupWeb.ECGViewerLive do
 
   def mount(params, _session, socket) do
     socket =
-      assign(socket,
-        lead_names: [],
-        env: Application.get_env(:astrup, :env),
-        ecg_loaded: false,
-        ecg_saved: false,
-        dataset_record: nil,
-        metadata: %{},
-        translated_report: nil
-      )
+      socket
+      |> assign(:env, Application.get_env(:astrup, :env))
+      |> assign(:ecg_saved, false)
+      |> assign(:metadata, %{})
+      |> assign(:ecg_data, nil)
 
     socket =
-      case {params["db"], params["filename"]} do
-        {db_name, filename} when is_binary(db_name) and is_binary(filename) ->
-          load_ecg_from_params(socket, db_name, filename)
-
-        _ ->
-          socket
+      if params["db"] && params["filename"] do
+        load_ecg_from_params(socket, params["db"], params["filename"])
+      else
+        socket
       end
 
     {:ok, socket}
@@ -39,16 +33,15 @@ defmodule AstrupWeb.ECGViewerLive do
         <.live_component
           module={AstrupWeb.Components.EcgPlayer}
           id="ecg-player"
-          ecg_loaded={@ecg_loaded}
           env={@env}
-          lead_names={@lead_names}
+          ecg_data={@ecg_data}
         >
           <:actions>
             <.button phx-click="load_random_ecg" class="btn btn-primary" id="load-random-ecg-button">
               <.icon class="h-5 w-5" name="hero-arrow-path" /> Load Random ECG
             </.button>
 
-            <%= if @ecg_loaded do %>
+            <%= if not is_nil(@ecg_data) do %>
               <.button
                 phx-click={if @ecg_saved, do: "unsave_ecg", else: "save_ecg"}
                 class="btn btn-square"
@@ -60,19 +53,11 @@ defmodule AstrupWeb.ECGViewerLive do
                   Save <.icon class="h-5 w-5" name="hero-document-arrow-down" />
                 <% end %>
               </.button>
-
-              <.button id="play-pause-button">
-                Play
-              </.button>
             <% end %>
           </:actions>
 
-          <:sidebar :if={@dataset_record}>
-            <AstrupWeb.Components.ClinicalInfoPanel.clinical_info_panel
-              dataset_record={@dataset_record}
-              metadata={@metadata}
-              translated_report={@translated_report}
-            />
+          <:sidebar :if={map_size(@metadata) > 0}>
+            <AstrupWeb.Components.ClinicalInfoPanel.clinical_info_panel metadata={@metadata} />
           </:sidebar>
 
           <:instructions>
@@ -86,11 +71,11 @@ defmodule AstrupWeb.ECGViewerLive do
 
   def handle_event("save_ecg", _params, socket) do
     case ECG.save_ecg(socket.assigns.current_scope, %{
-           db_name: socket.assigns.db_name,
+           db_name: socket.assigns.dataset_name,
            filename: socket.assigns.filename
          }) do
       {:ok, _saved_ecg} ->
-        socket = assign(socket, ecg_saved: true)
+        socket = assign(socket, :ecg_saved, true)
         {:noreply, put_flash(socket, :info, "ECG saved successfully!")}
 
       {:error, _changeset} ->
@@ -102,12 +87,12 @@ defmodule AstrupWeb.ECGViewerLive do
     {count, _} =
       ECG.unsave_ecg(
         socket.assigns.current_scope,
-        socket.assigns.db_name,
+        socket.assigns.dataset_name,
         socket.assigns.filename
       )
 
     if count > 0 do
-      socket = assign(socket, ecg_saved: false)
+      socket = assign(socket, :ecg_saved, false)
       {:noreply, put_flash(socket, :info, "ECG unsaved successfully!")}
     else
       {:noreply, put_flash(socket, :error, "Failed to unsave ECG")}
@@ -115,9 +100,11 @@ defmodule AstrupWeb.ECGViewerLive do
   end
 
   def handle_event("load_random_ecg", _params, socket) do
-    case get_random_record("ptbxl") do
+    dataset_name = Application.get_env(:astrup, :default_ecg_database, "ptbxl")
+
+    case get_random_record(dataset_name) do
       {:ok, filename} ->
-        socket = load_ecg_from_params(socket, "ptbxl", filename)
+        socket = load_ecg_from_params(socket, dataset_name, filename)
         {:noreply, socket}
 
       {:error, reason} ->
@@ -125,64 +112,43 @@ defmodule AstrupWeb.ECGViewerLive do
     end
   end
 
-  defp load_ecg_from_params(socket, db_name, filename) do
-    ecg_data = Astrup.Wfdb.read(db_name, filename)
-    qrs = Astrup.Wfdb.detect_qrs(db_name, filename)
+  defp load_ecg_from_params(socket, dataset_name, filename) do
+    ecg_data = Astrup.Wfdb.read(dataset_name, filename)
+    qrs = Astrup.Wfdb.detect_qrs(dataset_name, filename)
     record = Map.put(ecg_data, "qrs", qrs)
-    lead_names = Map.get(record, "sig_name", [])
 
     # Check if ECG is already saved
-    ecg_saved = ECG.is_ecg_saved?(socket.assigns.current_scope, db_name, filename)
+    ecg_saved = ECG.is_ecg_saved?(socket.assigns.current_scope, dataset_name, filename)
 
     # Load dataset metadata if available
-    {dataset_record, metadata, translated_report} = load_dataset_metadata(db_name, filename)
+    metadata = load_dataset_metadata(dataset_name, filename)
 
     socket
-    |> assign(ecg_loaded: true)
-    |> assign(lead_names: lead_names)
-    |> assign(db_name: db_name)
-    |> assign(filename: filename)
-    |> assign(ecg_saved: ecg_saved)
-    |> assign(dataset_record: dataset_record)
-    |> assign(metadata: metadata)
-    |> assign(translated_report: translated_report)
-    |> push_event("ecg_data_pushed", %{data: record})
+    |> assign(:dataset_name, dataset_name)
+    |> assign(:filename, filename)
+    |> assign(:ecg_saved, ecg_saved)
+    |> assign(:metadata, metadata)
+    |> assign(:ecg_data, record)
   end
 
-  defp load_dataset_metadata(db_name, filename) do
-    case DatasetRegistry.get_dataset(db_name) do
-      nil ->
-        {nil, %{}, nil}
-
-      dataset_module ->
-        case dataset_module.get_by_filename(filename) do
-          nil ->
-            {nil, %{}, nil}
-
-          record ->
-            metadata = dataset_module.get_metadata(record)
-            translated_report = maybe_translate_report(metadata)
-            {record, metadata, translated_report}
-        end
+  defp load_dataset_metadata(dataset_name, filename) do
+    with dataset_module when not is_nil(dataset_module) <-
+           DatasetRegistry.get_dataset(dataset_name),
+         record when not is_nil(record) <- dataset_module.get_by_filename(filename) do
+      dataset_module.get_metadata(record)
+    else
+      _ -> %{}
     end
   end
 
-  defp maybe_translate_report(%{report: report}) when is_binary(report) and report != "" do
-    # Translation temporarily disabled
-    nil
-  end
-
-  defp maybe_translate_report(_metadata), do: nil
-
-  defp get_random_record(db_name) do
-    case DatasetRegistry.get_dataset(db_name) do
-      nil -> 
-        {:error, "Database #{db_name} not found"}
-      dataset_module -> 
-        case dataset_module.get_random_record() do
-          nil -> {:error, "No records available"}
-          record -> {:ok, record.filename_lr}
-        end
+  defp get_random_record(dataset_name) do
+    with dataset_module when not is_nil(dataset_module) <-
+           DatasetRegistry.get_dataset(dataset_name),
+         record when not is_nil(record) <- dataset_module.get_random_record() do
+      {:ok, record.filename_lr}
+    else
+      nil -> {:error, "Database #{dataset_name} not found"}
+      _ -> {:error, "No records available"}
     end
   end
 end

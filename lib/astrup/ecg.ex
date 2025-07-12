@@ -16,19 +16,19 @@ defmodule Astrup.ECG do
     Repo.all(from(s in SavedEcgs, where: s.user_id == ^user_id))
   end
 
-  def is_ecg_saved?(%Scope{user: %User{id: user_id}}, db_name, filename) do
+  def is_ecg_saved?(%Scope{user: %User{id: user_id}}, dataset_name, filename) do
     query =
       from(s in SavedEcgs,
-        where: s.user_id == ^user_id and s.db_name == ^db_name and s.filename == ^filename
+        where: s.user_id == ^user_id and s.db_name == ^dataset_name and s.filename == ^filename
       )
 
     Repo.exists?(query)
   end
 
-  def unsave_ecg(%Scope{user: %User{id: user_id}}, db_name, filename) do
+  def unsave_ecg(%Scope{user: %User{id: user_id}}, dataset_name, filename) do
     query =
       from(s in SavedEcgs,
-        where: s.user_id == ^user_id and s.db_name == ^db_name and s.filename == ^filename
+        where: s.user_id == ^user_id and s.db_name == ^dataset_name and s.filename == ^filename
       )
 
     Repo.delete_all(query)

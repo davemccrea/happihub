@@ -89,6 +89,10 @@ defmodule AstrupWeb.Router do
       live "/users/log-in/:token", UserLive.Confirmation, :new
     end
 
+    # TODO:
+    # get "/terms-of-service", TermsOfService, :idnex
+    # get "/privacy-statement", PrivacyStatement, :index
+
     get "/locale/:locale", ChangeLocale, :index
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
