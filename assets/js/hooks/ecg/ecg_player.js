@@ -1,6 +1,6 @@
 // @ts-check
 
-import { ECGDiagnostics } from './ecg_diagnostics.js';
+import { ECGDiagnostics } from "./ecg_diagnostics.js";
 
 // ==================
 // RENDERING CONSTANTS
@@ -209,7 +209,7 @@ const ECGPlayer = {
     this.displayMode = "single";
     this.currentLead = 1; // Lead II as default
     this.leadHeight = CHART_HEIGHT * this.heightScale;
-    
+
     // Initialize diagnostics
     this.diagnostics = new ECGDiagnostics(this);
     this.loopEnabled = true;
@@ -236,7 +236,6 @@ const ECGPlayer = {
     this.qrsFlashCanvas = null;
     this.qrsFlashContext = null;
   },
-
 
   // =================
   // UTILITY FUNCTIONS

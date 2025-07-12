@@ -24,7 +24,7 @@ import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import { Hooks as BackpexHooks } from "backpex";
-import ECGPlayer from "./hooks/ecg_player";
+import ECGPlayer from "./hooks/ecg/ecg_player";
 import ClearFlash from "./hooks/clear_flash";
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
