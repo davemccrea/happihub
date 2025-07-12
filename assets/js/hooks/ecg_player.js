@@ -614,6 +614,22 @@ const ECGPlayer = {
   // ============================
 
   /**
+   * Updates the cursor style based on the current display mode.
+   * @returns {void}
+   */
+  updateCursorStyle() {
+    if (this.backgroundCanvas) {
+      if (this.displayMode === "single") {
+        // Single lead mode: show zoom-out cursor (click to show all leads)
+        this.backgroundCanvas.style.cursor = "zoom-out";
+      } else {
+        // Multi lead mode: show zoom-in cursor (click to zoom into a specific lead)
+        this.backgroundCanvas.style.cursor = "zoom-in";
+      }
+    }
+  },
+
+  /**
    * Sets up click event handler for canvas to allow lead selection in multi-lead mode.
    * @returns {void}
    */
@@ -675,6 +691,7 @@ const ECGPlayer = {
     this.switchLead(leadIndex);
     this.updateLeadSelectorVisibility("single");
     this.recreateCanvasAndRestart();
+    this.updateCursorStyle();
   },
 
   /**
@@ -686,6 +703,7 @@ const ECGPlayer = {
     this.updateDisplayModeSelector("multi");
     this.updateLeadSelectorVisibility("multi");
     this.recreateCanvasAndRestart();
+    this.updateCursorStyle();
   },
 
   // =========================
@@ -932,6 +950,9 @@ const ECGPlayer = {
 
     // Add click event listener for lead selection in multi-lead mode
     this.setupCanvasClickHandler();
+    
+    // Set initial cursor based on display mode
+    this.updateCursorStyle();
 
     // Create foreground canvas for animated waveform (overlapping)
     this.waveformCanvas = document.createElement("canvas");
@@ -1066,6 +1087,7 @@ const ECGPlayer = {
     if (displayMode === "single" || displayMode === "multi") {
       this.displayMode = displayMode;
       this.recreateCanvasAndRestart();
+      this.updateCursorStyle();
     }
   },
 
