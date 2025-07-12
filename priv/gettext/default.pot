@@ -41,7 +41,7 @@ msgstr ""
 msgid "Chloride"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:161
+#: lib/astrup_web/live/reference_values/quiz_live.ex:147
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Female"
@@ -52,7 +52,7 @@ msgstr ""
 msgid "Glucose"
 msgstr ""
 
-#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:297
+#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:296
 #, elixir-autogen, elixir-format
 msgid "H"
 msgstr ""
@@ -72,7 +72,7 @@ msgstr ""
 msgid "Ionized calcium corrected to pH 7.4"
 msgstr ""
 
-#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:271
+#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:270
 #, elixir-autogen, elixir-format
 msgid "L"
 msgstr ""
@@ -82,7 +82,7 @@ msgstr ""
 msgid "Lactate"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:160
+#: lib/astrup_web/live/reference_values/quiz_live.ex:146
 #: lib/astrup_web/live/submit_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Male"
@@ -93,7 +93,7 @@ msgstr ""
 msgid "Methemoglobin"
 msgstr ""
 
-#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:284
+#: lib/astrup_web/live/radiometer_abl90_flex_plus.ex:283
 #, elixir-autogen, elixir-format
 msgid "N"
 msgstr ""
@@ -138,89 +138,95 @@ msgstr ""
 msgid "pH"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:87
-#: lib/astrup_web/live/reference_values/quiz_live.ex:118
+#: lib/astrup_web/live/interpretation/quiz_live.ex:76
+#: lib/astrup_web/live/reference_values/quiz_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "Check Answers"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:121
+#: lib/astrup_web/live/reference_values/quiz_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:108
+#: lib/astrup_web/live/reference_values/quiz_live.ex:94
 #, elixir-autogen, elixir-format
 msgid "Answers: "
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:136
+#: lib/astrup_web/live/reference_values/quiz_live.ex:122
 #, elixir-autogen, elixir-format
 msgid "Age Range"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/learn_live.ex:91
+#: lib/astrup_web/live/reference_values/learn_live.ex:80
 #, elixir-autogen, elixir-format
 msgid "Click on any parameter in the printout to learn more about it."
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:102
+#: lib/astrup_web/live/reference_values/quiz_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "For each parameter, select whether the value is Low (L), Normal (N), or High (H) compared to its reference range. Once you've made all 18 selections, click \"Check Answers\"."
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:67
-#: lib/astrup_web/live/reference_values/quiz_live.ex:100
+#: lib/astrup_web/live/interpretation/quiz_live.ex:56
+#: lib/astrup_web/live/reference_values/quiz_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "Instructions"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:165
+#: lib/astrup_web/live/reference_values/quiz_live.ex:151
 #, elixir-autogen, elixir-format
 msgid "Note: determines Hb"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:149
+#: lib/astrup_web/live/reference_values/quiz_live.ex:135
 #, elixir-autogen, elixir-format
 msgid "Note: determines pO2"
 msgstr ""
 
-#: lib/astrup_web/components/core_components.ex:541
-#: lib/astrup_web/live/home_live.ex:83
-#: lib/astrup_web/live/reference_values/quiz_live.ex:128
+#: lib/astrup_web/components/core_components.ex:545
+#: lib/astrup_web/live/home_live.ex:127
+#: lib/astrup_web/live/reference_values/quiz_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:157
+#: lib/astrup_web/live/reference_values/quiz_live.ex:143
 #: lib/astrup_web/live/submit_live.ex:85
 #, elixir-autogen, elixir-format
 msgid "Sex"
 msgstr ""
 
-#: lib/astrup_web/live/reference_values/quiz_live.ex:172
+#: lib/astrup_web/live/reference_values/quiz_live.ex:158
 #, elixir-autogen, elixir-format
 msgid "Show hover hints"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:333
-#: lib/astrup_web/live/interpretation/quiz_live.ex:701
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:307
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:311
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:317
+#: lib/astrup_web/live/interpretation/quiz_live.ex:322
+#: lib/astrup_web/live/interpretation/quiz_live.ex:695
 #, elixir-autogen, elixir-format
 msgid "Acidosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:359
-#: lib/astrup_web/live/interpretation/quiz_live.ex:703
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:306
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:312
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:316
+#: lib/astrup_web/live/interpretation/quiz_live.ex:348
+#: lib/astrup_web/live/interpretation/quiz_live.ex:697
 #, elixir-autogen, elixir-format
 msgid "Alkalosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:166
+#: lib/astrup_web/live/interpretation/quiz_live.ex:155
 #, elixir-autogen, elixir-format
 msgid "Classify each parameter as acidosis, normal, or alkalosis:"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:149
+#: lib/astrup_web/live/interpretation/quiz_live.ex:138
 #, elixir-autogen, elixir-format
 msgid "Clinical Presentation"
 msgstr ""
@@ -230,50 +236,39 @@ msgstr ""
 msgid "Interpret"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:95
+#: lib/astrup_web/live/interpretation/quiz_live.ex:84
 #, elixir-autogen, elixir-format
 msgid "Next Case"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:446
-#: lib/astrup_web/live/interpretation/quiz_live.ex:467
+#: lib/astrup_web/live/interpretation/quiz_live.ex:440
+#: lib/astrup_web/live/interpretation/quiz_live.ex:461
 #, elixir-autogen, elixir-format
 msgid "No selection"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:295
-#: lib/astrup_web/live/interpretation/quiz_live.ex:346
-#: lib/astrup_web/live/interpretation/quiz_live.ex:702
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:305
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:310
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:315
+#: lib/astrup_web/live/interpretation/quiz_live.ex:335
+#: lib/astrup_web/live/interpretation/quiz_live.ex:696
 #, elixir-autogen, elixir-format
 msgid "Normal"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:386
+#: lib/astrup_web/live/interpretation/quiz_live.ex:375
 #, elixir-autogen, elixir-format
 msgid "Results"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:45
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:125
-#: lib/astrup_web/live/interpretation/learn_live.ex:17
-#: lib/astrup_web/live/interpretation/quiz_live.ex:161
-#, elixir-autogen, elixir-format
-msgid "Interpretation"
-msgstr ""
-
-#: lib/astrup_web/live/interpretation/quiz_live.ex:69
+#: lib/astrup_web/live/interpretation/quiz_live.ex:58
 #, elixir-autogen, elixir-format
 msgid "Read the clinical presentation, classify each parameter, and select the most appropriate interpretation."
 msgstr ""
 
-#: lib/astrup_web/components/core_components.ex:500
+#: lib/astrup_web/components/core_components.ex:502
 #, elixir-autogen, elixir-format
 msgid "Score"
-msgstr ""
-
-#: lib/astrup_web/live/interpretation/quiz_live.ex:106
-#, elixir-autogen, elixir-format
-msgid "Show reference values"
 msgstr ""
 
 #: lib/astrup_web/components/locale_picker.ex:31
@@ -281,8 +276,8 @@ msgstr ""
 msgid "Available languages"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:54
-#: lib/astrup_web/live/reference_values/quiz_live.ex:85
+#: lib/astrup_web/live/interpretation/quiz_live.ex:43
+#: lib/astrup_web/live/reference_values/quiz_live.ex:74
 #, elixir-autogen, elixir-format
 msgid "Back to Learning"
 msgstr ""
@@ -297,7 +292,7 @@ msgstr ""
 msgid "Blood Gas Values"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:198
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:196
 #, elixir-autogen, elixir-format
 msgid "Cannot determine primary disorder"
 msgstr ""
@@ -307,12 +302,12 @@ msgstr ""
 msgid "Change language"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:268
+#: lib/astrup_web/live/interpretation/quiz_live.ex:257
 #, elixir-autogen, elixir-format
 msgid "Choose compensation level..."
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:248
+#: lib/astrup_web/live/interpretation/quiz_live.ex:237
 #, elixir-autogen, elixir-format
 msgid "Choose primary disorder..."
 msgstr ""
@@ -322,12 +317,12 @@ msgstr ""
 msgid "Clear"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:464
+#: lib/astrup_web/live/interpretation/quiz_live.ex:458
 #, elixir-autogen, elixir-format
 msgid "Compensation"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:403
+#: lib/astrup_web/live/interpretation/quiz_live.ex:397
 #, elixir-autogen, elixir-format
 msgid "Correct"
 msgstr ""
@@ -337,7 +332,7 @@ msgstr ""
 msgid "Desktop Required"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:259
+#: lib/astrup_web/live/interpretation/quiz_live.ex:248
 #, elixir-autogen, elixir-format
 msgid "Determine the level of compensation:"
 msgstr ""
@@ -347,12 +342,12 @@ msgstr ""
 msgid "Enter pH, CO₂, and HCO₃⁻ values to get an acid-base interpretation"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:212
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:210
 #, elixir-autogen, elixir-format
 msgid "Fill in the blood gas values to get an interpretation"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:306
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:326
 #, elixir-autogen, elixir-format
 msgid "Fully compensated"
 msgstr ""
@@ -362,12 +357,7 @@ msgstr ""
 msgid "HCO₃⁻ must be between 5.0 and 50.0 mmol/L"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:296
-#, elixir-autogen, elixir-format
-msgid "High"
-msgstr ""
-
-#: lib/astrup_web/live/interpretation/quiz_live.ex:239
+#: lib/astrup_web/live/interpretation/quiz_live.ex:228
 #, elixir-autogen, elixir-format
 msgid "Identify the primary acid-base disorder:"
 msgstr ""
@@ -377,22 +367,12 @@ msgstr ""
 msgid "Interactive guide to ABG parameter reference values"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:33
-#, elixir-autogen, elixir-format
-msgid "Interpretation Quiz"
-msgstr ""
-
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:297
-#, elixir-autogen, elixir-format
-msgid "Low"
-msgstr ""
-
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:301
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:321
 #, elixir-autogen, elixir-format
 msgid "Metabolic Acidosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:302
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:322
 #, elixir-autogen, elixir-format
 msgid "Metabolic Alkalosis"
 msgstr ""
@@ -407,44 +387,31 @@ msgstr ""
 msgid "New Interpretation"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:192
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:190
 #, elixir-autogen, elixir-format
 msgid "Normal acid-base status"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:282
+#: lib/astrup_web/live/interpretation/quiz_live.ex:271
 #, elixir-autogen, elixir-format
 msgid "Note: Mixed acid-base disorders and fully compensated conditions exist in clinical practice but are not addressed here for educational simplicity."
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:401
+#: lib/astrup_web/live/interpretation/quiz_live.ex:395
 #, elixir-autogen, elixir-format
 msgid "Parameter"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:305
-#: lib/astrup_web/live/interpretation/quiz_live.ex:611
-#: lib/astrup_web/live/interpretation/quiz_live.ex:713
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:325
+#: lib/astrup_web/live/interpretation/quiz_live.ex:605
+#: lib/astrup_web/live/interpretation/quiz_live.ex:707
 #, elixir-autogen, elixir-format
 msgid "Partially compensated"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:174
-#: lib/astrup_web/live/interpretation/quiz_live.ex:443
+#: lib/astrup_web/live/interpretation/quiz_live.ex:437
 #, elixir-autogen, elixir-format
 msgid "Primary Disorder"
-msgstr ""
-
-#: lib/astrup_web/live/home_live.ex:17
-#: lib/astrup_web/live/interpretation/quiz_live.ex:515
-#: lib/astrup_web/live/reference_values/learn_live.ex:50
-#, elixir-autogen, elixir-format
-msgid "Reference Values"
-msgstr ""
-
-#: lib/astrup_web/live/reference_values/quiz_live.ex:64
-#, elixir-autogen, elixir-format
-msgid "Reference Values Quiz"
 msgstr ""
 
 #: lib/astrup_web/live/interpretation/interpreter_live.ex:61
@@ -454,17 +421,17 @@ msgstr ""
 msgid "Reference range"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:299
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:319
 #, elixir-autogen, elixir-format
 msgid "Respiratory Acidosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:300
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:320
 #, elixir-autogen, elixir-format
 msgid "Respiratory Alkalosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:404
+#: lib/astrup_web/live/interpretation/quiz_live.ex:398
 #, elixir-autogen, elixir-format
 msgid "Result"
 msgstr ""
@@ -487,7 +454,7 @@ msgstr ""
 msgid "Test your knowledge of ABG parameter reference ranges"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:200
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:198
 #, elixir-autogen, elixir-format
 msgid "The combination of values suggests a mixed disorder or measurement error"
 msgstr ""
@@ -502,14 +469,14 @@ msgstr ""
 msgid "This learning section is under development. Take the quiz to practice interpretation skills!"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:304
-#: lib/astrup_web/live/interpretation/quiz_live.ex:610
-#: lib/astrup_web/live/interpretation/quiz_live.ex:712
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:324
+#: lib/astrup_web/live/interpretation/quiz_live.ex:604
+#: lib/astrup_web/live/interpretation/quiz_live.ex:706
 #, elixir-autogen, elixir-format
 msgid "Uncompensated"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:402
+#: lib/astrup_web/live/interpretation/quiz_live.ex:396
 #, elixir-autogen, elixir-format
 msgid "Your Answer"
 msgstr ""
@@ -531,6 +498,7 @@ msgstr ""
 
 #: lib/astrup_web/live/home_live.ex:27
 #: lib/astrup_web/live/home_live.ex:55
+#: lib/astrup_web/live/home_live.ex:118
 #, elixir-autogen, elixir-format
 msgid "Learn"
 msgstr ""
@@ -566,7 +534,7 @@ msgstr ""
 msgid "Electrolyte values"
 msgstr ""
 
-#: lib/astrup_web/components/core_components.ex:547
+#: lib/astrup_web/components/core_components.ex:551
 #: lib/astrup_web/components/layouts.ex:221
 #, elixir-autogen, elixir-format
 msgid "Logout"
@@ -592,40 +560,30 @@ msgstr ""
 msgid "Thanks! Submission successful!"
 msgstr ""
 
-#: lib/astrup_web/live/home_live.ex:75
-#, elixir-autogen, elixir-format
-msgid "Interpreter"
-msgstr ""
-
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:177
-#, elixir-autogen, elixir-format
-msgid "Disorder"
-msgstr ""
-
-#: lib/astrup_web/live/interpretation/quiz_live.ex:121
+#: lib/astrup_web/live/interpretation/quiz_live.ex:110
 #, elixir-autogen, elixir-format
 msgid "Explanation"
 msgstr ""
 
-#: lib/astrup_web/components/core_components.ex:554
+#: lib/astrup_web/components/core_components.ex:558
 #, elixir-autogen, elixir-format
 msgid "Login"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:603
-#: lib/astrup_web/live/interpretation/quiz_live.ex:708
+#: lib/astrup_web/live/interpretation/quiz_live.ex:597
+#: lib/astrup_web/live/interpretation/quiz_live.ex:702
 #, elixir-autogen, elixir-format
 msgid "Metabolic acidosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:604
-#: lib/astrup_web/live/interpretation/quiz_live.ex:709
+#: lib/astrup_web/live/interpretation/quiz_live.ex:598
+#: lib/astrup_web/live/interpretation/quiz_live.ex:703
 #, elixir-autogen, elixir-format
 msgid "Metabolic alkalosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:600
-#: lib/astrup_web/live/interpretation/quiz_live.ex:705
+#: lib/astrup_web/live/interpretation/quiz_live.ex:594
+#: lib/astrup_web/live/interpretation/quiz_live.ex:699
 #, elixir-autogen, elixir-format
 msgid "Normal acid-base balance"
 msgstr ""
@@ -640,24 +598,91 @@ msgstr ""
 msgid "Practice interpreting ABG results with clinical cases"
 msgstr ""
 
-#: lib/astrup_web/components/core_components.ex:560
+#: lib/astrup_web/components/core_components.ex:564
 #, elixir-autogen, elixir-format
 msgid "Register"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:601
-#: lib/astrup_web/live/interpretation/quiz_live.ex:706
+#: lib/astrup_web/live/interpretation/quiz_live.ex:595
+#: lib/astrup_web/live/interpretation/quiz_live.ex:700
 #, elixir-autogen, elixir-format
 msgid "Respiratory acidosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/quiz_live.ex:602
-#: lib/astrup_web/live/interpretation/quiz_live.ex:707
+#: lib/astrup_web/live/interpretation/quiz_live.ex:596
+#: lib/astrup_web/live/interpretation/quiz_live.ex:701
 #, elixir-autogen, elixir-format
 msgid "Respiratory alkalosis"
 msgstr ""
 
-#: lib/astrup_web/live/interpretation/interpreter_live.ex:182
+#: lib/astrup_web/live/home_live.ex:45
+#: lib/astrup_web/live/interpretation/interpreter_live.ex:126
+#: lib/astrup_web/live/interpretation/learn_live.ex:17
+#: lib/astrup_web/live/interpretation/quiz_live.ex:150
 #, elixir-autogen, elixir-format
-msgid "Status"
+msgid "ABG Interpreation"
+msgstr ""
+
+#: lib/astrup_web/live/interpretation/quiz_live.ex:33
+#, elixir-autogen, elixir-format
+msgid "ABG Interpreation Quiz"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:17
+#: lib/astrup_web/live/interpretation/quiz_live.ex:509
+#: lib/astrup_web/live/reference_values/learn_live.ex:50
+#, elixir-autogen, elixir-format
+msgid "ABG Reference Values"
+msgstr ""
+
+#: lib/astrup_web/live/reference_values/quiz_live.ex:64
+#, elixir-autogen, elixir-format
+msgid "ABG Reference Values Quiz"
+msgstr ""
+
+#: lib/astrup_web/live/ecg/learn_live.ex:27
+#, elixir-autogen, elixir-format
+msgid "Coming soon..."
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:83
+#, elixir-autogen, elixir-format
+msgid "ECG"
+msgstr ""
+
+#: lib/astrup_web/live/ecg/learn_live.ex:21
+#, elixir-autogen, elixir-format
+msgid "ECG Learning Module"
+msgstr ""
+
+#: lib/astrup_web/live/ecg_viewer_live.ex:30
+#: lib/astrup_web/live/home_live.ex:106
+#, elixir-autogen, elixir-format
+msgid "ECG Viewer"
+msgstr ""
+
+#: lib/astrup_web/live/ecg/learn_live.ex:13
+#, elixir-autogen, elixir-format
+msgid "Learn ECG"
+msgstr ""
+
+#: lib/astrup_web/live/ecg/learn_live.ex:24
+#, elixir-autogen, elixir-format
+msgid "Learn about ECG interpretation, analysis, and clinical applications."
+msgstr ""
+
+#: lib/astrup_web/components/core_components.ex:510
+#: lib/astrup_web/live/interpretation/quiz_live.ex:385
+#, elixir-autogen, elixir-format
+msgid "Perfect!"
+msgstr ""
+
+#: lib/astrup_web/live/home_live.ex:94
+#, elixir-autogen, elixir-format
+msgid "Saved ECGs"
+msgstr ""
+
+#: lib/astrup_web/live/interpretation/quiz_live.ex:95
+#, elixir-autogen, elixir-format
+msgid "Show ABG Reference Values"
 msgstr ""
