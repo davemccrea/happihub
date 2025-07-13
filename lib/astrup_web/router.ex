@@ -49,7 +49,10 @@ defmodule AstrupWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :require_authenticated_user,
-      on_mount: [AstrupWeb.Hooks.LocaleHook, {AstrupWeb.UserAuth, :require_authenticated}] do
+      on_mount: [
+        {AstrupWeb.Hooks.LocaleHook, :default},
+        {AstrupWeb.UserAuth, :require_authenticated}
+      ] do
       live "/", HomeLive
       live "/reference-values/learn", ReferenceValues.LearnLive
       live "/reference-values/quiz", ReferenceValues.QuizLive

@@ -6,7 +6,7 @@ defmodule Astrup.Accounts do
   import Ecto.Query, warn: false
   alias Astrup.Repo
 
-  alias Astrup.Accounts.{User, UserToken, UserNotifier, UserSettings}
+  alias Astrup.Accounts.{User, UserToken, UserNotifier}
 
   ## Database getters
 
@@ -204,111 +204,6 @@ defmodule Astrup.Accounts do
     user
     |> User.settings_changeset(attrs)
     |> Repo.update()
-  end
-
-  ## ECG Settings
-
-  @doc """
-  Gets the ECG settings for a user, creating default settings if none exist.
-
-  ## Examples
-
-      iex> get_user_ecg_settings(user)
-      %UserSettings{}
-
-  """
-  def get_user_ecg_settings(%User{} = user) do
-    case Repo.get_by(UserSettings, user_id: user.id) do
-      nil ->
-        {:ok, settings} = create_default_ecg_settings(user)
-        settings
-
-      settings ->
-        settings
-    end
-  end
-
-  @doc """
-  Gets the ECG settings for a user, returns nil if none exist.
-
-  ## Examples
-
-      iex> get_user_ecg_settings_or_nil(user)
-      %UserSettings{}
-
-      iex> get_user_ecg_settings_or_nil(user_without_settings)
-      nil
-
-  """
-  def get_user_ecg_settings_or_nil(%User{} = user) do
-    Repo.get_by(UserSettings, user_id: user.id)
-  end
-
-  @doc """
-  Creates default ECG settings for a user.
-
-  ## Examples
-
-      iex> create_default_ecg_settings(user)
-      {:ok, %UserSettings{}}
-
-  """
-  def create_default_ecg_settings(%User{} = user) do
-    %UserSettings{user_id: user.id}
-    |> UserSettings.changeset(%{})
-    |> Repo.insert()
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for changing ECG settings.
-
-  ## Examples
-
-      iex> change_ecg_settings(settings)
-      %Ecto.Changeset{data: %UserSettings{}}
-
-  """
-  def change_ecg_settings(%UserSettings{} = settings, attrs \\ %{}) do
-    UserSettings.changeset(settings, attrs)
-  end
-
-  @doc """
-  Updates the ECG settings for a user.
-
-  ## Examples
-
-      iex> update_ecg_settings(settings, %{display_mode: "multi"})
-      {:ok, %UserSettings{}}
-
-      iex> update_ecg_settings(settings, %{grid_scale: "invalid"})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_ecg_settings(%UserSettings{} = settings, attrs) do
-    settings
-    |> UserSettings.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Updates or creates ECG settings for a user.
-
-  ## Examples
-
-      iex> upsert_ecg_settings(user, %{display_mode: "multi"})
-      {:ok, %UserSettings{}}
-
-  """
-  def upsert_ecg_settings(%User{} = user, attrs) do
-    case get_user_ecg_settings_or_nil(user) do
-      nil ->
-        %UserSettings{user_id: user.id}
-        |> UserSettings.changeset(attrs)
-        |> Repo.insert()
-
-      settings ->
-        update_ecg_settings(settings, attrs)
-    end
   end
 
   ## Session

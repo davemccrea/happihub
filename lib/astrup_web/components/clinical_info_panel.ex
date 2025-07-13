@@ -83,6 +83,12 @@ defmodule AstrupWeb.Components.ClinicalInfoPanel do
             </div>
           </div>
         <% end %>
+
+        <%= if Map.get(@metadata, :report) == nil and length(Map.get(@metadata, :scp_codes, [])) == 0 do %>
+          <div class="text-sm text-base-content/60">
+            No clinical information available for this ECG.
+          </div>
+        <% end %>
       </div>
     </div>
     """

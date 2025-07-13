@@ -17,6 +17,7 @@ defmodule Astrup.Accounts.Scope do
   """
 
   alias Astrup.Accounts.User
+  alias Astrup.Repo
 
   defstruct user: nil
 
@@ -26,7 +27,8 @@ defmodule Astrup.Accounts.Scope do
   Returns nil if no user is given.
   """
   def for_user(%User{} = user) do
-    %__MODULE__{user: user}
+    user_with_settings = Repo.preload(user, :settings)
+    %__MODULE__{user: user_with_settings}
   end
 
   def for_user(nil), do: nil

@@ -5,12 +5,15 @@ defmodule AstrupWeb.ECGViewerLive do
   alias Astrup.ECG.DatasetRegistry
 
   def mount(params, _session, socket) do
+    settings = Astrup.Settings.changeset(socket.assigns.current_scope.user.settings, %{})
+
     socket =
       socket
       |> assign(:env, Application.get_env(:astrup, :env))
       |> assign(:ecg_saved, false)
       |> assign(:metadata, %{})
       |> assign(:ecg_data, nil)
+      |> assign(:settings, settings)
 
     socket =
       if params["db"] && params["filename"] do
@@ -35,28 +38,27 @@ defmodule AstrupWeb.ECGViewerLive do
           id="ecg-player"
           env={@env}
           ecg_data={@ecg_data}
+          settings={@settings}
         >
           <:actions>
             <.button phx-click="load_random_ecg" class="btn btn-primary" id="load-random-ecg-button">
               <.icon class="h-5 w-5" name="hero-arrow-path" /> Load Random ECG
             </.button>
 
-            <%= if not is_nil(@ecg_data) do %>
-              <.button
-                phx-click={if @ecg_saved, do: "unsave_ecg", else: "save_ecg"}
-                class="btn btn-square"
-                id="save-ecg-button"
-              >
-                <%= if @ecg_saved do %>
-                  Unsave <.icon class="h-5 w-5" name="hero-trash" />
-                <% else %>
-                  Save <.icon class="h-5 w-5" name="hero-document-arrow-down" />
-                <% end %>
-              </.button>
-            <% end %>
+            <.button
+              phx-click={if @ecg_saved, do: "unsave_ecg", else: "save_ecg"}
+              class="btn btn-square"
+              id="save-ecg-button"
+            >
+              <%= if @ecg_saved do %>
+                Unsave <.icon class="h-5 w-5" name="hero-trash" />
+              <% else %>
+                Save <.icon class="h-5 w-5" name="hero-document-arrow-down" />
+              <% end %>
+            </.button>
           </:actions>
 
-          <:sidebar :if={map_size(@metadata) > 0}>
+          <:sidebar>
             <AstrupWeb.Components.ClinicalInfoPanel.clinical_info_panel metadata={@metadata} />
           </:sidebar>
 
