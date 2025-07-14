@@ -208,18 +208,14 @@ const ECGPlayer = {
         id: "loop-checkbox",
         event: "change",
         action: (e) => {
-          this.loopEnabled = e.target.checked;
+          this.loopEnabled$.next(e.target.checked);
         },
       },
       {
         id: "qrs-indicator-checkbox",
         event: "change",
         action: (e) => {
-          this.qrsIndicatorEnabled = e.target.checked;
-          if (!this.qrsIndicatorEnabled && this.qrsFlashActive) {
-            this.qrsFlashActive = false;
-            this.clearQrsFlashArea();
-          }
+          this.qrsIndicatorEnabled$.next(e.target.checked);
         },
       },
       {
@@ -227,9 +223,7 @@ const ECGPlayer = {
         event: "input",
         debounce: 100,
         action: (e) => {
-          this.gridScale = parseFloat(e.target.value);
-          this.updateGridScaleDisplay();
-          this.handleGridScaleChange();
+          this.gridScale$.next(parseFloat(e.target.value));
         },
       },
       {
@@ -237,9 +231,7 @@ const ECGPlayer = {
         event: "input",
         debounce: 100,
         action: (e) => {
-          this.amplitudeScale = parseFloat(e.target.value);
-          this.updateAmplitudeScaleDisplay();
-          this.handleAmplitudeScaleChange();
+          this.amplitudeScale$.next(parseFloat(e.target.value));
         },
       },
       {
@@ -247,10 +239,7 @@ const ECGPlayer = {
         event: "input",
         debounce: 100,
         action: (e) => {
-          this.heightScale = parseFloat(e.target.value);
-          this.leadHeight = CHART_HEIGHT * this.heightScale;
-          this.updateHeightScaleDisplay();
-          this.handleHeightScaleChange();
+          this.heightScale$.next(parseFloat(e.target.value));
         },
       },
     ];
@@ -369,6 +358,71 @@ const ECGPlayer = {
         }
       })
     );
+
+    // Subscribe to scale changes
+    this.subscriptions.add(
+      this.gridScale$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(scale => {
+        this.gridScale = scale;
+        this.updateGridScaleDisplay();
+        this.handleGridScaleChange();
+      })
+    );
+
+    this.subscriptions.add(
+      this.amplitudeScale$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(scale => {
+        this.amplitudeScale = scale;
+        this.updateAmplitudeScaleDisplay();
+        this.handleAmplitudeScaleChange();
+      })
+    );
+
+    this.subscriptions.add(
+      this.heightScale$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(scale => {
+        this.heightScale = scale;
+        this.updateHeightScaleDisplay();
+        this.handleHeightScaleChange();
+      })
+    );
+
+    this.subscriptions.add(
+      this.leadHeight$.pipe(
+        takeUntil(this.destroy$)
+      ).subscribe(height => {
+        this.leadHeight = height;
+      })
+    );
+
+    // Subscribe to checkbox state changes
+    this.subscriptions.add(
+      this.loopEnabled$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(enabled => {
+        this.loopEnabled = enabled;
+      })
+    );
+
+    this.subscriptions.add(
+      this.qrsIndicatorEnabled$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(enabled => {
+        this.qrsIndicatorEnabled = enabled;
+        if (!enabled && this.qrsFlashActive) {
+          this.qrsFlashActive = false;
+          this.clearQrsFlashArea();
+        }
+      })
+    );
   },
 
   setupAnimationStream() {
@@ -437,7 +491,7 @@ const ECGPlayer = {
   setupQrsFlashStream() {
     // Create QRS flash stream that responds to QRS detection events
     const qrsFlashStream$ = this.qrsDetectionSubject$.pipe(
-      filter(() => this.qrsIndicatorEnabled), // Only flash when indicator is enabled
+      filter(() => this.qrsIndicatorEnabled$.value), // Only flash when indicator is enabled
       switchMap(() => {
         // Emit true immediately, then false after flash duration
         return timer(this.qrsFlashDuration).pipe(
@@ -600,6 +654,21 @@ const ECGPlayer = {
     if (this.displayMode$) {
       this.displayMode$.complete();
     }
+    if (this.gridScale$) {
+      this.gridScale$.complete();
+    }
+    if (this.amplitudeScale$) {
+      this.amplitudeScale$.complete();
+    }
+    if (this.heightScale$) {
+      this.heightScale$.complete();
+    }
+    if (this.loopEnabled$) {
+      this.loopEnabled$.complete();
+    }
+    if (this.qrsIndicatorEnabled$) {
+      this.qrsIndicatorEnabled$.complete();
+    }
 
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
@@ -627,21 +696,26 @@ const ECGPlayer = {
     const initialDisplayMode = this.readFormValue("display_mode") || "single";
     const initialCurrentLead = parseInt(this.readFormValue("current_lead") || "0");
 
-    // Playback options
-    this.loopEnabled = this.readFormCheckbox("loop_playback");
-    this.qrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
+    // Playback options - initial values
+    const initialLoopEnabled = this.readFormCheckbox("loop_playback");
+    const initialQrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
 
-    // Scale settings
-    this.gridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
-    this.amplitudeScale = parseFloat(
+    // Scale settings - initial values
+    const initialGridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
+    const initialAmplitudeScale = parseFloat(
       this.readFormValue("amplitude_scale") || "1.0"
     );
-    this.heightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
+    const initialHeightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
 
     // Reactive state management
     this.isPlaying$ = new BehaviorSubject(false);
     this.currentLead$ = new BehaviorSubject(initialCurrentLead);
     this.displayMode$ = new BehaviorSubject(initialDisplayMode);
+    this.gridScale$ = new BehaviorSubject(initialGridScale);
+    this.amplitudeScale$ = new BehaviorSubject(initialAmplitudeScale);
+    this.heightScale$ = new BehaviorSubject(initialHeightScale);
+    this.loopEnabled$ = new BehaviorSubject(initialLoopEnabled);
+    this.qrsIndicatorEnabled$ = new BehaviorSubject(initialQrsIndicatorEnabled);
 
     // Reactive cursor width based on display mode
     this.cursorWidth$ = this.displayMode$.pipe(
@@ -650,10 +724,23 @@ const ECGPlayer = {
       share()
     );
 
-    // Initialize current cursor width
+    // Reactive leadHeight based on heightScale
+    this.leadHeight$ = this.heightScale$.pipe(
+      map((scale) => CHART_HEIGHT * scale),
+      distinctUntilChanged(),
+      share()
+    );
+
+    // Initialize current values
     this.cursorWidth = initialDisplayMode === "single" 
       ? SINGLE_LEAD_CURSOR_WIDTH 
       : MULTI_LEAD_CURSOR_WIDTH;
+    this.gridScale = initialGridScale;
+    this.amplitudeScale = initialAmplitudeScale;
+    this.heightScale = initialHeightScale;
+    this.leadHeight = CHART_HEIGHT * initialHeightScale;
+    this.loopEnabled = initialLoopEnabled;
+    this.qrsIndicatorEnabled = initialQrsIndicatorEnabled;
     this.activeSegments = [];
     this.startTime = null;
     this.pausedTime = 0;
@@ -1425,7 +1512,7 @@ const ECGPlayer = {
 
   handlePlaybackEnd() {
     this.pushEventTo(this.targetComponent, "playback_ended", {});
-    if (this.loopEnabled) {
+    if (this.loopEnabled$.value) {
       this.resetPlayback();
       this.startAnimation();
     } else {
@@ -1954,14 +2041,14 @@ const ECGPlayer = {
       document.getElementById("loop-checkbox")
     );
     if (loopCheckbox) {
-      loopCheckbox.checked = this.loopEnabled;
+      loopCheckbox.checked = this.loopEnabled$.value;
     }
 
     const qrsCheckbox = /** @type {HTMLInputElement} */ (
       document.getElementById("qrs-indicator-checkbox")
     );
     if (qrsCheckbox) {
-      qrsCheckbox.checked = this.qrsIndicatorEnabled;
+      qrsCheckbox.checked = this.qrsIndicatorEnabled$.value;
     }
 
     // Update sliders
@@ -1969,7 +2056,7 @@ const ECGPlayer = {
       document.getElementById("grid-scale-slider")
     );
     if (gridScaleSlider) {
-      gridScaleSlider.value = this.gridScale.toString();
+      gridScaleSlider.value = this.gridScale$.value.toString();
       this.updateGridScaleDisplay();
     }
 
@@ -1977,7 +2064,7 @@ const ECGPlayer = {
       document.getElementById("amplitude-scale-slider")
     );
     if (amplitudeScaleSlider) {
-      amplitudeScaleSlider.value = this.amplitudeScale.toString();
+      amplitudeScaleSlider.value = this.amplitudeScale$.value.toString();
       this.updateAmplitudeScaleDisplay();
     }
 
@@ -1985,7 +2072,7 @@ const ECGPlayer = {
       document.getElementById("height-scale-slider")
     );
     if (heightScaleSlider) {
-      heightScaleSlider.value = this.heightScale.toString();
+      heightScaleSlider.value = this.heightScale$.value.toString();
       this.updateHeightScaleDisplay();
     }
   },
