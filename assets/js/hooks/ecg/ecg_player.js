@@ -87,6 +87,9 @@ const ECGPlayer = {
     // Set up animation stream
     this.setupAnimationStream();
 
+    // Set up reactive state subscriptions
+    this.setupReactiveStateSubscriptions();
+
     // Resize events
     const resizeEvents$ = fromEvent(window, "resize").pipe(
       debounceTime(100),
@@ -180,7 +183,7 @@ const ECGPlayer = {
         event: "change",
         action: (e) => {
           const leadIndex = parseInt(e.target.value);
-          this.currentLead = leadIndex;
+          this.currentLead$.next(leadIndex);
           this.switchLead(leadIndex);
         },
       },
@@ -189,14 +192,8 @@ const ECGPlayer = {
         event: "change",
         action: (e) => {
           const value = e.target.value;
-          this.displayMode = value;
-          this.cursorWidth =
-            value === "single"
-              ? SINGLE_LEAD_CURSOR_WIDTH
-              : MULTI_LEAD_CURSOR_WIDTH;
-          this.recreateCanvasAndRestart();
-          this.updateCursorStyle();
-          this.updateLeadSelectorVisibility(value);
+          this.displayMode$.next(value);
+          this.updateDisplayModeSelector(value);
         },
       },
       {
@@ -288,22 +285,17 @@ const ECGPlayer = {
           };
         }),
         tap(({ x, y }) => {
-          if (this.displayMode === "multi") {
+          if (this.displayMode$.value === "multi") {
             const clickedLeadIndex = this.getLeadIndexFromClick(x, y);
             if (clickedLeadIndex !== null) {
-              this.displayMode = "single";
+              this.displayMode$.next("single");
+              this.currentLead$.next(clickedLeadIndex);
               this.updateDisplayModeSelector("single");
               this.switchLead(clickedLeadIndex);
-              this.updateLeadSelectorVisibility("single");
-              this.recreateCanvasAndRestart();
-              this.updateCursorStyle();
             }
-          } else if (this.displayMode === "single") {
-            this.displayMode = "multi";
+          } else if (this.displayMode$.value === "single") {
+            this.displayMode$.next("multi");
             this.updateDisplayModeSelector("multi");
-            this.updateLeadSelectorVisibility("multi");
-            this.recreateCanvasAndRestart();
-            this.updateCursorStyle();
           }
         }),
         takeUntil(this.destroy$),
@@ -343,10 +335,43 @@ const ECGPlayer = {
     return element ? fromEvent(element, eventType) : EMPTY;
   },
 
+  setupReactiveStateSubscriptions() {
+    // Subscribe to cursor width changes
+    this.subscriptions.add(
+      this.cursorWidth$.pipe(
+        takeUntil(this.destroy$)
+      ).subscribe(newWidth => {
+        this.cursorWidth = newWidth;
+        this.updateCursorStyle();
+      })
+    );
+
+    // Subscribe to display mode changes for UI updates
+    this.subscriptions.add(
+      this.displayMode$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(mode => {
+        this.updateLeadSelectorVisibility(mode);
+        this.recreateCanvasAndRestart();
+      })
+    );
+
+    // Subscribe to current lead changes
+    this.subscriptions.add(
+      this.currentLead$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(leadIndex => {
+        if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
+          this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+          this.updateLeadSelector(leadIndex);
+        }
+      })
+    );
+  },
+
   setupAnimationStream() {
-    // Store reference for reactive access to playback state
-    this.playbackStateSubject$ = new Subject();
-    
     // Store reference for QRS detection events
     this.qrsDetectionSubject$ = new Subject();
     
@@ -546,6 +571,15 @@ const ECGPlayer = {
     }
   },
 
+  updateLeadSelector(leadIndex) {
+    const leadSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("lead-selector")
+    );
+    if (leadSelector) {
+      leadSelector.value = leadIndex.toString();
+    }
+  },
+
   destroyed() {
     if (this.destroy$) {
       this.destroy$.next();
@@ -559,6 +593,12 @@ const ECGPlayer = {
     // Clean up reactive streams
     if (this.isPlaying$) {
       this.isPlaying$.complete();
+    }
+    if (this.currentLead$) {
+      this.currentLead$.complete();
+    }
+    if (this.displayMode$) {
+      this.displayMode$.complete();
     }
 
     if (this.animationId) {
@@ -584,8 +624,8 @@ const ECGPlayer = {
   initializeState() {
     // Display and playback settings
     this.gridType = this.readFormValue("grid_type") || "telemetry";
-    this.displayMode = this.readFormValue("display_mode") || "single";
-    this.currentLead = parseInt(this.readFormValue("current_lead") || "0");
+    const initialDisplayMode = this.readFormValue("display_mode") || "single";
+    const initialCurrentLead = parseInt(this.readFormValue("current_lead") || "0");
 
     // Playback options
     this.loopEnabled = this.readFormCheckbox("loop_playback");
@@ -598,14 +638,22 @@ const ECGPlayer = {
     );
     this.heightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
 
-    // Update cursor width based on display mode
-    this.cursorWidth =
-      this.displayMode === "single"
-        ? SINGLE_LEAD_CURSOR_WIDTH
-        : MULTI_LEAD_CURSOR_WIDTH;
-
     // Reactive state management
     this.isPlaying$ = new BehaviorSubject(false);
+    this.currentLead$ = new BehaviorSubject(initialCurrentLead);
+    this.displayMode$ = new BehaviorSubject(initialDisplayMode);
+
+    // Reactive cursor width based on display mode
+    this.cursorWidth$ = this.displayMode$.pipe(
+      map((mode) => mode === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH),
+      distinctUntilChanged(),
+      share()
+    );
+
+    // Initialize current cursor width
+    this.cursorWidth = initialDisplayMode === "single" 
+      ? SINGLE_LEAD_CURSOR_WIDTH 
+      : MULTI_LEAD_CURSOR_WIDTH;
     this.activeSegments = [];
     this.startTime = null;
     this.pausedTime = 0;
@@ -869,7 +917,7 @@ const ECGPlayer = {
    * @returns {number|null} The index of the clicked lead, or null if no lead was clicked.
    */
   getLeadIndexFromClick(x, y) {
-    if (!this.leadNames || this.displayMode !== "multi") {
+    if (!this.leadNames || this.displayMode$.value !== "multi") {
       return null;
     }
 
@@ -1080,7 +1128,7 @@ const ECGPlayer = {
       this.setupSelectors();
 
       // Set initial lead selector visibility
-      this.updateLeadSelectorVisibility(this.displayMode);
+      this.updateLeadSelectorVisibility(this.displayMode$.value);
 
       console.log("ECG data loaded successfully:", {
         samplingRate: this.samplingRate,
@@ -1290,18 +1338,10 @@ const ECGPlayer = {
     const wasPlaying = this.isPlaying$.value;
     if (wasPlaying) this.stopAnimation();
 
-    this.currentLead = leadIndex;
-    this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+    // Update reactive stream - this will trigger the subscription
+    this.currentLead$.next(leadIndex);
 
-    // Update the lead selector to match the current lead
-    const leadSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("lead-selector")
-    );
-    if (leadSelector) {
-      leadSelector.value = this.currentLead.toString();
-    }
-
-    if (this.displayMode === "single") {
+    if (this.displayMode$.value === "single") {
       // Clear both canvases and re-render for new lead
       this.clearWaveform();
       this.renderGridBackground();
@@ -1329,8 +1369,9 @@ const ECGPlayer = {
   switchToNextLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
 
-    if (this.currentLead < this.ecgLeadDatasets.length - 1) {
-      const nextLead = this.currentLead + 1;
+    const currentLead = this.currentLead$.value;
+    if (currentLead < this.ecgLeadDatasets.length - 1) {
+      const nextLead = currentLead + 1;
       this.switchLead(nextLead);
 
       this.pushEventTo(this.targetComponent, "lead_changed", {
@@ -1346,8 +1387,9 @@ const ECGPlayer = {
   switchToPrevLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
 
-    if (this.currentLead > 0) {
-      const prevLead = this.currentLead - 1;
+    const currentLead = this.currentLead$.value;
+    if (currentLead > 0) {
+      const prevLead = currentLead - 1;
       this.switchLead(prevLead);
 
       this.pushEventTo(this.targetComponent, "lead_changed", {
@@ -1405,13 +1447,13 @@ const ECGPlayer = {
     this.checkQrsOccurrences(elapsedTime);
     this.calculateCursorPosition(elapsedTime);
 
-    if (this.displayMode === "single") {
+    if (this.displayMode$.value === "single") {
       this.loadVisibleDataForSingleLead(elapsedTime);
     } else {
       this.loadVisibleDataForAllLeads(elapsedTime);
     }
 
-    if (this.displayMode === "single") {
+    if (this.displayMode$.value === "single") {
       if (!this.activeCursorData || this.activeCursorData.times.length === 0)
         return;
 
@@ -1424,7 +1466,7 @@ const ECGPlayer = {
       };
 
       this.renderLeadWaveform({
-        leadIndex: this.currentLead,
+        leadIndex: this.currentLead$.value,
         leadData: null,
         bounds: {
           xOffset: 0,
@@ -1508,7 +1550,7 @@ const ECGPlayer = {
 
     // Use pre-computed segments instead of real-time slicing
     const segments = this.getSegmentsForTimeRange(
-      this.currentLead,
+      this.currentLead$.value,
       currentScreenStartTime,
       elapsedTime
     );
@@ -1890,14 +1932,14 @@ const ECGPlayer = {
       document.getElementById("lead-selector")
     );
     if (leadSelector) {
-      leadSelector.value = this.currentLead.toString();
+      leadSelector.value = this.currentLead$.value.toString();
     }
 
     const displayModeSelector = /** @type {HTMLSelectElement} */ (
       document.getElementById("display-mode-selector")
     );
     if (displayModeSelector) {
-      displayModeSelector.value = this.displayMode;
+      displayModeSelector.value = this.displayMode$.value;
     }
 
     const gridTypeSelector = /** @type {HTMLSelectElement} */ (
@@ -2364,7 +2406,7 @@ const ECGPlayer = {
     this.backgroundContext.clearRect(0, 0, this.chartWidth, canvasHeight);
 
     // Render grid directly to background context
-    if (this.displayMode === "multi" && this.leadNames) {
+    if (this.displayMode$.value === "multi" && this.leadNames) {
       for (let i = 0; i < this.leadNames.length; i++) {
         const { xOffset, yOffset, columnWidth } =
           this.calculateLeadGridCoordinates(i);
@@ -2379,7 +2421,7 @@ const ECGPlayer = {
       }
     } else if (this.leadNames) {
       this.renderLeadBackground(
-        this.currentLead,
+        this.currentLead$.value,
         0,
         0,
         this.chartWidth,
