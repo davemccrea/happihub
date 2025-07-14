@@ -9,7 +9,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
      |> assign(assigns)
      |> assign(settings: assigns.settings)
      |> assign(form: to_form(assigns.settings))
-     |> assign(:lead_names, Map.get(assigns.ecg_data, "sig_name", []))
+     |> assign(:lead_names, if(assigns.ecg_data, do: Map.get(assigns.ecg_data, "sig_name", []), else: []))
      |> push_event("load_ecg_data", %{data: assigns.ecg_data})}
   end
 
