@@ -1145,7 +1145,7 @@ const ECGPlayer = {
    */
   updateCursorStyle() {
     if (this.backgroundCanvas) {
-      if (this.displayMode === "single") {
+      if (this.displayMode$.value === "single") {
         // Single lead mode: show zoom-out cursor (click to show all leads)
         this.backgroundCanvas.style.cursor = "zoom-out";
       } else {
