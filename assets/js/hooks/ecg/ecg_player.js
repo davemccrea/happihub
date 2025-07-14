@@ -13,6 +13,9 @@ import {
   merge,
   tap,
   takeUntil,
+  animationFrames,
+  switchMap,
+  takeWhile,
   // @ts-ignore
 } from "rxjs";
 
@@ -69,6 +72,9 @@ const ECGPlayer = {
   },
 
   setupEventStreams() {
+    // Set up animation stream
+    this.setupAnimationStream();
+
     // Resize events
     const resizeEvents$ = fromEvent(window, "resize").pipe(
       debounceTime(100),
@@ -318,6 +324,72 @@ const ECGPlayer = {
     return element ? fromEvent(element, eventType) : EMPTY;
   },
 
+  setupAnimationStream() {
+    // Store reference for reactive access to playback state
+    this.playbackStateSubject$ = new Subject();
+    
+    // Create animation frame stream that responds to playback state
+    const animationStream$ = this.playbackStateSubject$.pipe(
+      switchMap(() => {
+        if (!this.isPlaying || !this.totalDuration || !this.waveformCanvas) {
+          return EMPTY;
+        }
+
+        return animationFrames().pipe(
+          map(() => {
+            const currentTime = Date.now();
+            const elapsedSeconds = (currentTime - this.startTime) / 1000;
+            return {
+              elapsedSeconds,
+              cursorProgress: (elapsedSeconds % this.widthSeconds) / this.widthSeconds,
+              animationCycle: Math.floor(elapsedSeconds / this.widthSeconds),
+            };
+          }),
+          takeWhile((data) => data.elapsedSeconds < this.totalDuration, true)
+        );
+      })
+    );
+
+    // Handle animation completion
+    const animationCompletionEvents$ = animationStream$.pipe(
+      filter((data) => data.elapsedSeconds >= this.totalDuration),
+      tap(() => this.handlePlaybackEnd())
+    );
+
+    // Handle frame rendering
+    const animationRenderEvents$ = animationStream$.pipe(
+      filter((data) => data.elapsedSeconds < this.totalDuration),
+      tap((data) => {
+        if (data.animationCycle !== this.animationCycle) {
+          this.animationCycle = data.animationCycle;
+        }
+        this.processAnimationFrame(data.cursorProgress, data.animationCycle);
+      })
+    );
+
+    // Combine all animation effects
+    const allAnimationEvents$ = merge(
+      animationCompletionEvents$,
+      animationRenderEvents$
+    ).pipe(
+      takeUntil(this.destroy$),
+      catchError((error) => {
+        console.error("Animation stream error:", error);
+        return EMPTY;
+      })
+    );
+
+    // Subscribe to animation events
+    this.subscriptions.add(allAnimationEvents$.subscribe());
+  },
+
+  // Helper method to trigger animation state changes
+  triggerAnimationStateChange() {
+    if (this.playbackStateSubject$) {
+      this.playbackStateSubject$.next();
+    }
+  },
+
   handleThemeChange() {
     this.updateThemeColors();
     this.renderGridBackground();
@@ -339,6 +411,11 @@ const ECGPlayer = {
 
     if (this.subscriptions) {
       this.subscriptions.unsubscribe();
+    }
+
+    // Clean up animation subject
+    if (this.playbackStateSubject$) {
+      this.playbackStateSubject$.complete();
     }
 
     if (this.animationId) {
@@ -468,7 +545,7 @@ const ECGPlayer = {
 
     if (wasPlaying) {
       this.isPlaying = true;
-      this.startAnimationLoop();
+      this.triggerAnimationStateChange();
     }
   },
 
@@ -840,8 +917,7 @@ const ECGPlayer = {
       // Clear any existing waveform
       this.clearWaveform();
 
-      // Setup and update button state (button now exists in DOM)
-      this.setupPlayPauseButton();
+      // Update button state (button now exists in DOM)
       this.updatePlayPauseButton();
 
       // Setup selectors (they now exist in DOM)
@@ -1132,7 +1208,7 @@ const ECGPlayer = {
 
     if (wasPlaying) {
       this.isPlaying = true;
-      this.startAnimationLoop();
+      this.triggerAnimationStateChange();
     } else {
       if (this.startTime && this.pausedTime) {
         const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
@@ -1486,8 +1562,9 @@ const ECGPlayer = {
     this.cursorPosition = 0;
 
     this.allLeadsVisibleData = null;
-
-    this.startAnimationLoop();
+    
+    // Trigger RxJS animation stream
+    this.triggerAnimationStateChange();
   },
 
   /**
@@ -1501,7 +1578,10 @@ const ECGPlayer = {
       const pauseDuration = Date.now() - this.pausedTime;
       this.startTime += pauseDuration;
       this.pausedTime = 0;
-      this.startAnimationLoop();
+      this.isPlaying = true;
+      
+      // Trigger RxJS animation stream
+      this.triggerAnimationStateChange();
     }
   },
 
@@ -1511,7 +1591,7 @@ const ECGPlayer = {
    */
   pauseAnimation() {
     this.pausedTime = Date.now();
-    this.stopAnimation();
+    this.isPlaying = false;
 
     // Render the final frame when paused
     const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
@@ -1519,18 +1599,20 @@ const ECGPlayer = {
       (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
     const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
     this.processAnimationFrame(cursorProgress, animationCycle);
+    
+    // Trigger state change to stop RxJS animation stream
+    this.triggerAnimationStateChange();
   },
 
   /**
-   * Stops the `requestAnimationFrame` loop.
+   * Stops the animation by setting isPlaying to false.
    * @returns {void}
    */
   stopAnimation() {
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
     this.isPlaying = false;
+    
+    // Trigger state change to stop RxJS animation stream
+    this.triggerAnimationStateChange();
   },
 
   /**
@@ -1837,41 +1919,6 @@ const ECGPlayer = {
    * @returns {void}
    */
 
-  /**
-   * The main animation driver. It uses `requestAnimationFrame` to repeatedly
-   * call itself, creating a smooth animation loop that is synchronized with
-   * the browser's rendering cycle.
-   * @returns {void}
-   */
-  startAnimationLoop() {
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
-
-    const animate = () => {
-      if (!this.isPlaying || !this.waveformCanvas) {
-        this.stopAnimation();
-        return;
-      }
-
-      const currentTime = Date.now();
-      const elapsedSeconds = (currentTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-
-      if (animationCycle !== this.animationCycle) {
-        this.animationCycle = animationCycle;
-      }
-
-      this.processAnimationFrame(cursorProgress, animationCycle);
-
-      this.animationId = requestAnimationFrame(animate);
-    };
-
-    this.animationId = requestAnimationFrame(animate);
-  },
 
   // =================
   // RENDERING - GRID
