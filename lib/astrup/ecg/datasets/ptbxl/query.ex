@@ -68,6 +68,16 @@ defmodule Astrup.ECG.Datasets.Ptbxl.Query do
   end
 
   @doc """
+  Filter records to only include those with second opinion validation.
+  """
+  def filter_second_opinion(records) do
+    records
+    |> Enum.filter(fn record ->
+      record.second_opinion == true
+    end)
+  end
+
+  @doc """
   Take a specified number of records from each SCP code.
   Groups records by their highest confidence SCP code and takes up to `count` records per code.
   """
