@@ -1,11 +1,13 @@
 defmodule AstrupWeb.ECGViewerLive do
+  alias Astrup.Settings
   use AstrupWeb, :live_view
 
   alias Astrup.ECG
   alias Astrup.ECG.DatasetRegistry
 
   def mount(params, _session, socket) do
-    settings = Astrup.Settings.changeset(socket.assigns.current_scope.user.settings, %{})
+    settings =
+      Astrup.Settings.changeset(socket.assigns.current_scope.user.settings || %Settings{}, %{})
 
     socket =
       socket
