@@ -73,7 +73,7 @@ const ECGPlayer = {
     this.setupEventStreams();
 
     this.handleEvent("load_ecg_data", (payload) => {
-      this.handleECGDataLoaded(payload);
+      this.ecgDataLoaded$.next(payload);
     });
 
     this.updateThemeColors();
@@ -466,6 +466,44 @@ const ECGPlayer = {
         this.handleThemeChange();
       })
     );
+
+    // Subscribe to ECG data loading
+    this.subscriptions.add(
+      this.ecgDataLoaded$.pipe(
+        takeUntil(this.destroy$)
+      ).subscribe((payload) => {
+        this.processECGData(payload);
+      })
+    );
+
+    // Subscribe to animation timing changes
+    this.subscriptions.add(
+      this.animationTime$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(({ startTime, pausedTime }) => {
+        this.startTime = startTime;
+        this.pausedTime = pausedTime;
+      })
+    );
+
+    this.subscriptions.add(
+      this.animationCycle$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(cycle => {
+        this.animationCycle = cycle;
+      })
+    );
+
+    this.subscriptions.add(
+      this.cursorPosition$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(position => {
+        this.cursorPosition = position;
+      })
+    );
   },
 
   setupReactiveUIUpdates() {
@@ -671,12 +709,15 @@ const ECGPlayer = {
     this.updateThemeColors();
     this.renderGridBackground();
     this.clearWaveform();
-    if (!this.isPlaying$.value && this.startTime && this.pausedTime) {
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processAnimationFrame(cursorProgress, animationCycle);
+    if (!this.isPlaying$.value) {
+      const timing = this.animationTime$.value;
+      if (timing.startTime && timing.pausedTime) {
+        const elapsedSeconds = (timing.pausedTime - timing.startTime) / 1000;
+        const cursorProgress =
+          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+        const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+        this.processAnimationFrame(cursorProgress, animationCycle);
+      }
     }
   },
 
@@ -736,6 +777,18 @@ const ECGPlayer = {
     if (this.themeChange$) {
       this.themeChange$.complete();
     }
+    if (this.ecgDataLoaded$) {
+      this.ecgDataLoaded$.complete();
+    }
+    if (this.animationTime$) {
+      this.animationTime$.complete();
+    }
+    if (this.animationCycle$) {
+      this.animationCycle$.complete();
+    }
+    if (this.cursorPosition$) {
+      this.cursorPosition$.complete();
+    }
 
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
@@ -793,6 +846,14 @@ const ECGPlayer = {
     
     // Theme change trigger
     this.themeChange$ = new Subject();
+    
+    // ECG data loading stream
+    this.ecgDataLoaded$ = new Subject();
+    
+    // Animation timing streams
+    this.animationTime$ = new BehaviorSubject({ startTime: null, pausedTime: 0 });
+    this.animationCycle$ = new BehaviorSubject(0);
+    this.cursorPosition$ = new BehaviorSubject(0);
 
     // Reactive cursor width based on display mode
     this.cursorWidth$ = this.displayMode$.pipe(
@@ -1198,12 +1259,12 @@ const ECGPlayer = {
   },
 
   /**
-   * Handles ECG data loaded from the server.
-   * Processes the data and stores it in memory.
+   * Processes ECG data loaded from the server.
+   * Stores the data in memory and triggers reactive updates.
    * @param {object} payload - The ECG data payload from the server.
    * @returns {void}
    */
-  handleECGDataLoaded(payload) {
+  processECGData(payload) {
     try {
       const data = payload.data;
 
@@ -1608,6 +1669,9 @@ const ECGPlayer = {
 
     this.checkQrsOccurrences(elapsedTime);
     this.calculateCursorPosition(elapsedTime);
+    
+    // Update animation cycle reactively
+    this.animationCycle$.next(animationCycle);
 
     if (this.displayMode$.value === "single") {
       this.loadVisibleDataForSingleLead(elapsedTime);
@@ -1623,7 +1687,7 @@ const ECGPlayer = {
       const cursorData = {
         times: this.activeCursorData.times,
         values: this.activeCursorData.values,
-        cursorPosition: this.cursorPosition,
+        cursorPosition: this.cursorPosition$.value,
         cursorWidth: cursorClearWidth,
       };
 
@@ -1649,7 +1713,7 @@ const ECGPlayer = {
 
         const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
         const columnProgress =
-          (this.cursorPosition / this.chartWidth) *
+          (this.cursorPosition$.value / this.chartWidth) *
           (this.widthSeconds / columnTimeSpan);
         const localCursorPosition =
           xOffset + (columnProgress % 1) * columnWidth;
@@ -1696,8 +1760,8 @@ const ECGPlayer = {
    * @returns {void}
    */
   calculateCursorPosition(elapsedTime) {
-    this.cursorPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
-    this.cursorPosition = this.cursorPosition % this.chartWidth;
+    const newPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
+    this.cursorPosition$.next(newPosition % this.chartWidth);
   },
 
   /**
@@ -1844,10 +1908,10 @@ const ECGPlayer = {
    */
   startAnimation() {
     this.isPlaying$.next(true);
-    this.startTime = Date.now();
-    this.pausedTime = 0;
-    this.animationCycle = 0;
-    this.cursorPosition = 0;
+    const startTime = Date.now();
+    this.animationTime$.next({ startTime, pausedTime: 0 });
+    this.animationCycle$.next(0);
+    this.cursorPosition$.next(0);
 
     this.allLeadsVisibleData = null;
   },
@@ -1857,12 +1921,13 @@ const ECGPlayer = {
    * @returns {void}
    */
   resumeAnimation() {
-    if (!this.startTime) {
+    const currentTime = this.animationTime$.value;
+    if (!currentTime.startTime) {
       this.startAnimation();
     } else {
-      const pauseDuration = Date.now() - this.pausedTime;
-      this.startTime += pauseDuration;
-      this.pausedTime = 0;
+      const pauseDuration = Date.now() - currentTime.pausedTime;
+      const newStartTime = currentTime.startTime + pauseDuration;
+      this.animationTime$.next({ startTime: newStartTime, pausedTime: 0 });
       this.isPlaying$.next(true);
     }
   },
@@ -1872,11 +1937,13 @@ const ECGPlayer = {
    * @returns {void}
    */
   pauseAnimation() {
-    this.pausedTime = Date.now();
+    const pausedTime = Date.now();
+    const currentTime = this.animationTime$.value;
+    this.animationTime$.next({ startTime: currentTime.startTime, pausedTime });
     this.isPlaying$.next(false);
 
     // Render the final frame when paused
-    const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+    const elapsedSeconds = (pausedTime - currentTime.startTime) / 1000;
     const cursorProgress =
       (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
     const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
@@ -1897,10 +1964,9 @@ const ECGPlayer = {
    */
   resetPlayback() {
     this.stopAnimation();
-    this.startTime = null;
-    this.pausedTime = 0;
-    this.animationCycle = 0;
-    this.cursorPosition = 0;
+    this.animationTime$.next({ startTime: null, pausedTime: 0 });
+    this.animationCycle$.next(0);
+    this.cursorPosition$.next(0);
 
     this.allLeadsVisibleData = null;
 
