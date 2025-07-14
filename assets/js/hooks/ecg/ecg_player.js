@@ -77,7 +77,6 @@ const ECGPlayer = {
 
     this.updateThemeColors();
     this.initializeECGChart();
-
   },
 
   setupEventStreams() {
@@ -148,7 +147,6 @@ const ECGPlayer = {
     );
 
     const formEvents$ = this.setupFormEventStreams();
-
 
     const allEvents$ = merge(
       resizeEvents$,
@@ -599,11 +597,11 @@ const ECGPlayer = {
 
     // Process segments in batches to prevent blocking
     return from(timeSegments).pipe(
-        bufferCount(10),
+      bufferCount(10),
       concatMap((segmentBatch) =>
         timer(0).pipe(
           map(() => {
-                const batchResults = [];
+            const batchResults = [];
             for (const time of segmentBatch) {
               const segmentKey = Math.floor(time / this.segmentDuration);
               const startTime = segmentKey * this.segmentDuration;
@@ -651,7 +649,6 @@ const ECGPlayer = {
       map(() => ({ leadIndex, segments: leadSegments }))
     );
   },
-
 
   handleThemeChange() {
     this.updateThemeColors();
@@ -1216,7 +1213,7 @@ const ECGPlayer = {
         return;
       }
 
-        this.stopAnimation();
+      this.stopAnimation();
 
       this.resetPlayback();
 
@@ -1224,7 +1221,7 @@ const ECGPlayer = {
       this.leadNames = data.sig_name;
       this.totalDuration = data.p_signal.length / data.fs;
 
-        this.qrsIndexes = data.qrs || [];
+      this.qrsIndexes = data.qrs || [];
       this.qrsTimestamps = this.qrsIndexes.map(
         (index) => index / this.samplingRate
       );
@@ -1262,9 +1259,9 @@ const ECGPlayer = {
       this.yMax = HEIGHT_MILLIVOLTS / 2;
       this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
 
-        const precomputationStream$ = this.setupDataPrecomputationStream();
+      const precomputationStream$ = this.setupDataPrecomputationStream();
 
-        this.subscriptions.add(
+      this.subscriptions.add(
         precomputationStream$.subscribe({
           next: (processedCount) => {
             // Optional: Add progress feedback here
@@ -1278,16 +1275,15 @@ const ECGPlayer = {
         })
       );
 
-        this.renderGridBackground();
+      this.renderGridBackground();
 
-        this.clearWaveform();
+      this.clearWaveform();
 
-  
-        this.setupPlayPauseEvents();
+      this.setupPlayPauseEvents();
 
-        this.setupSelectors();
+      this.setupSelectors();
 
-        this.updateLeadSelectorVisibility(this.displayMode$.value);
+      this.updateLeadSelectorVisibility(this.displayMode$.value);
 
       console.log("ECG data loaded successfully:", {
         samplingRate: this.samplingRate,
@@ -1342,14 +1338,14 @@ const ECGPlayer = {
     this.cleanupCanvases();
 
     const canvasHeight =
-      this.displayMode === "multi"
+      this.displayMode$.value === "multi"
         ? ROWS_PER_DISPLAY *
             ((CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
           (ROWS_PER_DISPLAY - 1) * ROW_PADDING
         : CHART_HEIGHT * this.heightScale;
 
     this.leadHeight =
-      this.displayMode === "multi"
+      this.displayMode$.value === "multi"
         ? (CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE
         : CHART_HEIGHT * this.heightScale;
 
@@ -1488,7 +1484,7 @@ const ECGPlayer = {
     this.currentLead$.next(leadIndex);
 
     if (this.displayMode$.value === "single") {
-        this.clearWaveform();
+      this.clearWaveform();
       this.renderGridBackground();
     }
 
@@ -1687,7 +1683,7 @@ const ECGPlayer = {
     this.activeSegments = segments;
 
     if (segments.length > 0) {
-        const times = [];
+      const times = [];
       const values = [];
 
       for (const segment of segments) {
@@ -1728,7 +1724,7 @@ const ECGPlayer = {
       leadIndex < this.ecgLeadDatasets.length;
       leadIndex++
     ) {
-        const segments = this.getSegmentsForTimeRange(
+      const segments = this.getSegmentsForTimeRange(
         leadIndex,
         columnCycleStart,
         elapsedTime
@@ -1738,7 +1734,7 @@ const ECGPlayer = {
       }
 
       if (segments.length > 0) {
-            const times = [];
+        const times = [];
         const values = [];
 
         for (const segment of segments) {
@@ -1778,13 +1774,13 @@ const ECGPlayer = {
       if (qrsTime <= elapsedTime) {
         this.qrsDetectedCount++;
 
-            if (this.qrsDetectionSubject$) {
+        if (this.qrsDetectionSubject$) {
           this.qrsDetectionSubject$.next(qrsTime);
         }
 
         this.lastQrsIndex = i;
       } else {
-            break;
+        break;
       }
     }
   },
@@ -1881,7 +1877,7 @@ const ECGPlayer = {
     const button = document.getElementById("play-pause-button");
     if (button) {
       const isPlaying = this.isPlaying$.value;
-        const iconClass = isPlaying ? "hero-pause" : "hero-play";
+      const iconClass = isPlaying ? "hero-pause" : "hero-play";
       const iconHtml = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24">
         ${
           isPlaying
@@ -1890,10 +1886,10 @@ const ECGPlayer = {
         }
       </svg>`;
 
-        const buttonText = isPlaying ? "Pause" : "Play";
+      const buttonText = isPlaying ? "Pause" : "Play";
       const textHtml = `<span class="ml-1">${buttonText}</span>`;
 
-        button.innerHTML = iconHtml + textHtml;
+      button.innerHTML = iconHtml + textHtml;
     }
   },
 
@@ -1945,7 +1941,8 @@ const ECGPlayer = {
         this.loopEnabled$.next(checked);
       },
       (element) => {
-        /** @type {HTMLInputElement} */ (element).checked = this.loopEnabled$.value;
+        /** @type {HTMLInputElement} */ (element).checked =
+          this.loopEnabled$.value;
       }
     );
 
@@ -2461,7 +2458,6 @@ const ECGPlayer = {
       timeSpan,
       cursorData = null,
     } = options;
-
 
     if (cursorData) {
       this.drawWaveformToCursor({
