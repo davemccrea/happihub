@@ -89,7 +89,7 @@ const ECGPlayer = {
 
     // Set up reactive state subscriptions
     this.setupReactiveStateSubscriptions();
-    
+
     // Set up reactive UI updates
     this.setupReactiveUIUpdates();
 
@@ -316,7 +316,7 @@ const ECGPlayer = {
           takeUntil(this.destroy$)
         )
         .subscribe();
-      
+
       this.subscriptions.add(this.playPauseSubscription);
     }
   },
@@ -329,9 +329,7 @@ const ECGPlayer = {
   setupReactiveStateSubscriptions() {
     // Subscribe to cursor width changes
     this.subscriptions.add(
-      this.cursorWidth$.pipe(
-        takeUntil(this.destroy$)
-      ).subscribe(newWidth => {
+      this.cursorWidth$.pipe(takeUntil(this.destroy$)).subscribe((newWidth) => {
         this.cursorWidth = newWidth;
         this.updateCursorStyle();
       })
@@ -339,192 +337,181 @@ const ECGPlayer = {
 
     // Subscribe to display mode changes for UI updates
     this.subscriptions.add(
-      this.displayMode$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(mode => {
-        this.updateLeadSelectorVisibility(mode);
-        this.canvasRecreationTrigger$.next();
-      })
+      this.displayMode$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((mode) => {
+          this.updateLeadSelectorVisibility(mode);
+          this.canvasRecreationTrigger$.next();
+        })
     );
 
     // Subscribe to current lead changes
     this.subscriptions.add(
-      this.currentLead$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(leadIndex => {
-        if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
-          this.currentLeadData = this.ecgLeadDatasets[leadIndex];
-          this.updateLeadSelector(leadIndex);
-        }
-      })
+      this.currentLead$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((leadIndex) => {
+          if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
+            this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+            this.updateLeadSelector(leadIndex);
+          }
+        })
     );
 
     // Subscribe to scale changes
     this.subscriptions.add(
-      this.gridScale$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(scale => {
-        this.gridScale = scale;
-        this.updateGridScaleDisplay();
-        this.handleGridScaleChange();
-      })
+      this.gridScale$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((scale) => {
+          this.gridScale = scale;
+          this.updateGridScaleDisplay();
+          this.handleGridScaleChange();
+        })
     );
 
     this.subscriptions.add(
-      this.amplitudeScale$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(scale => {
-        this.amplitudeScale = scale;
-        this.updateAmplitudeScaleDisplay();
-        this.handleAmplitudeScaleChange();
-      })
+      this.amplitudeScale$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((scale) => {
+          this.amplitudeScale = scale;
+          this.updateAmplitudeScaleDisplay();
+          this.handleAmplitudeScaleChange();
+        })
     );
 
     this.subscriptions.add(
-      this.heightScale$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(scale => {
-        this.heightScale = scale;
-        this.updateHeightScaleDisplay();
-        this.handleHeightScaleChange();
-      })
+      this.heightScale$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((scale) => {
+          this.heightScale = scale;
+          this.updateHeightScaleDisplay();
+          this.handleHeightScaleChange();
+        })
     );
 
     this.subscriptions.add(
-      this.leadHeight$.pipe(
-        takeUntil(this.destroy$)
-      ).subscribe(height => {
+      this.leadHeight$.pipe(takeUntil(this.destroy$)).subscribe((height) => {
         this.leadHeight = height;
       })
     );
 
     // Subscribe to grid type changes
     this.subscriptions.add(
-      this.gridType$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(gridType => {
-        this.gridType = gridType;
-        this.renderGridBackground();
-      })
+      this.gridType$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((gridType) => {
+          this.gridType = gridType;
+          this.renderGridBackground();
+        })
     );
 
     // Subscribe to checkbox state changes
     this.subscriptions.add(
-      this.loopEnabled$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(enabled => {
-        this.loopEnabled = enabled;
-      })
+      this.loopEnabled$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((enabled) => {
+          this.loopEnabled = enabled;
+        })
     );
 
     this.subscriptions.add(
-      this.qrsIndicatorEnabled$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(enabled => {
-        this.qrsIndicatorEnabled = enabled;
-        if (!enabled && this.qrsFlashActive$.value) {
-          this.qrsFlashActive$.next(false);
-          this.clearQrsFlashArea();
-        }
-      })
+      this.qrsIndicatorEnabled$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((enabled) => {
+          this.qrsIndicatorEnabled = enabled;
+          if (!enabled && this.qrsFlashActive$.value) {
+            this.qrsFlashActive$.next(false);
+            this.clearQrsFlashArea();
+          }
+        })
     );
 
     // Subscribe to QRS flash state changes
     this.subscriptions.add(
-      this.qrsFlashActive$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(isActive => {
-        this.qrsFlashActive = isActive;
-      })
+      this.qrsFlashActive$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((isActive) => {
+          this.qrsFlashActive = isActive;
+        })
     );
 
     // Subscribe to canvas recreation events
     this.subscriptions.add(
-      this.canvasRecreationTrigger$.pipe(
-        debounceTime(50), // Debounce multiple rapid triggers
-        takeUntil(this.destroy$)
-      ).subscribe(() => {
-        this.recreateCanvasAndRestart();
-      })
+      this.canvasRecreationTrigger$
+        .pipe(
+          debounceTime(50), // Debounce multiple rapid triggers
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          this.recreateCanvasAndRestart();
+        })
     );
 
     // Subscribe to theme changes
     this.subscriptions.add(
-      this.themeChange$.pipe(
-        debounceTime(50), // Debounce multiple rapid triggers
-        takeUntil(this.destroy$)
-      ).subscribe(() => {
-        this.handleThemeChange();
-      })
+      this.themeChange$
+        .pipe(
+          debounceTime(50), // Debounce multiple rapid triggers
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          this.handleThemeChange();
+        })
     );
 
     // Subscribe to ECG data loading
     this.subscriptions.add(
-      this.ecgDataLoaded$.pipe(
-        takeUntil(this.destroy$)
-      ).subscribe((payload) => {
-        this.processECGData(payload);
-      })
+      this.ecgDataLoaded$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((payload) => {
+          this.processECGData(payload);
+        })
     );
 
     // Subscribe to animation timing changes
     this.subscriptions.add(
-      this.animationTime$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(({ startTime, pausedTime }) => {
-        this.startTime = startTime;
-        this.pausedTime = pausedTime;
-      })
+      this.animationTime$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe(({ startTime, pausedTime }) => {
+          this.startTime = startTime;
+          this.pausedTime = pausedTime;
+        })
     );
 
     this.subscriptions.add(
-      this.animationCycle$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(cycle => {
-        this.animationCycle = cycle;
-      })
+      this.animationCycle$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((cycle) => {
+          this.animationCycle = cycle;
+        })
     );
 
     this.subscriptions.add(
-      this.cursorPosition$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(position => {
-        this.cursorPosition = position;
-      })
+      this.cursorPosition$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((position) => {
+          this.cursorPosition = position;
+        })
     );
   },
 
   setupReactiveUIUpdates() {
     // Reactive play/pause button updates
     this.subscriptions.add(
-      this.isPlaying$.pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      ).subscribe(isPlaying => {
-        this.updatePlayPauseButton();
-      })
+      this.isPlaying$
+        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+        .subscribe((isPlaying) => {
+          this.updatePlayPauseButton();
+        })
     );
   },
 
   setupAnimationStream() {
     // Store reference for QRS detection events
     this.qrsDetectionSubject$ = new Subject();
-    
+
     // Setup QRS flash stream
     this.setupQrsFlashStream();
-    
+
     // Create animation frame stream that responds to playback state
     const animationStream$ = this.isPlaying$.pipe(
       distinctUntilChanged(),
@@ -539,7 +526,8 @@ const ECGPlayer = {
             const elapsedSeconds = (currentTime - this.startTime) / 1000;
             return {
               elapsedSeconds,
-              cursorProgress: (elapsedSeconds % this.widthSeconds) / this.widthSeconds,
+              cursorProgress:
+                (elapsedSeconds % this.widthSeconds) / this.widthSeconds,
               animationCycle: Math.floor(elapsedSeconds / this.widthSeconds),
             };
           }),
@@ -617,19 +605,24 @@ const ECGPlayer = {
     // Create reactive data precomputation pipeline
     return from(this.ecgLeadDatasets).pipe(
       // Process leads with controlled concurrency (max 2 at a time)
-      mergeMap((leadData, leadIndex) => 
-        this.precomputeLeadSegments(leadData, leadIndex), 2
+      mergeMap(
+        (leadData, leadIndex) =>
+          this.precomputeLeadSegments(leadData, leadIndex),
+        2
       ),
       // Collect all processed lead segments
       scan((acc, leadResult) => {
         if (leadResult) {
-          this.precomputedSegments.set(leadResult.leadIndex, leadResult.segments);
+          this.precomputedSegments.set(
+            leadResult.leadIndex,
+            leadResult.segments
+          );
         }
         return acc + 1;
       }, 0),
       // Handle errors gracefully
       catchError((error) => {
-        console.error('Data precomputation error:', error);
+        console.error("Data precomputation error:", error);
         return of(null);
       }),
       // Share stream for multiple subscribers
@@ -642,9 +635,13 @@ const ECGPlayer = {
   precomputeLeadSegments(leadData, leadIndex) {
     const leadSegments = new Map();
     const timeSegments = [];
-    
+
     // Create time segments array
-    for (let time = 0; time < this.totalDuration; time += this.segmentDuration) {
+    for (
+      let time = 0;
+      time < this.totalDuration;
+      time += this.segmentDuration
+    ) {
       timeSegments.push(time);
     }
 
@@ -653,7 +650,7 @@ const ECGPlayer = {
       // Buffer time segments into chunks of 10 for processing
       bufferCount(10),
       // Process each batch with a small delay to yield control
-      concatMap(segmentBatch => 
+      concatMap((segmentBatch) =>
         timer(0).pipe(
           map(() => {
             // Process this batch of segments
@@ -666,10 +663,19 @@ const ECGPlayer = {
                 this.totalDuration
               );
 
-              const startIndex = this.calculateDataIndexForTime(leadData, startTime);
-              const endIndex = this.calculateDataIndexForTime(leadData, endTime);
+              const startIndex = this.calculateDataIndexForTime(
+                leadData,
+                startTime
+              );
+              const endIndex = this.calculateDataIndexForTime(
+                leadData,
+                endTime
+              );
 
-              if (endIndex >= startIndex && startIndex < leadData.times.length) {
+              if (
+                endIndex >= startIndex &&
+                startIndex < leadData.times.length
+              ) {
                 const times = leadData.times.slice(startIndex, endIndex + 1);
                 const values = leadData.values.slice(startIndex, endIndex + 1);
 
@@ -679,7 +685,7 @@ const ECGPlayer = {
                     times: times.map((t) => t - startTime),
                     values: values,
                     originalStartTime: startTime,
-                  }
+                  },
                 });
               }
             }
@@ -688,7 +694,7 @@ const ECGPlayer = {
         )
       ),
       // Flatten all batches into individual segments
-      mergeMap(batchResults => from(batchResults)),
+      mergeMap((batchResults) => from(batchResults)),
       // Collect all segments for this lead
       scan((acc, segmentResult) => {
         acc.set(segmentResult.segmentKey, segmentResult.segment);
@@ -814,18 +820,24 @@ const ECGPlayer = {
     // Display and playback settings - initial values
     const initialGridType = this.readFormValue("grid_type") || "telemetry";
     const initialDisplayMode = this.readFormValue("display_mode") || "single";
-    const initialCurrentLead = parseInt(this.readFormValue("current_lead") || "0");
+    const initialCurrentLead = parseInt(
+      this.readFormValue("current_lead") || "0"
+    );
 
     // Playback options - initial values
     const initialLoopEnabled = this.readFormCheckbox("loop_playback");
     const initialQrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
 
     // Scale settings - initial values
-    const initialGridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
+    const initialGridScale = parseFloat(
+      this.readFormValue("grid_scale") || "1.0"
+    );
     const initialAmplitudeScale = parseFloat(
       this.readFormValue("amplitude_scale") || "1.0"
     );
-    const initialHeightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
+    const initialHeightScale = parseFloat(
+      this.readFormValue("height_scale") || "1.2"
+    );
 
     // Reactive state management
     this.isPlaying$ = new BehaviorSubject(false);
@@ -837,27 +849,32 @@ const ECGPlayer = {
     this.heightScale$ = new BehaviorSubject(initialHeightScale);
     this.loopEnabled$ = new BehaviorSubject(initialLoopEnabled);
     this.qrsIndicatorEnabled$ = new BehaviorSubject(initialQrsIndicatorEnabled);
-    
+
     // QRS flash state as reactive stream
     this.qrsFlashActive$ = new BehaviorSubject(false);
-    
+
     // Canvas recreation trigger
     this.canvasRecreationTrigger$ = new Subject();
-    
+
     // Theme change trigger
     this.themeChange$ = new Subject();
-    
+
     // ECG data loading stream
     this.ecgDataLoaded$ = new Subject();
-    
+
     // Animation timing streams
-    this.animationTime$ = new BehaviorSubject({ startTime: null, pausedTime: 0 });
+    this.animationTime$ = new BehaviorSubject({
+      startTime: null,
+      pausedTime: 0,
+    });
     this.animationCycle$ = new BehaviorSubject(0);
     this.cursorPosition$ = new BehaviorSubject(0);
 
     // Reactive cursor width based on display mode
     this.cursorWidth$ = this.displayMode$.pipe(
-      map((mode) => mode === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH),
+      map((mode) =>
+        mode === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH
+      ),
       distinctUntilChanged(),
       share()
     );
@@ -870,9 +887,10 @@ const ECGPlayer = {
     );
 
     // Initialize current values
-    this.cursorWidth = initialDisplayMode === "single" 
-      ? SINGLE_LEAD_CURSOR_WIDTH 
-      : MULTI_LEAD_CURSOR_WIDTH;
+    this.cursorWidth =
+      initialDisplayMode === "single"
+        ? SINGLE_LEAD_CURSOR_WIDTH
+        : MULTI_LEAD_CURSOR_WIDTH;
     this.gridType = initialGridType;
     this.gridScale = initialGridScale;
     this.amplitudeScale = initialAmplitudeScale;
@@ -1323,19 +1341,19 @@ const ECGPlayer = {
 
       // Pre-compute data segments for all leads reactively
       const precomputationStream$ = this.setupDataPrecomputationStream();
-      
+
       // Subscribe to precomputation progress
       this.subscriptions.add(
         precomputationStream$.subscribe({
           next: (processedCount) => {
             // Optional: Add progress feedback here
             if (processedCount === this.ecgLeadDatasets.length) {
-              console.log('Data precomputation completed');
+              console.log("Data precomputation completed");
             }
           },
           error: (error) => {
-            console.error('Precomputation failed:', error);
-          }
+            console.error("Precomputation failed:", error);
+          },
         })
       );
 
@@ -1511,7 +1529,6 @@ const ECGPlayer = {
   // DATA PRE-COMPUTATION
   // ====================
 
-
   /**
    * Retrieves all the pre-computed data segments that fall within a given time range.
    * This is the main function used by the animation to get the data it needs to draw.
@@ -1599,10 +1616,6 @@ const ECGPlayer = {
     if (currentLead < this.ecgLeadDatasets.length - 1) {
       const nextLead = currentLead + 1;
       this.switchLead(nextLead);
-
-      this.pushEventTo(this.targetComponent, "lead_changed", {
-        lead: nextLead,
-      });
     }
   },
 
@@ -1617,10 +1630,6 @@ const ECGPlayer = {
     if (currentLead > 0) {
       const prevLead = currentLead - 1;
       this.switchLead(prevLead);
-
-      this.pushEventTo(this.targetComponent, "lead_changed", {
-        lead: prevLead,
-      });
     }
   },
 
@@ -1636,10 +1645,6 @@ const ECGPlayer = {
     const newPlayingState = !this.isPlaying$.value;
     this.isPlaying$.next(newPlayingState);
 
-    this.pushEventTo(this.targetComponent, "playback_changed", {
-      is_playing: newPlayingState,
-    });
-
     if (newPlayingState) {
       this.resumeAnimation();
     } else {
@@ -1648,7 +1653,6 @@ const ECGPlayer = {
   },
 
   handlePlaybackEnd() {
-    this.pushEventTo(this.targetComponent, "playback_ended", {});
     if (this.loopEnabled$.value) {
       this.resetPlayback();
       this.startAnimation();
@@ -1669,7 +1673,7 @@ const ECGPlayer = {
 
     this.checkQrsOccurrences(elapsedTime);
     this.calculateCursorPosition(elapsedTime);
-    
+
     // Update animation cycle reactively
     this.animationCycle$.next(animationCycle);
 
@@ -1891,7 +1895,6 @@ const ECGPlayer = {
     }
   },
 
-
   clearQrsFlashArea() {
     if (!this.qrsFlashContext || !this.qrsFlashCanvas) return;
 
@@ -2007,7 +2010,6 @@ const ECGPlayer = {
     }
   },
 
-
   /**
    * Sets up event handlers for the three selectors.
    * @returns {void}
@@ -2033,24 +2035,17 @@ const ECGPlayer = {
       const leadIndex = parseInt(
         /** @type {HTMLSelectElement} */ (e.target).value
       );
-      this.currentLead = leadIndex;
-      this.switchLead(leadIndex);
+      this.currentLead$.next(leadIndex);
     });
 
     this.setupElementListener("display-mode-selector", "change", (e) => {
       const value = /** @type {HTMLSelectElement} */ (e.target).value;
-      this.displayMode = value;
-      this.cursorWidth =
-        value === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH;
-      this.recreateCanvasAndRestart();
-      this.updateCursorStyle();
-      this.updateLeadSelectorVisibility(value);
+      this.displayMode$.next(value);
     });
 
     this.setupElementListener("grid-type-selector", "change", (e) => {
       const value = /** @type {HTMLSelectElement} */ (e.target).value;
-      this.gridType = value;
-      this.renderGridBackground();
+      this.gridType$.next(value);
     });
   },
 
@@ -2059,12 +2054,11 @@ const ECGPlayer = {
       "loop-checkbox",
       "change",
       (event) => {
-        this.loopEnabled = /** @type {HTMLInputElement} */ (
-          event.target
-        ).checked;
+        const checked = /** @type {HTMLInputElement} */ (event.target).checked;
+        this.loopEnabled$.next(checked);
       },
       (element) => {
-        /** @type {HTMLInputElement} */ (element).checked = this.loopEnabled;
+        /** @type {HTMLInputElement} */ (element).checked = this.loopEnabled$.value;
       }
     );
 
@@ -2072,17 +2066,15 @@ const ECGPlayer = {
       "qrs-indicator-checkbox",
       "change",
       (event) => {
-        this.qrsIndicatorEnabled = /** @type {HTMLInputElement} */ (
-          event.target
-        ).checked;
-        if (!this.qrsIndicatorEnabled && this.qrsFlashActive) {
-          this.qrsFlashActive = false;
-          this.clearQrsFlashArea();
+        const checked = /** @type {HTMLInputElement} */ (event.target).checked;
+        this.qrsIndicatorEnabled$.next(checked);
+        if (!checked && this.qrsFlashActive$.value) {
+          this.qrsFlashActive$.next(false);
         }
       },
       (element) => {
         /** @type {HTMLInputElement} */ (element).checked =
-          this.qrsIndicatorEnabled;
+          this.qrsIndicatorEnabled$.value;
       }
     );
   },
@@ -2092,15 +2084,14 @@ const ECGPlayer = {
       "grid-scale-slider",
       "input",
       (event) => {
-        this.gridScale = parseFloat(
+        const value = parseFloat(
           /** @type {HTMLInputElement} */ (event.target).value
         );
-        this.updateGridScaleDisplay();
-        this.handleGridScaleChange();
+        this.gridScale$.next(value);
       },
       (element) => {
         /** @type {HTMLInputElement} */ (element).value =
-          this.gridScale.toString();
+          this.gridScale$.value.toString();
         this.updateGridScaleDisplay();
       }
     );
@@ -2109,15 +2100,14 @@ const ECGPlayer = {
       "amplitude-scale-slider",
       "input",
       (event) => {
-        this.amplitudeScale = parseFloat(
+        const value = parseFloat(
           /** @type {HTMLInputElement} */ (event.target).value
         );
-        this.updateAmplitudeScaleDisplay();
-        this.handleAmplitudeScaleChange();
+        this.amplitudeScale$.next(value);
       },
       (element) => {
         /** @type {HTMLInputElement} */ (element).value =
-          this.amplitudeScale.toString();
+          this.amplitudeScale$.value.toString();
         this.updateAmplitudeScaleDisplay();
       }
     );
@@ -2126,16 +2116,14 @@ const ECGPlayer = {
       "height-scale-slider",
       "input",
       (event) => {
-        this.heightScale = parseFloat(
+        const value = parseFloat(
           /** @type {HTMLInputElement} */ (event.target).value
         );
-        this.leadHeight = CHART_HEIGHT * this.heightScale;
-        this.updateHeightScaleDisplay();
-        this.handleHeightScaleChange();
+        this.heightScale$.next(value);
       },
       (element) => {
         /** @type {HTMLInputElement} */ (element).value =
-          this.heightScale.toString();
+          this.heightScale$.value.toString();
         this.updateHeightScaleDisplay();
       }
     );
@@ -2240,7 +2228,6 @@ const ECGPlayer = {
    * Updates the lead selector value to match the current lead.
    * @returns {void}
    */
-
 
   // =================
   // RENDERING - GRID
