@@ -18,6 +18,14 @@ import {
   takeWhile,
   timer,
   startWith,
+  from,
+  concatMap,
+  mergeMap,
+  bufferCount,
+  scan,
+  share,
+  of,
+  takeLast,
   // @ts-ignore
 } from "rxjs";
 
@@ -420,6 +428,101 @@ const ECGPlayer = {
 
     // Subscribe to QRS flash events
     this.subscriptions.add(qrsFlashStream$.subscribe());
+  },
+
+  setupDataPrecomputationStream() {
+    // Clear existing data
+    this.precomputedSegments.clear();
+    this.dataIndexCache.clear();
+
+    if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) {
+      return of(null);
+    }
+
+    // Create reactive data precomputation pipeline
+    return from(this.ecgLeadDatasets).pipe(
+      // Process leads with controlled concurrency (max 2 at a time)
+      mergeMap((leadData, leadIndex) => 
+        this.precomputeLeadSegments(leadData, leadIndex), 2
+      ),
+      // Collect all processed lead segments
+      scan((acc, leadResult) => {
+        if (leadResult) {
+          this.precomputedSegments.set(leadResult.leadIndex, leadResult.segments);
+        }
+        return acc + 1;
+      }, 0),
+      // Handle errors gracefully
+      catchError((error) => {
+        console.error('Data precomputation error:', error);
+        return of(null);
+      }),
+      // Share stream for multiple subscribers
+      share(),
+      // Cleanup on component destruction
+      takeUntil(this.destroy$)
+    );
+  },
+
+  precomputeLeadSegments(leadData, leadIndex) {
+    const leadSegments = new Map();
+    const timeSegments = [];
+    
+    // Create time segments array
+    for (let time = 0; time < this.totalDuration; time += this.segmentDuration) {
+      timeSegments.push(time);
+    }
+
+    // Process segments in batches to prevent blocking
+    return from(timeSegments).pipe(
+      // Buffer time segments into chunks of 10 for processing
+      bufferCount(10),
+      // Process each batch with a small delay to yield control
+      concatMap(segmentBatch => 
+        timer(0).pipe(
+          map(() => {
+            // Process this batch of segments
+            const batchResults = [];
+            for (const time of segmentBatch) {
+              const segmentKey = Math.floor(time / this.segmentDuration);
+              const startTime = segmentKey * this.segmentDuration;
+              const endTime = Math.min(
+                startTime + this.segmentDuration,
+                this.totalDuration
+              );
+
+              const startIndex = this.calculateDataIndexForTime(leadData, startTime);
+              const endIndex = this.calculateDataIndexForTime(leadData, endTime);
+
+              if (endIndex >= startIndex && startIndex < leadData.times.length) {
+                const times = leadData.times.slice(startIndex, endIndex + 1);
+                const values = leadData.values.slice(startIndex, endIndex + 1);
+
+                batchResults.push({
+                  segmentKey,
+                  segment: {
+                    times: times.map((t) => t - startTime),
+                    values: values,
+                    originalStartTime: startTime,
+                  }
+                });
+              }
+            }
+            return batchResults;
+          })
+        )
+      ),
+      // Flatten all batches into individual segments
+      mergeMap(batchResults => from(batchResults)),
+      // Collect all segments for this lead
+      scan((acc, segmentResult) => {
+        acc.set(segmentResult.segmentKey, segmentResult.segment);
+        return acc;
+      }, leadSegments),
+      // Return the final result for this lead after all segments processed
+      takeLast(1),
+      map(() => ({ leadIndex, segments: leadSegments }))
+    );
   },
 
   // Helper method to trigger animation state changes
@@ -942,8 +1045,23 @@ const ECGPlayer = {
       this.yMax = HEIGHT_MILLIVOLTS / 2;
       this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
 
-      // Pre-compute data segments for all leads
-      this.precomputeDataSegments();
+      // Pre-compute data segments for all leads reactively
+      const precomputationStream$ = this.setupDataPrecomputationStream();
+      
+      // Subscribe to precomputation progress
+      this.subscriptions.add(
+        precomputationStream$.subscribe({
+          next: (processedCount) => {
+            // Optional: Add progress feedback here
+            if (processedCount === this.ecgLeadDatasets.length) {
+              console.log('Data precomputation completed');
+            }
+          },
+          error: (error) => {
+            console.error('Precomputation failed:', error);
+          }
+        })
+      );
 
       // Re-render the grid background with the new data
       this.renderGridBackground();
@@ -1118,61 +1236,6 @@ const ECGPlayer = {
   // DATA PRE-COMPUTATION
   // ====================
 
-  /**
-   * A key performance optimization. This function runs once at startup to process
-   * the entire ECG dataset. It chunks the data for each lead into small, 100ms segments
-   * and stores them in a Map for extremely fast lookups during the animation loop.
-   * This avoids slow array searches on every frame.
-   * @returns {void}
-   */
-  precomputeDataSegments() {
-    this.precomputedSegments.clear();
-    this.dataIndexCache.clear();
-
-    if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) {
-      return;
-    }
-
-    // Pre-compute segments for each lead
-    for (
-      let leadIndex = 0;
-      leadIndex < this.ecgLeadDatasets.length;
-      leadIndex++
-    ) {
-      const leadData = this.ecgLeadDatasets[leadIndex];
-      const leadSegments = new Map();
-
-      // Create segments every 100ms
-      for (
-        let time = 0;
-        time < this.totalDuration;
-        time += this.segmentDuration
-      ) {
-        const segmentKey = Math.floor(time / this.segmentDuration);
-        const startTime = segmentKey * this.segmentDuration;
-        const endTime = Math.min(
-          startTime + this.segmentDuration,
-          this.totalDuration
-        );
-
-        const startIndex = this.calculateDataIndexForTime(leadData, startTime);
-        const endIndex = this.calculateDataIndexForTime(leadData, endTime);
-
-        if (endIndex >= startIndex && startIndex < leadData.times.length) {
-          const times = leadData.times.slice(startIndex, endIndex + 1);
-          const values = leadData.values.slice(startIndex, endIndex + 1);
-
-          leadSegments.set(segmentKey, {
-            times: times.map((t) => t - startTime),
-            values: values,
-            originalStartTime: startTime,
-          });
-        }
-      }
-
-      this.precomputedSegments.set(leadIndex, leadSegments);
-    }
-  },
 
   /**
    * Retrieves all the pre-computed data segments that fall within a given time range.
