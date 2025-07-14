@@ -89,6 +89,9 @@ const ECGPlayer = {
 
     // Set up reactive state subscriptions
     this.setupReactiveStateSubscriptions();
+    
+    // Set up reactive UI updates
+    this.setupReactiveUIUpdates();
 
     // Resize events
     const resizeEvents$ = fromEvent(window, "resize").pipe(
@@ -421,6 +424,18 @@ const ECGPlayer = {
           this.qrsFlashActive = false;
           this.clearQrsFlashArea();
         }
+      })
+    );
+  },
+
+  setupReactiveUIUpdates() {
+    // Reactive play/pause button updates
+    this.subscriptions.add(
+      this.isPlaying$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(isPlaying => {
+        this.updatePlayPauseButton();
       })
     );
   },
@@ -1205,8 +1220,7 @@ const ECGPlayer = {
       // Clear any existing waveform
       this.clearWaveform();
 
-      // Update button state (button now exists in DOM)
-      this.updatePlayPauseButton();
+      // Button state will be updated reactively
 
       // Setup play/pause button events (button now exists in DOM)
       this.setupPlayPauseEvents();
@@ -1506,8 +1520,6 @@ const ECGPlayer = {
     } else {
       this.pauseAnimation();
     }
-
-    this.updatePlayPauseButton();
   },
 
   handlePlaybackEnd() {
@@ -1518,7 +1530,6 @@ const ECGPlayer = {
     } else {
       this.stopAnimation();
       this.resetPlayback();
-      this.updatePlayPauseButton();
     }
   },
 
