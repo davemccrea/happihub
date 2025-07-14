@@ -20,7 +20,34 @@ defmodule Astrup.Release do
 
   def seed do
     load_app()
+    seed_test_user()
     seed_patient_cases()
+  end
+
+  defp seed_test_user do
+    for repo <- repos() do
+      {:ok, _, _} =
+        Ecto.Migrator.with_repo(repo, fn repo ->
+          # Check if test user already exists
+          case repo.get_by(Astrup.Accounts.User, email: "test@example.com") do
+            nil ->
+              # Create test user if it doesn't exist
+              {:ok, user} = Astrup.Accounts.register_user(%{email: "test@example.com"})
+              
+              # Set password for the test user
+              {:ok, _user_with_password, _expired_tokens} = 
+                Astrup.Accounts.update_user_password(user, %{
+                  password: "testpassword123",
+                  password_confirmation: "testpassword123"
+                })
+              
+              IO.puts("Test user created: test@example.com")
+            
+            _existing_user ->
+              IO.puts("Test user already exists: test@example.com")
+          end
+        end)
+    end
   end
 
   defp seed_patient_cases do
