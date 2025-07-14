@@ -142,23 +142,14 @@ const ECGPlayer = {
     const formEvents$ = this.setupFormEventStreams();
 
     // Canvas click events will be set up when canvas is created
-
-    // Play/pause button events
-    const playPauseEvents$ = this.createElementStream(
-      "play-pause-button",
-      "click"
-    ).pipe(
-      tap(() => this.togglePlayback()),
-      takeUntil(this.destroy$)
-    );
+    // Play/pause button events will be set up when button exists after ECG data loads
 
     // Combine all event streams
     const allEvents$ = merge(
       resizeEvents$,
       themeChangeEvents$,
       keyboardEvents$,
-      formEvents$,
-      playPauseEvents$
+      formEvents$
     ).pipe(
       catchError((error) => {
         console.error("Event stream error:", error);
@@ -317,6 +308,26 @@ const ECGPlayer = {
 
     // Add to main subscriptions for cleanup
     this.subscriptions.add(this.canvasClickSubscription);
+  },
+
+  setupPlayPauseEvents() {
+    // Clean up any existing play/pause subscription
+    if (this.playPauseSubscription) {
+      this.playPauseSubscription.unsubscribe();
+    }
+
+    // Set up new play/pause button stream
+    const playPauseButton = document.getElementById("play-pause-button");
+    if (playPauseButton) {
+      this.playPauseSubscription = fromEvent(playPauseButton, "click")
+        .pipe(
+          tap(() => this.togglePlayback()),
+          takeUntil(this.destroy$)
+        )
+        .subscribe();
+      
+      this.subscriptions.add(this.playPauseSubscription);
+    }
   },
 
   createElementStream(elementId, eventType) {
@@ -919,6 +930,9 @@ const ECGPlayer = {
 
       // Update button state (button now exists in DOM)
       this.updatePlayPauseButton();
+
+      // Setup play/pause button events (button now exists in DOM)
+      this.setupPlayPauseEvents();
 
       // Setup selectors (they now exist in DOM)
       this.setupSelectors();
@@ -1668,19 +1682,6 @@ const ECGPlayer = {
     }
   },
 
-  /**
-   * Sets up the play/pause button click handler.
-   * @returns {void}
-   */
-  setupPlayPauseButton() {
-    const button = document.getElementById("play-pause-button");
-    if (button && !button.dataset.listenerAdded) {
-      button.addEventListener("click", () => {
-        this.togglePlayback();
-      });
-      button.dataset.listenerAdded = "true";
-    }
-  },
 
   /**
    * Sets up event handlers for the three selectors.
