@@ -203,8 +203,7 @@ const ECGPlayer = {
         id: "grid-type-selector",
         event: "change",
         action: (e) => {
-          this.gridType = e.target.value;
-          this.renderGridBackground();
+          this.gridType$.next(e.target.value);
         },
       },
       {
@@ -404,6 +403,17 @@ const ECGPlayer = {
       })
     );
 
+    // Subscribe to grid type changes
+    this.subscriptions.add(
+      this.gridType$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(gridType => {
+        this.gridType = gridType;
+        this.renderGridBackground();
+      })
+    );
+
     // Subscribe to checkbox state changes
     this.subscriptions.add(
       this.loopEnabled$.pipe(
@@ -420,10 +430,20 @@ const ECGPlayer = {
         takeUntil(this.destroy$)
       ).subscribe(enabled => {
         this.qrsIndicatorEnabled = enabled;
-        if (!enabled && this.qrsFlashActive) {
-          this.qrsFlashActive = false;
+        if (!enabled && this.qrsFlashActive$.value) {
+          this.qrsFlashActive$.next(false);
           this.clearQrsFlashArea();
         }
+      })
+    );
+
+    // Subscribe to QRS flash state changes
+    this.subscriptions.add(
+      this.qrsFlashActive$.pipe(
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      ).subscribe(isActive => {
+        this.qrsFlashActive = isActive;
       })
     );
   },
@@ -515,7 +535,7 @@ const ECGPlayer = {
         );
       }),
       tap((isFlashActive) => {
-        this.qrsFlashActive = isFlashActive;
+        this.qrsFlashActive$.next(isFlashActive);
         if (!isFlashActive) {
           this.clearQrsFlashArea();
         }
@@ -669,6 +689,9 @@ const ECGPlayer = {
     if (this.displayMode$) {
       this.displayMode$.complete();
     }
+    if (this.gridType$) {
+      this.gridType$.complete();
+    }
     if (this.gridScale$) {
       this.gridScale$.complete();
     }
@@ -683,6 +706,9 @@ const ECGPlayer = {
     }
     if (this.qrsIndicatorEnabled$) {
       this.qrsIndicatorEnabled$.complete();
+    }
+    if (this.qrsFlashActive$) {
+      this.qrsFlashActive$.complete();
     }
 
     if (this.animationId) {
@@ -706,8 +732,8 @@ const ECGPlayer = {
   // =================
 
   initializeState() {
-    // Display and playback settings
-    this.gridType = this.readFormValue("grid_type") || "telemetry";
+    // Display and playback settings - initial values
+    const initialGridType = this.readFormValue("grid_type") || "telemetry";
     const initialDisplayMode = this.readFormValue("display_mode") || "single";
     const initialCurrentLead = parseInt(this.readFormValue("current_lead") || "0");
 
@@ -726,11 +752,15 @@ const ECGPlayer = {
     this.isPlaying$ = new BehaviorSubject(false);
     this.currentLead$ = new BehaviorSubject(initialCurrentLead);
     this.displayMode$ = new BehaviorSubject(initialDisplayMode);
+    this.gridType$ = new BehaviorSubject(initialGridType);
     this.gridScale$ = new BehaviorSubject(initialGridScale);
     this.amplitudeScale$ = new BehaviorSubject(initialAmplitudeScale);
     this.heightScale$ = new BehaviorSubject(initialHeightScale);
     this.loopEnabled$ = new BehaviorSubject(initialLoopEnabled);
     this.qrsIndicatorEnabled$ = new BehaviorSubject(initialQrsIndicatorEnabled);
+    
+    // QRS flash state as reactive stream
+    this.qrsFlashActive$ = new BehaviorSubject(false);
 
     // Reactive cursor width based on display mode
     this.cursorWidth$ = this.displayMode$.pipe(
@@ -750,12 +780,14 @@ const ECGPlayer = {
     this.cursorWidth = initialDisplayMode === "single" 
       ? SINGLE_LEAD_CURSOR_WIDTH 
       : MULTI_LEAD_CURSOR_WIDTH;
+    this.gridType = initialGridType;
     this.gridScale = initialGridScale;
     this.amplitudeScale = initialAmplitudeScale;
     this.heightScale = initialHeightScale;
     this.leadHeight = CHART_HEIGHT * initialHeightScale;
     this.loopEnabled = initialLoopEnabled;
     this.qrsIndicatorEnabled = initialQrsIndicatorEnabled;
+    this.qrsFlashActive = false;
     this.activeSegments = [];
     this.startTime = null;
     this.pausedTime = 0;
@@ -1613,7 +1645,7 @@ const ECGPlayer = {
       }
     }
 
-    if (!this.qrsFlashActive || !this.qrsFlashContext) return;
+    if (!this.qrsFlashActive$.value || !this.qrsFlashContext) return;
 
     const dotRadius = 5;
     const margin = 15;
@@ -1845,7 +1877,7 @@ const ECGPlayer = {
     this.qrsDetectedCount = 0;
 
     // Reset QRS flash state
-    this.qrsFlashActive = false;
+    this.qrsFlashActive$.next(false);
 
     this.clearWaveform();
   },
@@ -2044,7 +2076,7 @@ const ECGPlayer = {
       document.getElementById("grid-type-selector")
     );
     if (gridTypeSelector) {
-      gridTypeSelector.value = this.gridType;
+      gridTypeSelector.value = this.gridType$.value;
     }
 
     // Update checkboxes
