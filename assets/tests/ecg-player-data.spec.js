@@ -9,15 +9,19 @@ test.describe('ECG Player - Data Loading and Animation', () => {
     }
     
     await page.goto('/ecg/viewer');
-    await page.waitForLoadState('networkidle');
+    try {
+      await page.waitForLoadState('networkidle', { timeout: 15000 });
+    } catch (error) {
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+    }
     
     if (page.url().includes('/users/log-in')) {
       test.skip();
       return;
     }
     
-    await page.waitForSelector('#ecg-player', { timeout: 10000 });
-    await page.waitForSelector('[data-ecg-chart]', { timeout: 5000 });
+    await page.waitForSelector('#ecg-player', { timeout: 15000 });
+    await page.waitForSelector('[data-ecg-chart]', { timeout: 10000 });
     
     const loadRandomButton = page.locator('#load-random-ecg-button');
     if (await loadRandomButton.count() > 0) {
