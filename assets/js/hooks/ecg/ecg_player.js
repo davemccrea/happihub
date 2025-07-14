@@ -98,7 +98,7 @@ const ECGPlayer = {
       debounceTime(100),
       tap(() => {
         this.calculateMedicallyAccurateDimensions();
-        this.recreateCanvasAndRestart();
+        this.canvasRecreationTrigger$.next();
       }),
       takeUntil(this.destroy$)
     );
@@ -119,7 +119,7 @@ const ECGPlayer = {
       });
       return () => observer.disconnect();
     }).pipe(
-      tap(() => this.handleThemeChange()),
+      tap(() => this.themeChange$.next()),
       takeUntil(this.destroy$)
     );
 
@@ -344,7 +344,7 @@ const ECGPlayer = {
         takeUntil(this.destroy$)
       ).subscribe(mode => {
         this.updateLeadSelectorVisibility(mode);
-        this.recreateCanvasAndRestart();
+        this.canvasRecreationTrigger$.next();
       })
     );
 
@@ -444,6 +444,26 @@ const ECGPlayer = {
         takeUntil(this.destroy$)
       ).subscribe(isActive => {
         this.qrsFlashActive = isActive;
+      })
+    );
+
+    // Subscribe to canvas recreation events
+    this.subscriptions.add(
+      this.canvasRecreationTrigger$.pipe(
+        debounceTime(50), // Debounce multiple rapid triggers
+        takeUntil(this.destroy$)
+      ).subscribe(() => {
+        this.recreateCanvasAndRestart();
+      })
+    );
+
+    // Subscribe to theme changes
+    this.subscriptions.add(
+      this.themeChange$.pipe(
+        debounceTime(50), // Debounce multiple rapid triggers
+        takeUntil(this.destroy$)
+      ).subscribe(() => {
+        this.handleThemeChange();
       })
     );
   },
@@ -710,6 +730,12 @@ const ECGPlayer = {
     if (this.qrsFlashActive$) {
       this.qrsFlashActive$.complete();
     }
+    if (this.canvasRecreationTrigger$) {
+      this.canvasRecreationTrigger$.complete();
+    }
+    if (this.themeChange$) {
+      this.themeChange$.complete();
+    }
 
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
@@ -761,6 +787,12 @@ const ECGPlayer = {
     
     // QRS flash state as reactive stream
     this.qrsFlashActive$ = new BehaviorSubject(false);
+    
+    // Canvas recreation trigger
+    this.canvasRecreationTrigger$ = new Subject();
+    
+    // Theme change trigger
+    this.themeChange$ = new Subject();
 
     // Reactive cursor width based on display mode
     this.cursorWidth$ = this.displayMode$.pipe(
