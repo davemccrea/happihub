@@ -26,6 +26,8 @@ import {
   share,
   of,
   takeLast,
+  BehaviorSubject,
+  distinctUntilChanged,
   // @ts-ignore
 } from "rxjs";
 
@@ -352,9 +354,10 @@ const ECGPlayer = {
     this.setupQrsFlashStream();
     
     // Create animation frame stream that responds to playback state
-    const animationStream$ = this.playbackStateSubject$.pipe(
-      switchMap(() => {
-        if (!this.isPlaying || !this.totalDuration || !this.waveformCanvas) {
+    const animationStream$ = this.isPlaying$.pipe(
+      distinctUntilChanged(),
+      switchMap((isPlaying) => {
+        if (!isPlaying || !this.totalDuration || !this.waveformCanvas) {
           return EMPTY;
         }
 
@@ -527,16 +530,14 @@ const ECGPlayer = {
 
   // Helper method to trigger animation state changes
   triggerAnimationStateChange() {
-    if (this.playbackStateSubject$) {
-      this.playbackStateSubject$.next();
-    }
+    // No longer needed - state changes are handled by isPlaying$ BehaviorSubject
   },
 
   handleThemeChange() {
     this.updateThemeColors();
     this.renderGridBackground();
     this.clearWaveform();
-    if (!this.isPlaying && this.startTime && this.pausedTime) {
+    if (!this.isPlaying$.value && this.startTime && this.pausedTime) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
       const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
@@ -555,9 +556,9 @@ const ECGPlayer = {
       this.subscriptions.unsubscribe();
     }
 
-    // Clean up animation subject
-    if (this.playbackStateSubject$) {
-      this.playbackStateSubject$.complete();
+    // Clean up reactive streams
+    if (this.isPlaying$) {
+      this.isPlaying$.complete();
     }
 
     if (this.animationId) {
@@ -603,7 +604,8 @@ const ECGPlayer = {
         ? SINGLE_LEAD_CURSOR_WIDTH
         : MULTI_LEAD_CURSOR_WIDTH;
 
-    this.isPlaying = false;
+    // Reactive state management
+    this.isPlaying$ = new BehaviorSubject(false);
     this.activeSegments = [];
     this.startTime = null;
     this.pausedTime = 0;
@@ -667,7 +669,7 @@ const ECGPlayer = {
 
   // Common utility for preserving canvas state during operations
   withCanvasStatePreservation(operation) {
-    const wasPlaying = this.isPlaying;
+    const wasPlaying = this.isPlaying$.value;
     if (wasPlaying) this.stopAnimation();
 
     operation();
@@ -681,8 +683,7 @@ const ECGPlayer = {
     }
 
     if (wasPlaying) {
-      this.isPlaying = true;
-      this.triggerAnimationStateChange();
+      this.isPlaying$.next(true);
     }
   },
 
@@ -1286,7 +1287,7 @@ const ECGPlayer = {
       return;
     }
 
-    const wasPlaying = this.isPlaying;
+    const wasPlaying = this.isPlaying$.value;
     if (wasPlaying) this.stopAnimation();
 
     this.currentLead = leadIndex;
@@ -1307,8 +1308,7 @@ const ECGPlayer = {
     }
 
     if (wasPlaying) {
-      this.isPlaying = true;
-      this.triggerAnimationStateChange();
+      this.isPlaying$.next(true);
     } else {
       if (this.startTime && this.pausedTime) {
         const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
@@ -1365,8 +1365,8 @@ const ECGPlayer = {
    * @returns {void}
    */
   togglePlayback() {
-    const newPlayingState = !this.isPlaying;
-    this.isPlaying = newPlayingState;
+    const newPlayingState = !this.isPlaying$.value;
+    this.isPlaying$.next(newPlayingState);
 
     this.pushEventTo(this.targetComponent, "playback_changed", {
       is_playing: newPlayingState,
@@ -1639,16 +1639,13 @@ const ECGPlayer = {
    * @returns {void}
    */
   startAnimation() {
-    this.isPlaying = true;
+    this.isPlaying$.next(true);
     this.startTime = Date.now();
     this.pausedTime = 0;
     this.animationCycle = 0;
     this.cursorPosition = 0;
 
     this.allLeadsVisibleData = null;
-    
-    // Trigger RxJS animation stream
-    this.triggerAnimationStateChange();
   },
 
   /**
@@ -1662,10 +1659,7 @@ const ECGPlayer = {
       const pauseDuration = Date.now() - this.pausedTime;
       this.startTime += pauseDuration;
       this.pausedTime = 0;
-      this.isPlaying = true;
-      
-      // Trigger RxJS animation stream
-      this.triggerAnimationStateChange();
+      this.isPlaying$.next(true);
     }
   },
 
@@ -1675,7 +1669,7 @@ const ECGPlayer = {
    */
   pauseAnimation() {
     this.pausedTime = Date.now();
-    this.isPlaying = false;
+    this.isPlaying$.next(false);
 
     // Render the final frame when paused
     const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
@@ -1683,9 +1677,6 @@ const ECGPlayer = {
       (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
     const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
     this.processAnimationFrame(cursorProgress, animationCycle);
-    
-    // Trigger state change to stop RxJS animation stream
-    this.triggerAnimationStateChange();
   },
 
   /**
@@ -1693,10 +1684,7 @@ const ECGPlayer = {
    * @returns {void}
    */
   stopAnimation() {
-    this.isPlaying = false;
-    
-    // Trigger state change to stop RxJS animation stream
-    this.triggerAnimationStateChange();
+    this.isPlaying$.next(false);
   },
 
   /**
@@ -1729,18 +1717,19 @@ const ECGPlayer = {
   updatePlayPauseButton() {
     const button = document.getElementById("play-pause-button");
     if (button) {
+      const isPlaying = this.isPlaying$.value;
       // Update icon
-      const iconClass = this.isPlaying ? "hero-pause" : "hero-play";
+      const iconClass = isPlaying ? "hero-pause" : "hero-play";
       const iconHtml = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24">
         ${
-          this.isPlaying
+          isPlaying
             ? '<path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />'
             : '<path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />'
         }
       </svg>`;
 
       // Update text
-      const buttonText = this.isPlaying ? "Pause" : "Play";
+      const buttonText = isPlaying ? "Pause" : "Play";
       const textHtml = `<span class="ml-1">${buttonText}</span>`;
 
       // Replace button content with icon + text
