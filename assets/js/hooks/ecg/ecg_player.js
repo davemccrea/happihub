@@ -63,7 +63,6 @@ const ECGPlayer = {
   // ==========================
 
   mounted() {
-    // Initialize RxJS cleanup infrastructure
     this.destroy$ = new Subject();
     this.subscriptions = new Subscription();
 
@@ -79,21 +78,15 @@ const ECGPlayer = {
     this.updateThemeColors();
     this.initializeECGChart();
 
-    // Get the target for push events (component ID)
-    this.targetComponent = this.el.getAttribute("phx-target");
   },
 
   setupEventStreams() {
-    // Set up animation stream
     this.setupAnimationStream();
 
-    // Set up reactive state subscriptions
     this.setupReactiveStateSubscriptions();
 
-    // Set up reactive UI updates
     this.setupReactiveUIUpdates();
 
-    // Resize events
     const resizeEvents$ = fromEvent(window, "resize").pipe(
       debounceTime(100),
       tap(() => {
@@ -103,7 +96,6 @@ const ECGPlayer = {
       takeUntil(this.destroy$)
     );
 
-    // Theme change events
     const themeChangeEvents$ = new Observable((subscriber) => {
       const observer = new MutationObserver((mutations) => {
         const themeChange = mutations.find(
@@ -123,7 +115,6 @@ const ECGPlayer = {
       takeUntil(this.destroy$)
     );
 
-    // Keyboard events
     const keyboardEvents$ = fromEvent(document, "keydown").pipe(
       filter((event) => {
         const target = event.target;
@@ -156,13 +147,9 @@ const ECGPlayer = {
       takeUntil(this.destroy$)
     );
 
-    // Form event streams
     const formEvents$ = this.setupFormEventStreams();
 
-    // Canvas click events will be set up when canvas is created
-    // Play/pause button events will be set up when button exists after ECG data loads
 
-    // Combine all event streams
     const allEvents$ = merge(
       resizeEvents$,
       themeChangeEvents$,
@@ -175,7 +162,6 @@ const ECGPlayer = {
       })
     );
 
-    // Subscribe to all events
     this.subscriptions.add(allEvents$.subscribe());
   },
 
@@ -260,12 +246,10 @@ const ECGPlayer = {
   setupCanvasClickEvents() {
     if (!this.backgroundCanvas) return;
 
-    // Clean up any existing canvas click subscription
     if (this.canvasClickSubscription) {
       this.canvasClickSubscription.unsubscribe();
     }
 
-    // Set up new canvas click stream
     this.canvasClickSubscription = fromEvent(this.backgroundCanvas, "click")
       .pipe(
         map((event) => {
@@ -297,17 +281,14 @@ const ECGPlayer = {
       )
       .subscribe();
 
-    // Add to main subscriptions for cleanup
     this.subscriptions.add(this.canvasClickSubscription);
   },
 
   setupPlayPauseEvents() {
-    // Clean up any existing play/pause subscription
     if (this.playPauseSubscription) {
       this.playPauseSubscription.unsubscribe();
     }
 
-    // Set up new play/pause button stream
     const playPauseButton = document.getElementById("play-pause-button");
     if (playPauseButton) {
       this.playPauseSubscription = fromEvent(playPauseButton, "click")
@@ -327,7 +308,6 @@ const ECGPlayer = {
   },
 
   setupReactiveStateSubscriptions() {
-    // Subscribe to cursor width changes
     this.subscriptions.add(
       this.cursorWidth$.pipe(takeUntil(this.destroy$)).subscribe((newWidth) => {
         this.cursorWidth = newWidth;
@@ -335,7 +315,6 @@ const ECGPlayer = {
       })
     );
 
-    // Subscribe to display mode changes for UI updates
     this.subscriptions.add(
       this.displayMode$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -345,7 +324,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to current lead changes
     this.subscriptions.add(
       this.currentLead$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -357,7 +335,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to scale changes
     this.subscriptions.add(
       this.gridScale$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -394,7 +371,6 @@ const ECGPlayer = {
       })
     );
 
-    // Subscribe to grid type changes
     this.subscriptions.add(
       this.gridType$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -404,7 +380,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to checkbox state changes
     this.subscriptions.add(
       this.loopEnabled$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -425,7 +400,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to QRS flash state changes
     this.subscriptions.add(
       this.qrsFlashActive$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -434,7 +408,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to canvas recreation events
     this.subscriptions.add(
       this.canvasRecreationTrigger$
         .pipe(
@@ -446,7 +419,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to theme changes
     this.subscriptions.add(
       this.themeChange$
         .pipe(
@@ -458,7 +430,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to ECG data loading
     this.subscriptions.add(
       this.ecgDataLoaded$
         .pipe(takeUntil(this.destroy$))
@@ -467,7 +438,6 @@ const ECGPlayer = {
         })
     );
 
-    // Subscribe to animation timing changes
     this.subscriptions.add(
       this.animationTime$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -495,7 +465,6 @@ const ECGPlayer = {
   },
 
   setupReactiveUIUpdates() {
-    // Reactive play/pause button updates
     this.subscriptions.add(
       this.isPlaying$
         .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
@@ -506,13 +475,10 @@ const ECGPlayer = {
   },
 
   setupAnimationStream() {
-    // Store reference for QRS detection events
     this.qrsDetectionSubject$ = new Subject();
 
-    // Setup QRS flash stream
     this.setupQrsFlashStream();
 
-    // Create animation frame stream that responds to playback state
     const animationStream$ = this.isPlaying$.pipe(
       distinctUntilChanged(),
       switchMap((isPlaying) => {
@@ -536,13 +502,11 @@ const ECGPlayer = {
       })
     );
 
-    // Handle animation completion
     const animationCompletionEvents$ = animationStream$.pipe(
       filter((data) => data.elapsedSeconds >= this.totalDuration),
       tap(() => this.handlePlaybackEnd())
     );
 
-    // Handle frame rendering
     const animationRenderEvents$ = animationStream$.pipe(
       filter((data) => data.elapsedSeconds < this.totalDuration),
       tap((data) => {
@@ -553,7 +517,6 @@ const ECGPlayer = {
       })
     );
 
-    // Combine all animation effects
     const allAnimationEvents$ = merge(
       animationCompletionEvents$,
       animationRenderEvents$
@@ -565,12 +528,10 @@ const ECGPlayer = {
       })
     );
 
-    // Subscribe to animation events
     this.subscriptions.add(allAnimationEvents$.subscribe());
   },
 
   setupQrsFlashStream() {
-    // Create QRS flash stream that responds to QRS detection events
     const qrsFlashStream$ = this.qrsDetectionSubject$.pipe(
       filter(() => this.qrsIndicatorEnabled$.value), // Only flash when indicator is enabled
       switchMap(() => {
@@ -589,12 +550,10 @@ const ECGPlayer = {
       takeUntil(this.destroy$)
     );
 
-    // Subscribe to QRS flash events
     this.subscriptions.add(qrsFlashStream$.subscribe());
   },
 
   setupDataPrecomputationStream() {
-    // Clear existing data
     this.precomputedSegments.clear();
     this.dataIndexCache.clear();
 
@@ -602,15 +561,12 @@ const ECGPlayer = {
       return of(null);
     }
 
-    // Create reactive data precomputation pipeline
     return from(this.ecgLeadDatasets).pipe(
-      // Process leads with controlled concurrency (max 2 at a time)
       mergeMap(
         (leadData, leadIndex) =>
           this.precomputeLeadSegments(leadData, leadIndex),
         2
       ),
-      // Collect all processed lead segments
       scan((acc, leadResult) => {
         if (leadResult) {
           this.precomputedSegments.set(
@@ -620,14 +576,11 @@ const ECGPlayer = {
         }
         return acc + 1;
       }, 0),
-      // Handle errors gracefully
       catchError((error) => {
         console.error("Data precomputation error:", error);
         return of(null);
       }),
-      // Share stream for multiple subscribers
       share(),
-      // Cleanup on component destruction
       takeUntil(this.destroy$)
     );
   },
@@ -636,7 +589,6 @@ const ECGPlayer = {
     const leadSegments = new Map();
     const timeSegments = [];
 
-    // Create time segments array
     for (
       let time = 0;
       time < this.totalDuration;
@@ -647,14 +599,11 @@ const ECGPlayer = {
 
     // Process segments in batches to prevent blocking
     return from(timeSegments).pipe(
-      // Buffer time segments into chunks of 10 for processing
-      bufferCount(10),
-      // Process each batch with a small delay to yield control
+        bufferCount(10),
       concatMap((segmentBatch) =>
         timer(0).pipe(
           map(() => {
-            // Process this batch of segments
-            const batchResults = [];
+                const batchResults = [];
             for (const time of segmentBatch) {
               const segmentKey = Math.floor(time / this.segmentDuration);
               const startTime = segmentKey * this.segmentDuration;
@@ -693,23 +642,16 @@ const ECGPlayer = {
           })
         )
       ),
-      // Flatten all batches into individual segments
       mergeMap((batchResults) => from(batchResults)),
-      // Collect all segments for this lead
       scan((acc, segmentResult) => {
         acc.set(segmentResult.segmentKey, segmentResult.segment);
         return acc;
       }, leadSegments),
-      // Return the final result for this lead after all segments processed
       takeLast(1),
       map(() => ({ leadIndex, segments: leadSegments }))
     );
   },
 
-  // Helper method to trigger animation state changes
-  triggerAnimationStateChange() {
-    // No longer needed - state changes are handled by isPlaying$ BehaviorSubject
-  },
 
   handleThemeChange() {
     this.updateThemeColors();
@@ -746,7 +688,6 @@ const ECGPlayer = {
       this.subscriptions.unsubscribe();
     }
 
-    // Clean up reactive streams
     if (this.isPlaying$) {
       this.isPlaying$.complete();
     }
@@ -809,7 +750,6 @@ const ECGPlayer = {
     this.currentLeadData = null;
     this.allLeadsCursorData = null;
     this.activeCursorData = null;
-    this.eventHandlers = null;
   },
 
   // =================
@@ -817,18 +757,15 @@ const ECGPlayer = {
   // =================
 
   initializeState() {
-    // Display and playback settings - initial values
     const initialGridType = this.readFormValue("grid_type") || "telemetry";
     const initialDisplayMode = this.readFormValue("display_mode") || "single";
     const initialCurrentLead = parseInt(
       this.readFormValue("current_lead") || "0"
     );
 
-    // Playback options - initial values
     const initialLoopEnabled = this.readFormCheckbox("loop_playback");
     const initialQrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
 
-    // Scale settings - initial values
     const initialGridScale = parseFloat(
       this.readFormValue("grid_scale") || "1.0"
     );
@@ -839,7 +776,6 @@ const ECGPlayer = {
       this.readFormValue("height_scale") || "1.2"
     );
 
-    // Reactive state management
     this.isPlaying$ = new BehaviorSubject(false);
     this.currentLead$ = new BehaviorSubject(initialCurrentLead);
     this.displayMode$ = new BehaviorSubject(initialDisplayMode);
@@ -850,19 +786,14 @@ const ECGPlayer = {
     this.loopEnabled$ = new BehaviorSubject(initialLoopEnabled);
     this.qrsIndicatorEnabled$ = new BehaviorSubject(initialQrsIndicatorEnabled);
 
-    // QRS flash state as reactive stream
     this.qrsFlashActive$ = new BehaviorSubject(false);
 
-    // Canvas recreation trigger
     this.canvasRecreationTrigger$ = new Subject();
 
-    // Theme change trigger
     this.themeChange$ = new Subject();
 
-    // ECG data loading stream
     this.ecgDataLoaded$ = new Subject();
 
-    // Animation timing streams
     this.animationTime$ = new BehaviorSubject({
       startTime: null,
       pausedTime: 0,
@@ -870,7 +801,6 @@ const ECGPlayer = {
     this.animationCycle$ = new BehaviorSubject(0);
     this.cursorPosition$ = new BehaviorSubject(0);
 
-    // Reactive cursor width based on display mode
     this.cursorWidth$ = this.displayMode$.pipe(
       map((mode) =>
         mode === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH
@@ -879,14 +809,12 @@ const ECGPlayer = {
       share()
     );
 
-    // Reactive leadHeight based on heightScale
     this.leadHeight$ = this.heightScale$.pipe(
       map((scale) => CHART_HEIGHT * scale),
       distinctUntilChanged(),
       share()
     );
 
-    // Initialize current values
     this.cursorWidth =
       initialDisplayMode === "single"
         ? SINGLE_LEAD_CURSOR_WIDTH
@@ -910,16 +838,13 @@ const ECGPlayer = {
     this.allLeadsCursorData = null;
     this.leadHeight = CHART_HEIGHT * this.heightScale;
 
-    // QRS flash indicator
     this.qrsFlashActive = false;
     this.qrsFlashDuration = QRS_FLASH_DURATION_MS;
 
-    // Pre-computed data segments for performance
     this.precomputedSegments = new Map();
     this.segmentDuration = SEGMENT_DURATION_SECONDS;
     this.dataIndexCache = new Map();
 
-    // Canvas layers for optimized rendering
     this.backgroundCanvas = null;
     this.backgroundContext = null;
     this.waveformCanvas = null;
@@ -1291,8 +1216,7 @@ const ECGPlayer = {
         return;
       }
 
-      // Reset playback state when loading new ECG data
-      this.stopAnimation();
+        this.stopAnimation();
 
       this.resetPlayback();
 
@@ -1300,8 +1224,7 @@ const ECGPlayer = {
       this.leadNames = data.sig_name;
       this.totalDuration = data.p_signal.length / data.fs;
 
-      // Store QRS data for logging
-      this.qrsIndexes = data.qrs || [];
+        this.qrsIndexes = data.qrs || [];
       this.qrsTimestamps = this.qrsIndexes.map(
         (index) => index / this.samplingRate
       );
@@ -1339,11 +1262,9 @@ const ECGPlayer = {
       this.yMax = HEIGHT_MILLIVOLTS / 2;
       this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
 
-      // Pre-compute data segments for all leads reactively
-      const precomputationStream$ = this.setupDataPrecomputationStream();
+        const precomputationStream$ = this.setupDataPrecomputationStream();
 
-      // Subscribe to precomputation progress
-      this.subscriptions.add(
+        this.subscriptions.add(
         precomputationStream$.subscribe({
           next: (processedCount) => {
             // Optional: Add progress feedback here
@@ -1357,22 +1278,16 @@ const ECGPlayer = {
         })
       );
 
-      // Re-render the grid background with the new data
-      this.renderGridBackground();
+        this.renderGridBackground();
 
-      // Clear any existing waveform
-      this.clearWaveform();
+        this.clearWaveform();
 
-      // Button state will be updated reactively
+  
+        this.setupPlayPauseEvents();
 
-      // Setup play/pause button events (button now exists in DOM)
-      this.setupPlayPauseEvents();
+        this.setupSelectors();
 
-      // Setup selectors (they now exist in DOM)
-      this.setupSelectors();
-
-      // Set initial lead selector visibility
-      this.updateLeadSelectorVisibility(this.displayMode$.value);
+        this.updateLeadSelectorVisibility(this.displayMode$.value);
 
       console.log("ECG data loaded successfully:", {
         samplingRate: this.samplingRate,
@@ -1441,7 +1356,6 @@ const ECGPlayer = {
     const container = this.el.querySelector("[data-ecg-chart]");
     const devicePixelRatio = window.devicePixelRatio || 1;
 
-    // Create background canvas for static grid
     this.backgroundCanvas = document.createElement("canvas");
     this.backgroundCanvas.width = this.chartWidth * devicePixelRatio;
     this.backgroundCanvas.height = canvasHeight * devicePixelRatio;
@@ -1453,13 +1367,10 @@ const ECGPlayer = {
     this.backgroundContext = this.backgroundCanvas.getContext("2d");
     this.backgroundContext.scale(devicePixelRatio, devicePixelRatio);
 
-    // Add click event listener for lead selection in multi-lead mode
     this.setupCanvasClickEvents();
 
-    // Set initial cursor based on display mode
     this.updateCursorStyle();
 
-    // Create foreground canvas for animated waveform (overlapping)
     this.waveformCanvas = document.createElement("canvas");
     this.waveformCanvas.width = this.chartWidth * devicePixelRatio;
     this.waveformCanvas.height = canvasHeight * devicePixelRatio;
@@ -1473,7 +1384,6 @@ const ECGPlayer = {
     this.waveformContext = this.waveformCanvas.getContext("2d");
     this.waveformContext.scale(devicePixelRatio, devicePixelRatio);
 
-    // Create QRS flash canvas (top layer for indicators)
     this.qrsFlashCanvas = document.createElement("canvas");
     this.qrsFlashCanvas.width = this.chartWidth * devicePixelRatio;
     this.qrsFlashCanvas.height = canvasHeight * devicePixelRatio;
@@ -1494,12 +1404,6 @@ const ECGPlayer = {
    */
   cleanupCanvases() {
     if (this.backgroundCanvas) {
-      if (this.canvasClickHandler) {
-        this.backgroundCanvas.removeEventListener(
-          "click",
-          this.canvasClickHandler
-        );
-      }
       this.backgroundCanvas.remove();
       this.backgroundCanvas = null;
       this.backgroundContext = null;
@@ -1581,12 +1485,10 @@ const ECGPlayer = {
     const wasPlaying = this.isPlaying$.value;
     if (wasPlaying) this.stopAnimation();
 
-    // Update reactive stream - this will trigger the subscription
     this.currentLead$.next(leadIndex);
 
     if (this.displayMode$.value === "single") {
-      // Clear both canvases and re-render for new lead
-      this.clearWaveform();
+        this.clearWaveform();
       this.renderGridBackground();
     }
 
@@ -1674,7 +1576,6 @@ const ECGPlayer = {
     this.checkQrsOccurrences(elapsedTime);
     this.calculateCursorPosition(elapsedTime);
 
-    // Update animation cycle reactively
     this.animationCycle$.next(animationCycle);
 
     if (this.displayMode$.value === "single") {
@@ -1778,7 +1679,6 @@ const ECGPlayer = {
     const currentScreenStartTime =
       Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
 
-    // Use pre-computed segments instead of real-time slicing
     const segments = this.getSegmentsForTimeRange(
       this.currentLead$.value,
       currentScreenStartTime,
@@ -1787,8 +1687,7 @@ const ECGPlayer = {
     this.activeSegments = segments;
 
     if (segments.length > 0) {
-      // Combine segments into cursor data
-      const times = [];
+        const times = [];
       const values = [];
 
       for (const segment of segments) {
@@ -1829,8 +1728,7 @@ const ECGPlayer = {
       leadIndex < this.ecgLeadDatasets.length;
       leadIndex++
     ) {
-      // Use pre-computed segments instead of real-time slicing
-      const segments = this.getSegmentsForTimeRange(
+        const segments = this.getSegmentsForTimeRange(
         leadIndex,
         columnCycleStart,
         elapsedTime
@@ -1840,8 +1738,7 @@ const ECGPlayer = {
       }
 
       if (segments.length > 0) {
-        // Combine segments into cursor data
-        const times = [];
+            const times = [];
         const values = [];
 
         for (const segment of segments) {
@@ -1875,22 +1772,19 @@ const ECGPlayer = {
       return;
     }
 
-    // Find QRS events that have occurred since the last check
     for (let i = this.lastQrsIndex + 1; i < this.qrsTimestamps.length; i++) {
       const qrsTime = this.qrsTimestamps[i];
 
       if (qrsTime <= elapsedTime) {
         this.qrsDetectedCount++;
 
-        // Emit QRS detection event to reactive stream
-        if (this.qrsDetectionSubject$) {
+            if (this.qrsDetectionSubject$) {
           this.qrsDetectionSubject$.next(qrsTime);
         }
 
         this.lastQrsIndex = i;
       } else {
-        // Since QRS timestamps are sorted, we can break early
-        break;
+            break;
       }
     }
   },
@@ -1901,7 +1795,6 @@ const ECGPlayer = {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.qrsFlashCanvas.height / devicePixelRatio;
 
-    // Clear the entire QRS flash canvas
     this.qrsFlashContext.clearRect(0, 0, this.chartWidth, canvasHeight);
   },
 
@@ -1945,7 +1838,6 @@ const ECGPlayer = {
     this.animationTime$.next({ startTime: currentTime.startTime, pausedTime });
     this.isPlaying$.next(false);
 
-    // Render the final frame when paused
     const elapsedSeconds = (pausedTime - currentTime.startTime) / 1000;
     const cursorProgress =
       (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
@@ -1973,11 +1865,9 @@ const ECGPlayer = {
 
     this.allLeadsVisibleData = null;
 
-    // Reset QRS tracking
     this.lastQrsIndex = -1;
     this.qrsDetectedCount = 0;
 
-    // Reset QRS flash state
     this.qrsFlashActive$.next(false);
 
     this.clearWaveform();
@@ -1991,8 +1881,7 @@ const ECGPlayer = {
     const button = document.getElementById("play-pause-button");
     if (button) {
       const isPlaying = this.isPlaying$.value;
-      // Update icon
-      const iconClass = isPlaying ? "hero-pause" : "hero-play";
+        const iconClass = isPlaying ? "hero-pause" : "hero-play";
       const iconHtml = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24">
         ${
           isPlaying
@@ -2001,12 +1890,10 @@ const ECGPlayer = {
         }
       </svg>`;
 
-      // Update text
-      const buttonText = isPlaying ? "Pause" : "Play";
+        const buttonText = isPlaying ? "Pause" : "Play";
       const textHtml = `<span class="ml-1">${buttonText}</span>`;
 
-      // Replace button content with icon + text
-      button.innerHTML = iconHtml + textHtml;
+        button.innerHTML = iconHtml + textHtml;
     }
   },
 
@@ -2134,7 +2021,6 @@ const ECGPlayer = {
     this.setupCheckboxes();
     this.setupScaleSliders();
 
-    // Sync all form elements with current state
     this.syncFormElementsWithState();
   },
 
@@ -2143,7 +2029,6 @@ const ECGPlayer = {
    * @returns {void}
    */
   syncFormElementsWithState() {
-    // Update selectors
     const leadSelector = /** @type {HTMLSelectElement} */ (
       document.getElementById("lead-selector")
     );
@@ -2165,7 +2050,6 @@ const ECGPlayer = {
       gridTypeSelector.value = this.gridType$.value;
     }
 
-    // Update checkboxes
     const loopCheckbox = /** @type {HTMLInputElement} */ (
       document.getElementById("loop-checkbox")
     );
@@ -2180,7 +2064,6 @@ const ECGPlayer = {
       qrsCheckbox.checked = this.qrsIndicatorEnabled$.value;
     }
 
-    // Update sliders
     const gridScaleSlider = /** @type {HTMLInputElement} */ (
       document.getElementById("grid-scale-slider")
     );
@@ -2382,7 +2265,6 @@ const ECGPlayer = {
   clearWaveform() {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
-    // Only clear waveform canvas, background grid persists
     this.waveformContext.clearRect(0, 0, this.chartWidth, canvasHeight);
   },
 
@@ -2436,7 +2318,6 @@ const ECGPlayer = {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
 
-    // Only clear the waveform canvas, background grid remains untouched
     this.waveformContext.clearRect(x, 0, width, canvasHeight);
   },
 
@@ -2581,8 +2462,6 @@ const ECGPlayer = {
       cursorData = null,
     } = options;
 
-    // Background is already rendered on the background canvas
-    // Only draw waveform data on the foreground canvas
 
     if (cursorData) {
       this.drawWaveformToCursor({
@@ -2617,10 +2496,8 @@ const ECGPlayer = {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.backgroundCanvas.height / devicePixelRatio;
 
-    // Clear and render to background canvas only
     this.backgroundContext.clearRect(0, 0, this.chartWidth, canvasHeight);
 
-    // Render grid directly to background context
     if (this.displayMode$.value === "multi" && this.leadNames) {
       for (let i = 0; i < this.leadNames.length; i++) {
         const { xOffset, yOffset, columnWidth } =
