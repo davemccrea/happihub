@@ -16,6 +16,8 @@ import {
   animationFrames,
   switchMap,
   takeWhile,
+  timer,
+  startWith,
   // @ts-ignore
 } from "rxjs";
 
@@ -209,10 +211,6 @@ const ECGPlayer = {
           this.qrsIndicatorEnabled = e.target.checked;
           if (!this.qrsIndicatorEnabled && this.qrsFlashActive) {
             this.qrsFlashActive = false;
-            if (this.qrsFlashTimeout) {
-              clearTimeout(this.qrsFlashTimeout);
-              this.qrsFlashTimeout = null;
-            }
             this.clearQrsFlashArea();
           }
         },
@@ -339,6 +337,12 @@ const ECGPlayer = {
     // Store reference for reactive access to playback state
     this.playbackStateSubject$ = new Subject();
     
+    // Store reference for QRS detection events
+    this.qrsDetectionSubject$ = new Subject();
+    
+    // Setup QRS flash stream
+    this.setupQrsFlashStream();
+    
     // Create animation frame stream that responds to playback state
     const animationStream$ = this.playbackStateSubject$.pipe(
       switchMap(() => {
@@ -394,6 +398,30 @@ const ECGPlayer = {
     this.subscriptions.add(allAnimationEvents$.subscribe());
   },
 
+  setupQrsFlashStream() {
+    // Create QRS flash stream that responds to QRS detection events
+    const qrsFlashStream$ = this.qrsDetectionSubject$.pipe(
+      filter(() => this.qrsIndicatorEnabled), // Only flash when indicator is enabled
+      switchMap(() => {
+        // Emit true immediately, then false after flash duration
+        return timer(this.qrsFlashDuration).pipe(
+          startWith(true),
+          map((_, index) => index === 0) // true for startWith, false for timer
+        );
+      }),
+      tap((isFlashActive) => {
+        this.qrsFlashActive = isFlashActive;
+        if (!isFlashActive) {
+          this.clearQrsFlashArea();
+        }
+      }),
+      takeUntil(this.destroy$)
+    );
+
+    // Subscribe to QRS flash events
+    this.subscriptions.add(qrsFlashStream$.subscribe());
+  },
+
   // Helper method to trigger animation state changes
   triggerAnimationStateChange() {
     if (this.playbackStateSubject$) {
@@ -431,10 +459,6 @@ const ECGPlayer = {
 
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
-    }
-
-    if (this.qrsFlashTimeout) {
-      clearTimeout(this.qrsFlashTimeout);
     }
 
     this.cleanupCanvases();
@@ -490,7 +514,6 @@ const ECGPlayer = {
 
     // QRS flash indicator
     this.qrsFlashActive = false;
-    this.qrsFlashTimeout = null;
     this.qrsFlashDuration = QRS_FLASH_DURATION_MS;
 
     // Pre-computed data segments for performance
@@ -1524,8 +1547,9 @@ const ECGPlayer = {
       if (qrsTime <= elapsedTime) {
         this.qrsDetectedCount++;
 
-        if (this.qrsIndicatorEnabled) {
-          this.triggerQrsFlash();
+        // Emit QRS detection event to reactive stream
+        if (this.qrsDetectionSubject$) {
+          this.qrsDetectionSubject$.next(qrsTime);
         }
 
         this.lastQrsIndex = i;
@@ -1536,23 +1560,6 @@ const ECGPlayer = {
     }
   },
 
-  triggerQrsFlash() {
-    // Clear any existing timeout
-    if (this.qrsFlashTimeout) {
-      clearTimeout(this.qrsFlashTimeout);
-    }
-
-    // Activate the flash
-    this.qrsFlashActive = true;
-
-    // Set timeout to deactivate the flash and clear the dot
-    this.qrsFlashTimeout = setTimeout(() => {
-      this.qrsFlashActive = false;
-      this.qrsFlashTimeout = null;
-      // Clear the flash dot area
-      this.clearQrsFlashArea();
-    }, this.qrsFlashDuration);
-  },
 
   clearQrsFlashArea() {
     if (!this.qrsFlashContext || !this.qrsFlashCanvas) return;
@@ -1647,10 +1654,6 @@ const ECGPlayer = {
     this.qrsDetectedCount = 0;
 
     // Reset QRS flash state
-    if (this.qrsFlashTimeout) {
-      clearTimeout(this.qrsFlashTimeout);
-      this.qrsFlashTimeout = null;
-    }
     this.qrsFlashActive = false;
 
     this.clearWaveform();
@@ -1752,10 +1755,6 @@ const ECGPlayer = {
         ).checked;
         if (!this.qrsIndicatorEnabled && this.qrsFlashActive) {
           this.qrsFlashActive = false;
-          if (this.qrsFlashTimeout) {
-            clearTimeout(this.qrsFlashTimeout);
-            this.qrsFlashTimeout = null;
-          }
           this.clearQrsFlashArea();
         }
       },
