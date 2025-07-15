@@ -1141,9 +1141,14 @@ const ECGPlayer = {
 
   processECGData(payload) {
     try {
+      if (!payload || !payload.data) {
+        console.error("Invalid ECG payload:", payload);
+        return;
+      }
+
       const data = payload.data;
 
-      if (!data.fs || !data.sig_name || !data.p_signal) {
+      if (!data || !data.fs || !data.sig_name || !data.p_signal) {
         console.error("Invalid ECG data format:", data);
         return;
       }

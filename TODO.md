@@ -1,8 +1,14 @@
-- When the Save button is pressed the canvases should not be cleared
-- What is this line doing? this.actionSubscription = this.actions$.pipe(scan(this.reducer.bind(this), initialState)).subscribe(this.state$);
-- For simplicity, should play state be part of the main state object?
-- Add notes to a saved ECG
-- If no ECGs are saved, show placeholder instead of table
+- When the save button is pressed the canvas should not be cleared
+- Allow user to add notes to a saved ECG
 - Fullscreen mode
-- Add Playwright for browser testing. Add Playwright MCP to Claude. Write tests for key functionality, then refactor to RxJS.
 - Should the handleEvent also be refactored to RxJS?
+- ECG Viewer should load ECGs from URL params only
+- If user visits /ecg/viewer without params or if ECG not found, show message
+- If no ECGs are saved, show placeholder instead of table
+- Improve error handling in ecg_playback.js
+- Add CLAUDE.md file with project overview and methodology for writing code (i.e. incremental, test often, commit regularly after green tests, write new tests when new bugs are discovered)
+- Add comprehensive telemetry/diagnositcs
+
+Fix (and write test):
+
+- Can play/pause even if no ECG is loaded
