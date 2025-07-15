@@ -368,6 +368,17 @@ const ECGPlayer = {
       ecgDataEffect: this.ecgDataLoaded$.pipe(
         tap((payload) => this.processECGData(payload))
       ),
+
+      // HYBRID PATTERN: Keep imperative variable in sync with reactive stream
+      // WHY: Performance-critical code paths (animation rendering, click hit detection)
+      // need synchronous access to leadHeight for 60fps animation and responsive UX.
+      // The reactive stream handles state management and automatic updates, while
+      // this.leadHeight provides immediate access without subscription overhead.
+      leadHeightEffect: this.leadHeight$.pipe(
+        tap((height) => {
+          this.leadHeight = height;
+        })
+      ),
     };
   },
 
@@ -714,8 +725,20 @@ const ECGPlayer = {
       shareReplay(1)
     );
 
-    this.leadHeight$ = this.heightScale$.pipe(
-      map((scale) => CHART_HEIGHT * scale),
+    // HYBRID PATTERN: Reactive stream for leadHeight calculation
+    // This pure stream calculates the correct height based on display mode.
+    // Multi-lead mode uses MULTI_LEAD_HEIGHT_SCALE to fit multiple leads on screen.
+    // The calculated value is synchronized to this.leadHeight imperative variable
+    // via leadHeightEffect for performance-critical synchronous access.
+    this.leadHeight$ = combineLatest([
+      this.displayMode$,
+      this.heightScale$
+    ]).pipe(
+      map(([displayMode, heightScale]) => {
+        return displayMode === "multi"
+          ? (CHART_HEIGHT * heightScale) / MULTI_LEAD_HEIGHT_SCALE
+          : CHART_HEIGHT * heightScale;
+      }),
       distinctUntilChanged(),
       shareReplay(1)
     );
@@ -801,6 +824,16 @@ const ECGPlayer = {
     this.activeCursorData = null;
     this.allLeadsCursorData = null;
     this.qrsFlashDuration = QRS_FLASH_DURATION_MS;
+
+    // HYBRID PATTERN: Initialize leadHeight for immediate synchronous access
+    // This imperative variable is kept in sync with leadHeight$ reactive stream
+    // via leadHeightEffect. Used by performance-critical code paths:
+    // - Animation rendering (60fps)
+    // - Click hit detection (immediate response)
+    // - Grid coordinate calculations
+    this.leadHeight = initialDisplayMode === "multi"
+      ? (CHART_HEIGHT * initialHeightScale) / MULTI_LEAD_HEIGHT_SCALE
+      : CHART_HEIGHT * initialHeightScale;
 
     this.precomputedSegments = new Map();
     this.segmentDuration = SEGMENT_DURATION_SECONDS;
@@ -1034,7 +1067,7 @@ const ECGPlayer = {
         x >= xOffset &&
         x <= xOffset + columnWidth &&
         y >= yOffset &&
-        y <= yOffset + this.leadHeight$.value
+        y <= yOffset + this.leadHeight
       ) {
         return leadIndex;
       }
@@ -1069,7 +1102,7 @@ const ECGPlayer = {
       (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
 
     const xOffset = column * (columnWidth + COLUMN_PADDING);
-    const yOffset = row * (this.leadHeight$.value + ROW_PADDING);
+    const yOffset = row * (this.leadHeight + ROW_PADDING);
 
     return { xOffset, yOffset, columnWidth };
   },
@@ -1102,6 +1135,8 @@ const ECGPlayer = {
     }
     this.recreateCanvas();
     this.renderGridBackground();
+    // Initialize lead selector visibility based on current display mode
+    this.updateLeadSelectorVisibility(this.displayMode$.value);
   },
 
   processECGData(payload) {
@@ -1480,7 +1515,7 @@ const ECGPlayer = {
           xOffset,
           yOffset,
           width: columnWidth,
-          height: this.leadHeight$.value,
+          height: this.leadHeight,
         },
         timeSpan: columnTimeSpan,
         cursorData,
@@ -1825,7 +1860,7 @@ const ECGPlayer = {
     } = options;
 
     // Use derived grid dimensions
-    const { smallSquareSize, largeSquareSize } = this.gridDimensions$
+    this.gridDimensions$
       .pipe(take(1))
       .subscribe((dimensions) => {
         this.renderMedicalGridLines(
@@ -2180,7 +2215,7 @@ const ECGPlayer = {
           xOffset,
           yOffset,
           columnWidth,
-          this.leadHeight$.value,
+          this.leadHeight,
           this.backgroundContext
         );
       }
