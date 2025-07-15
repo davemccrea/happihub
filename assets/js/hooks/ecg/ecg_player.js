@@ -306,160 +306,109 @@ const ECGPlayer = {
   },
 
   setupReactiveStateSubscriptions() {
-    this.subscriptions.add(
-      this.cursorWidth$.pipe(takeUntil(this.destroy$)).subscribe((newWidth) => {
-        this.cursorWidth = newWidth;
-        this.updateCursorStyle();
-      })
+    // Create consolidated reactive state effects
+    const cursorWidthEffect$ = this.cursorWidth$.pipe(
+      tap(() => this.updateCursorStyle()),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.displayMode$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((mode) => {
-          this.updateLeadSelectorVisibility(mode);
-          this.canvasRecreationTrigger$.next();
-        })
+    const displayModeEffect$ = this.displayMode$.pipe(
+      distinctUntilChanged(),
+      tap((mode) => {
+        this.updateLeadSelectorVisibility(mode);
+        this.canvasRecreationTrigger$.next();
+      }),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.currentLead$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((leadIndex) => {
-          if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
-            this.currentLeadData = this.ecgLeadDatasets[leadIndex];
-            this.updateLeadSelector(leadIndex);
-          }
-        })
+    const currentLeadEffect$ = this.currentLead$.pipe(
+      distinctUntilChanged(),
+      tap((leadIndex) => {
+        if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
+          this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+          this.updateLeadSelector(leadIndex);
+        }
+      }),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.gridScale$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((scale) => {
-          this.gridScale = scale;
-          this.updateGridScaleDisplay();
-          this.handleGridScaleChange();
-        })
+    const gridScaleEffect$ = this.gridScale$.pipe(
+      distinctUntilChanged(),
+      tap((scale) => {
+        this.updateGridScaleDisplay();
+        this.handleGridScaleChange();
+      }),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.amplitudeScale$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((scale) => {
-          this.amplitudeScale = scale;
-          this.updateAmplitudeScaleDisplay();
-          this.handleAmplitudeScaleChange();
-        })
+    const amplitudeScaleEffect$ = this.amplitudeScale$.pipe(
+      distinctUntilChanged(),
+      tap((scale) => {
+        this.updateAmplitudeScaleDisplay();
+        this.handleAmplitudeScaleChange();
+      }),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.heightScale$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((scale) => {
-          this.heightScale = scale;
-          this.updateHeightScaleDisplay();
-          this.handleHeightScaleChange();
-        })
+    const heightScaleEffect$ = this.heightScale$.pipe(
+      distinctUntilChanged(),
+      tap((scale) => {
+        this.updateHeightScaleDisplay();
+        this.handleHeightScaleChange();
+      }),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.leadHeight$.pipe(takeUntil(this.destroy$)).subscribe((height) => {
-        this.leadHeight = height;
-      })
+    const gridTypeEffect$ = this.gridType$.pipe(
+      distinctUntilChanged(),
+      tap(() => this.renderGridBackground()),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.gridType$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((gridType) => {
-          this.gridType = gridType;
-          this.renderGridBackground();
-        })
+    const qrsIndicatorEffect$ = this.qrsIndicatorEnabled$.pipe(
+      distinctUntilChanged(),
+      tap((enabled) => {
+        if (!enabled && this.qrsFlashActive$.value) {
+          this.qrsFlashActive$.next(false);
+          this.clearQrsFlashArea();
+        }
+      }),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.loopEnabled$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((enabled) => {
-          this.loopEnabled = enabled;
-        })
+    const canvasRecreationEffect$ = this.canvasRecreationTrigger$.pipe(
+      debounceTime(50),
+      tap(() => this.recreateCanvasAndRestart()),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.qrsIndicatorEnabled$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((enabled) => {
-          this.qrsIndicatorEnabled = enabled;
-          if (!enabled && this.qrsFlashActive$.value) {
-            this.qrsFlashActive$.next(false);
-            this.clearQrsFlashArea();
-          }
-        })
+    const themeChangeEffect$ = this.themeChange$.pipe(
+      debounceTime(50),
+      tap(() => this.handleThemeChange()),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.qrsFlashActive$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((isActive) => {
-          this.qrsFlashActive = isActive;
-        })
+    const ecgDataEffect$ = this.ecgDataLoaded$.pipe(
+      tap((payload) => this.processECGData(payload)),
+      takeUntil(this.destroy$)
     );
 
-    this.subscriptions.add(
-      this.canvasRecreationTrigger$
-        .pipe(
-          debounceTime(50), // Debounce multiple rapid triggers
-          takeUntil(this.destroy$)
-        )
-        .subscribe(() => {
-          this.recreateCanvasAndRestart();
-        })
+    // Combine all effects into a single subscription
+    const allEffects$ = merge(
+      cursorWidthEffect$,
+      displayModeEffect$,
+      currentLeadEffect$,
+      gridScaleEffect$,
+      amplitudeScaleEffect$,
+      heightScaleEffect$,
+      gridTypeEffect$,
+      qrsIndicatorEffect$,
+      canvasRecreationEffect$,
+      themeChangeEffect$,
+      ecgDataEffect$
     );
 
-    this.subscriptions.add(
-      this.themeChange$
-        .pipe(
-          debounceTime(50), // Debounce multiple rapid triggers
-          takeUntil(this.destroy$)
-        )
-        .subscribe(() => {
-          this.handleThemeChange();
-        })
-    );
-
-    this.subscriptions.add(
-      this.ecgDataLoaded$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe((payload) => {
-          this.processECGData(payload);
-        })
-    );
-
-    this.subscriptions.add(
-      this.animationTime$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe(({ startTime, pausedTime }) => {
-          this.startTime = startTime;
-          this.pausedTime = pausedTime;
-        })
-    );
-
-    this.subscriptions.add(
-      this.animationCycle$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((cycle) => {
-          this.animationCycle = cycle;
-        })
-    );
-
-    this.subscriptions.add(
-      this.cursorPosition$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((position) => {
-          this.cursorPosition = position;
-        })
-    );
+    this.subscriptions.add(allEffects$.subscribe());
   },
 
   setupReactiveUIUpdates() {
@@ -487,7 +436,8 @@ const ECGPlayer = {
         return animationFrames().pipe(
           map(() => {
             const currentTime = Date.now();
-            const elapsedSeconds = (currentTime - this.startTime) / 1000;
+            const timing = this.animationTime$.value;
+            const elapsedSeconds = (currentTime - timing.startTime) / 1000;
             return {
               elapsedSeconds,
               cursorProgress:
@@ -508,8 +458,8 @@ const ECGPlayer = {
     const animationRenderEvents$ = animationStream$.pipe(
       filter((data) => data.elapsedSeconds < this.totalDuration),
       tap((data) => {
-        if (data.animationCycle !== this.animationCycle) {
-          this.animationCycle = data.animationCycle;
+        if (data.animationCycle !== this.animationCycle$.value) {
+          this.animationCycle$.next(data.animationCycle);
         }
         this.processAnimationFrame(data.cursorProgress, data.animationCycle);
       })
@@ -812,30 +762,11 @@ const ECGPlayer = {
       share()
     );
 
-    this.cursorWidth =
-      initialDisplayMode === "single"
-        ? SINGLE_LEAD_CURSOR_WIDTH
-        : MULTI_LEAD_CURSOR_WIDTH;
-    this.gridType = initialGridType;
-    this.gridScale = initialGridScale;
-    this.amplitudeScale = initialAmplitudeScale;
-    this.heightScale = initialHeightScale;
-    this.leadHeight = CHART_HEIGHT * initialHeightScale;
-    this.loopEnabled = initialLoopEnabled;
-    this.qrsIndicatorEnabled = initialQrsIndicatorEnabled;
-    this.qrsFlashActive = false;
+    // Remove duplicate imperative state - use reactive streams as single source of truth
     this.activeSegments = [];
-    this.startTime = null;
-    this.pausedTime = 0;
-    this.animationCycle = 0;
     this.animationId = null;
-    this.cursorPosition = 0;
-    this.cursorWidth = SINGLE_LEAD_CURSOR_WIDTH;
     this.activeCursorData = null;
     this.allLeadsCursorData = null;
-    this.leadHeight = CHART_HEIGHT * this.heightScale;
-
-    this.qrsFlashActive = false;
     this.qrsFlashDuration = QRS_FLASH_DURATION_MS;
 
     this.precomputedSegments = new Map();
@@ -889,8 +820,9 @@ const ECGPlayer = {
 
     operation();
 
-    if (!wasPlaying && this.startTime && this.pausedTime) {
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+    const timing = this.animationTime$.value;
+    if (!wasPlaying && timing.startTime && timing.pausedTime) {
+      const elapsedSeconds = (timing.pausedTime - timing.startTime) / 1000;
       const cursorProgress =
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
@@ -978,7 +910,7 @@ const ECGPlayer = {
     for (let i = 0; i < times.length; i++) {
       const x = xOffset + times[i] * xScale;
       // Apply amplitude scale to the voltage values
-      const scaledValue = values[i] * this.amplitudeScale;
+      const scaledValue = values[i] * this.amplitudeScale$.value;
       const y = yOffset + height - (scaledValue - this.yMin) * yScale;
       coordinates.push({ x, y });
     }
@@ -1018,11 +950,11 @@ const ECGPlayer = {
     const gridScaleSpeed = document.getElementById("grid-scale-speed");
 
     if (gridScaleValue) {
-      gridScaleValue.textContent = `${this.gridScale.toFixed(2)}x`;
+      gridScaleValue.textContent = `${this.gridScale$.value.toFixed(2)}x`;
     }
 
     if (gridScaleSpeed) {
-      const actualSpeed = (MM_PER_SECOND * this.gridScale).toFixed(1);
+      const actualSpeed = (MM_PER_SECOND * this.gridScale$.value).toFixed(1);
       gridScaleSpeed.textContent = `${actualSpeed} mm/s`;
     }
   },
@@ -1034,11 +966,11 @@ const ECGPlayer = {
     const amplitudeScaleGain = document.getElementById("amplitude-scale-gain");
 
     if (amplitudeScaleValue) {
-      amplitudeScaleValue.textContent = `${this.amplitudeScale.toFixed(2)}x`;
+      amplitudeScaleValue.textContent = `${this.amplitudeScale$.value.toFixed(2)}x`;
     }
 
     if (amplitudeScaleGain) {
-      const actualGain = (MM_PER_MILLIVOLT * this.amplitudeScale).toFixed(1);
+      const actualGain = (MM_PER_MILLIVOLT * this.amplitudeScale$.value).toFixed(1);
       amplitudeScaleGain.textContent = `${actualGain} mm/mV`;
     }
   },
@@ -1048,11 +980,11 @@ const ECGPlayer = {
     const heightScalePixels = document.getElementById("height-scale-pixels");
 
     if (heightScaleValue) {
-      heightScaleValue.textContent = `${this.heightScale.toFixed(2)}x`;
+      heightScaleValue.textContent = `${this.heightScale$.value.toFixed(2)}x`;
     }
 
     if (heightScalePixels) {
-      const actualHeight = Math.round(CHART_HEIGHT * this.heightScale);
+      const actualHeight = Math.round(CHART_HEIGHT * this.heightScale$.value);
       heightScalePixels.textContent = `${actualHeight}px`;
     }
   },
@@ -1097,7 +1029,7 @@ const ECGPlayer = {
         x >= xOffset &&
         x <= xOffset + columnWidth &&
         y >= yOffset &&
-        y <= yOffset + this.leadHeight
+        y <= yOffset + this.leadHeight$.value
       ) {
         return leadIndex;
       }
@@ -1152,7 +1084,7 @@ const ECGPlayer = {
       (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
 
     const xOffset = column * (columnWidth + COLUMN_PADDING);
-    const yOffset = row * (this.leadHeight + ROW_PADDING);
+    const yOffset = row * (this.leadHeight$.value + ROW_PADDING);
 
     return { xOffset, yOffset, columnWidth };
   },
@@ -1316,7 +1248,7 @@ const ECGPlayer = {
     }
 
     const containerWidth = container.offsetWidth - CONTAINER_PADDING;
-    const scaledPixelsPerMm = PIXELS_PER_MM * this.gridScale;
+    const scaledPixelsPerMm = PIXELS_PER_MM * this.gridScale$.value;
     const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * scaledPixelsPerMm;
 
     if (containerWidth < minWidth) {
@@ -1337,17 +1269,13 @@ const ECGPlayer = {
   recreateCanvas() {
     this.cleanupCanvases();
 
+    const heightScale = this.heightScale$.value;
     const canvasHeight =
       this.displayMode$.value === "multi"
         ? ROWS_PER_DISPLAY *
-            ((CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
+            ((CHART_HEIGHT * heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
           (ROWS_PER_DISPLAY - 1) * ROW_PADDING
-        : CHART_HEIGHT * this.heightScale;
-
-    this.leadHeight =
-      this.displayMode$.value === "multi"
-        ? (CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE
-        : CHART_HEIGHT * this.heightScale;
+        : CHART_HEIGHT * heightScale;
 
     const container = this.el.querySelector("[data-ecg-chart]");
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -1599,7 +1527,7 @@ const ECGPlayer = {
           xOffset: 0,
           yOffset: 0,
           width: this.chartWidth,
-          height: CHART_HEIGHT * this.heightScale,
+          height: CHART_HEIGHT * this.heightScale$.value,
         },
         timeSpan: this.widthSeconds,
         cursorData,
@@ -1634,7 +1562,7 @@ const ECGPlayer = {
             xOffset,
             yOffset,
             width: columnWidth,
-            height: this.leadHeight,
+            height: this.leadHeight$.value,
           },
           timeSpan: columnTimeSpan,
           cursorData,
@@ -2175,8 +2103,8 @@ const ECGPlayer = {
       bounds: { xOffset, yOffset, width, height },
       context = this.waveformContext,
     } = options;
-    const smallSquareSize = PIXELS_PER_MM * this.gridScale;
-    const largeSquareSize = 5 * PIXELS_PER_MM * this.gridScale;
+    const smallSquareSize = PIXELS_PER_MM * this.gridScale$.value;
+    const largeSquareSize = 5 * PIXELS_PER_MM * this.gridScale$.value;
 
     context.strokeStyle = this.colors.gridFine;
     context.lineWidth = 0.5;
@@ -2239,7 +2167,7 @@ const ECGPlayer = {
       bounds: { xOffset, yOffset, width, height },
       context = this.waveformContext,
     } = options;
-    const dotSpacing = 5 * PIXELS_PER_MM * this.gridScale;
+    const dotSpacing = 5 * PIXELS_PER_MM * this.gridScale$.value;
     context.fillStyle = this.colors.gridDots;
 
     for (let x = xOffset + 5; x < xOffset + width - 5; x += dotSpacing) {
@@ -2503,7 +2431,7 @@ const ECGPlayer = {
           xOffset,
           yOffset,
           columnWidth,
-          this.leadHeight,
+          this.leadHeight$.value,
           this.backgroundContext
         );
       }
@@ -2513,7 +2441,7 @@ const ECGPlayer = {
         0,
         0,
         this.chartWidth,
-        CHART_HEIGHT * this.heightScale,
+        CHART_HEIGHT * this.heightScale$.value,
         this.backgroundContext
       );
     }
