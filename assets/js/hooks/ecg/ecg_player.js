@@ -164,81 +164,82 @@ const ECGPlayer = {
   },
 
   setupFormEventStreams() {
-    const uiEventToActionMap = [
-      {
-        id: "lead-selector",
-        event: "change",
-        action: (e) => {
-          const leadIndex = parseInt(e.target.value);
-          this.currentLead$.next(leadIndex);
-          this.switchLead(leadIndex);
-        },
-      },
-      {
-        id: "display-mode-selector",
-        event: "change",
-        action: (e) => {
-          const value = e.target.value;
-          this.displayMode$.next(value);
-          this.updateDisplayModeSelector(value);
-        },
-      },
-      {
-        id: "grid-type-selector",
-        event: "change",
-        action: (e) => {
-          this.gridType$.next(e.target.value);
-        },
-      },
-      {
-        id: "loop-checkbox",
-        event: "change",
-        action: (e) => {
-          this.loopEnabled$.next(e.target.checked);
-        },
-      },
-      {
-        id: "qrs-indicator-checkbox",
-        event: "change",
-        action: (e) => {
-          this.qrsIndicatorEnabled$.next(e.target.checked);
-        },
-      },
-      {
-        id: "grid-scale-slider",
-        event: "input",
-        debounce: 100,
-        action: (e) => {
-          this.gridScale$.next(parseFloat(e.target.value));
-        },
-      },
-      {
-        id: "amplitude-scale-slider",
-        event: "input",
-        debounce: 100,
-        action: (e) => {
-          this.amplitudeScale$.next(parseFloat(e.target.value));
-        },
-      },
-      {
-        id: "height-scale-slider",
-        event: "input",
-        debounce: 100,
-        action: (e) => {
-          this.heightScale$.next(parseFloat(e.target.value));
-        },
-      },
-    ];
-
-    const formEventStreams = uiEventToActionMap.map(
-      ({ id, event, debounce: db, action }) => {
-        const stream = this.createElementStream(id, event);
-        const mappedStream = stream.pipe(tap(action), takeUntil(this.destroy$));
-        return db ? mappedStream.pipe(debounceTime(db)) : mappedStream;
-      }
+    // Create reactive form streams with proper typing
+    const leadSelectorChange$ = this.createElementStream("lead-selector", "change").pipe(
+      map(e => parseInt(e.target.value)),
+      distinctUntilChanged(),
+      tap(leadIndex => {
+        this.currentLead$.next(leadIndex);
+        this.switchLead(leadIndex);
+      })
     );
 
-    return merge(...formEventStreams);
+    const displayModeChange$ = this.createElementStream("display-mode-selector", "change").pipe(
+      map(e => e.target.value),
+      distinctUntilChanged(),
+      tap(value => {
+        this.displayMode$.next(value);
+        this.updateDisplayModeSelector(value);
+      })
+    );
+
+    const gridTypeChange$ = this.createElementStream("grid-type-selector", "change").pipe(
+      map(e => e.target.value),
+      distinctUntilChanged(),
+      tap(value => this.gridType$.next(value))
+    );
+
+    const loopCheckboxChange$ = this.createElementStream("loop-checkbox", "change").pipe(
+      map(e => e.target.checked),
+      distinctUntilChanged(),
+      tap(checked => this.loopEnabled$.next(checked))
+    );
+
+    const qrsIndicatorChange$ = this.createElementStream("qrs-indicator-checkbox", "change").pipe(
+      map(e => e.target.checked),
+      distinctUntilChanged(),
+      tap(checked => this.qrsIndicatorEnabled$.next(checked))
+    );
+
+    // Debounced slider streams for performance
+    const gridScaleSlider$ = this.createElementStream("grid-scale-slider", "input").pipe(
+      map(e => parseFloat(e.target.value)),
+      debounceTime(100),
+      distinctUntilChanged(),
+      tap(value => this.gridScale$.next(value))
+    );
+
+    const amplitudeScaleSlider$ = this.createElementStream("amplitude-scale-slider", "input").pipe(
+      map(e => parseFloat(e.target.value)),
+      debounceTime(100),
+      distinctUntilChanged(),
+      tap(value => this.amplitudeScale$.next(value))
+    );
+
+    const heightScaleSlider$ = this.createElementStream("height-scale-slider", "input").pipe(
+      map(e => parseFloat(e.target.value)),
+      debounceTime(100),
+      distinctUntilChanged(),
+      tap(value => this.heightScale$.next(value))
+    );
+
+    // Combine all form streams with error handling
+    return merge(
+      leadSelectorChange$,
+      displayModeChange$,
+      gridTypeChange$,
+      loopCheckboxChange$,
+      qrsIndicatorChange$,
+      gridScaleSlider$,
+      amplitudeScaleSlider$,
+      heightScaleSlider$
+    ).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Form event stream error:', error);
+        return EMPTY;
+      })
+    );
   },
 
   setupCanvasClickEvents() {
@@ -302,7 +303,11 @@ const ECGPlayer = {
 
   createElementStream(elementId, eventType) {
     const element = document.getElementById(elementId);
-    return element ? fromEvent(element, eventType) : EMPTY;
+    if (!element) {
+      console.warn(`Element with id '${elementId}' not found`);
+      return EMPTY;
+    }
+    return fromEvent(element, eventType);
   },
 
   setupReactiveStateSubscriptions() {
