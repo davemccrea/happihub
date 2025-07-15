@@ -732,7 +732,7 @@ const ECGPlayer = {
     // via leadHeightEffect for performance-critical synchronous access.
     this.leadHeight$ = combineLatest([
       this.displayMode$,
-      this.heightScale$
+      this.heightScale$,
     ]).pipe(
       map(([displayMode, heightScale]) => {
         return displayMode === "multi"
@@ -831,9 +831,10 @@ const ECGPlayer = {
     // - Animation rendering (60fps)
     // - Click hit detection (immediate response)
     // - Grid coordinate calculations
-    this.leadHeight = initialDisplayMode === "multi"
-      ? (CHART_HEIGHT * initialHeightScale) / MULTI_LEAD_HEIGHT_SCALE
-      : CHART_HEIGHT * initialHeightScale;
+    this.leadHeight =
+      initialDisplayMode === "multi"
+        ? (CHART_HEIGHT * initialHeightScale) / MULTI_LEAD_HEIGHT_SCALE
+        : CHART_HEIGHT * initialHeightScale;
 
     this.precomputedSegments = new Map();
     this.segmentDuration = SEGMENT_DURATION_SECONDS;
@@ -1865,19 +1866,17 @@ const ECGPlayer = {
     } = options;
 
     // Use derived grid dimensions
-    this.gridDimensions$
-      .pipe(take(1))
-      .subscribe((dimensions) => {
-        this.renderMedicalGridLines(
-          context,
-          xOffset,
-          yOffset,
-          width,
-          height,
-          dimensions.smallSquareSize,
-          dimensions.largeSquareSize
-        );
-      });
+    this.gridDimensions$.pipe(take(1)).subscribe((dimensions) => {
+      this.renderMedicalGridLines(
+        context,
+        xOffset,
+        yOffset,
+        width,
+        height,
+        dimensions.smallSquareSize,
+        dimensions.largeSquareSize
+      );
+    });
   },
 
   renderMedicalGridLines(
