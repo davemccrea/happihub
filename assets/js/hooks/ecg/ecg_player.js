@@ -35,7 +35,6 @@ import {
   // @ts-ignore
 } from "rxjs";
 
-// RENDERING CONSTANTS
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 6;
@@ -43,45 +42,66 @@ const HEIGHT_MILLIVOLTS = 2.5;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
 const WAVEFORM_LINE_WIDTH = 1.3;
 const DOT_RADIUS = 1.2;
-
-// LAYOUT CONSTANTS
 const DEFAULT_WIDTH_SECONDS = 2.5;
 const CONTAINER_PADDING = 0;
 const COLUMNS_PER_DISPLAY = 4;
 const ROWS_PER_DISPLAY = 3;
 const COLUMN_PADDING = 0;
 const ROW_PADDING = 0;
-
-// ANIMATION CONSTANTS
 const SINGLE_LEAD_CURSOR_WIDTH = 20;
 const MULTI_LEAD_CURSOR_WIDTH = 8;
-
-// MULTI-LEAD DISPLAY CONSTANTS
-const MULTI_LEAD_HEIGHT_SCALE = 0.8; // Reduces individual lead height in multi-lead view
-const QRS_FLASH_DURATION_MS = 100; // Duration of QRS indicator flash in milliseconds
-const SEGMENT_DURATION_SECONDS = 0.1; // Pre-computed data segment size for performance
+const MULTI_LEAD_HEIGHT_SCALE = 0.8;
+const QRS_FLASH_DURATION_MS = 100;
+const SEGMENT_DURATION_SECONDS = 0.1;
 
 const ECGPlayer = {
-  // ==========================
-  // INITIALIZATION & LIFECYCLE
-  // ==========================
+  // =====================================
+  // LIFECYCLE
+  // =====================================
 
   mounted() {
     this.destroy$ = new Subject();
     this.subscriptions = new Subscription();
-
     this.initializeState();
     this.calculateMedicallyAccurateDimensions();
-
-    // Initialize reactive system with consolidated streams
     this.setupEventStreams();
-
     this.handleEvent("load_ecg_data", (payload) => {
       this.ecgDataLoaded$.next(payload);
     });
-
     this.updateThemeColors();
     this.initializeECGChart();
+  },
+
+  destroyed() {
+    if (this.destroy$) {
+      this.destroy$.next();
+      this.destroy$.complete();
+    }
+    if (this.subscriptions) {
+      this.subscriptions.unsubscribe();
+    }
+    const subjects = [
+      this.isPlaying$, this.currentLead$, this.displayMode$, this.gridType$,
+      this.gridScale$, this.amplitudeScale$, this.heightScale$, this.loopEnabled$,
+      this.qrsIndicatorEnabled$, this.qrsFlashActive$, this.canvasRecreationTrigger$,
+      this.themeChange$, this.ecgDataLoaded$, this.animationTime$,
+      this.animationCycle$, this.cursorPosition$, this.qrsDetectionSubject$
+    ];
+    subjects.forEach(subject => {
+      if (subject) {
+        subject.complete();
+      }
+    });
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+    }
+    this.cleanupCanvases();
+    this.ecgLeadDatasets = null;
+    this.precomputedSegments = null;
+    this.dataIndexCache = null;
+    this.currentLeadData = null;
+    this.allLeadsCursorData = null;
+    this.activeCursorData = null;
   },
 
   setupEventStreams() {
@@ -608,46 +628,6 @@ const ECGPlayer = {
     }
   },
 
-  destroyed() {
-    // Clean shutdown of reactive system
-    if (this.destroy$) {
-      this.destroy$.next();
-      this.destroy$.complete();
-    }
-
-    if (this.subscriptions) {
-      this.subscriptions.unsubscribe();
-    }
-
-    // Complete all subjects
-    const subjects = [
-      this.isPlaying$, this.currentLead$, this.displayMode$, this.gridType$,
-      this.gridScale$, this.amplitudeScale$, this.heightScale$, this.loopEnabled$,
-      this.qrsIndicatorEnabled$, this.qrsFlashActive$, this.canvasRecreationTrigger$,
-      this.themeChange$, this.ecgDataLoaded$, this.animationTime$,
-      this.animationCycle$, this.cursorPosition$, this.qrsDetectionSubject$
-    ];
-
-    subjects.forEach(subject => {
-      if (subject) {
-        subject.complete();
-      }
-    });
-
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-    }
-
-    this.cleanupCanvases();
-
-    // Explicitly nullify large data objects to break references
-    this.ecgLeadDatasets = null;
-    this.precomputedSegments = null;
-    this.dataIndexCache = null;
-    this.currentLeadData = null;
-    this.allLeadsCursorData = null;
-    this.activeCursorData = null;
-  },
 
   // =================
   // STATE MANAGEMENT
