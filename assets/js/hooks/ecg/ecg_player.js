@@ -1338,8 +1338,9 @@ const ECGPlayer = {
     if (wasPlaying) {
       this.isPlaying$.next(true);
     } else {
-      if (this.startTime && this.pausedTime) {
-        const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const timing = this.animationTime$.value;
+      if (timing.startTime && timing.pausedTime) {
+        const elapsedSeconds = (timing.pausedTime - timing.startTime) / 1000;
         const cursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
         const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);

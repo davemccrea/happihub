@@ -188,6 +188,54 @@ test.describe('ECG Player - Data Loading and Animation', () => {
     
     await playPauseButton.click();
   });
+  
+  test('should preserve waveform when changing leads during pause', async ({ page }) => {
+    const leadSelector = page.locator('#lead-selector');
+    const playPauseButton = page.locator('#play-pause-button');
+    const chartContainer = page.locator('[data-ecg-chart]');
+    
+    // Start playback
+    await playPauseButton.click();
+    await page.waitForTimeout(1000);
+    
+    // Pause the playback
+    await playPauseButton.click();
+    await expect(playPauseButton).toContainText('Play');
+    
+    // Verify we have canvases
+    const canvases = chartContainer.locator('canvas');
+    await expect(canvases).toHaveCount(3);
+    
+    // Change to a different lead
+    await leadSelector.selectOption('1');
+    await page.waitForTimeout(200);
+    
+    // Verify we still have canvases and they're visible
+    await expect(canvases).toHaveCount(3);
+    await expect(canvases.nth(0)).toBeVisible(); // background canvas
+    await expect(canvases.nth(1)).toBeVisible(); // waveform canvas
+    await expect(canvases.nth(2)).toBeVisible(); // qrs flash canvas
+    
+    // Verify we're still in paused state
+    await expect(playPauseButton).toContainText('Play');
+    
+    // Change to another lead
+    await leadSelector.selectOption('2');
+    await page.waitForTimeout(200);
+    
+    // Verify canvases are still there and visible
+    await expect(canvases).toHaveCount(3);
+    await expect(canvases.nth(0)).toBeVisible();
+    await expect(canvases.nth(1)).toBeVisible();
+    await expect(canvases.nth(2)).toBeVisible();
+    
+    // Verify we're still in paused state
+    await expect(playPauseButton).toContainText('Play');
+    
+    // Test that playback can resume after lead changes
+    await playPauseButton.click();
+    await expect(playPauseButton).toContainText('Pause');
+  });
 
   test('should handle error conditions gracefully', async ({ page }) => {
     const leadSelector = page.locator('#lead-selector');
