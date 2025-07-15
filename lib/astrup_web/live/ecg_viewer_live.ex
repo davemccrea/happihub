@@ -6,8 +6,7 @@ defmodule AstrupWeb.ECGViewerLive do
   alias Astrup.ECG.DatasetRegistry
 
   def mount(params, _session, socket) do
-    settings =
-      Astrup.Settings.changeset(socket.assigns.current_scope.user.settings || %Settings{}, %{})
+    settings = Settings.get_settings(socket.assigns.current_scope)
 
     socket =
       socket

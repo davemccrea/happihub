@@ -3,7 +3,8 @@ defmodule Astrup.Settings do
   import Ecto.Changeset
   import Ecto.Query, warn: false
 
-  alias Astrup.Accounts.User
+  alias Astrup.Accounts.{User, Scope}
+  alias Astrup.Repo
 
   schema "settings" do
     field :display_mode, :string, default: "single"
@@ -39,4 +40,33 @@ defmodule Astrup.Settings do
     |> validate_number(:amplitude_scale, greater_than: 0.5, less_than: 2.0)
     |> validate_number(:height_scale, greater_than: 0.5, less_than: 2.0)
   end
+
+  @doc """
+  Gets the settings for the given scope.
+
+  Returns the user's settings if they exist, otherwise creates and returns default settings.
+
+  ## Examples
+
+      iex> get_settings(scope)
+      %Settings{}
+
+  """
+  def get_settings(%Scope{user: %User{} = user}) do
+    user
+    |> Repo.preload(:settings)
+    |> Map.get(:settings)
+    |> case do
+      nil ->
+        %__MODULE__{}
+        |> changeset(%{})
+        |> Ecto.Changeset.put_assoc(:user, user)
+        |> Repo.insert!()
+
+      settings ->
+        settings
+    end
+  end
+
+  def get_settings(_), do: %__MODULE__{}
 end

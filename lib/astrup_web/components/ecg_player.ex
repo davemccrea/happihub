@@ -4,12 +4,21 @@ defmodule AstrupWeb.Components.EcgPlayer do
   use AstrupWeb, :live_component
 
   def update(assigns, socket) do
+    form =
+      assigns
+      |> Map.get(:settings)
+      |> Settings.changeset(%{})
+      |> to_form()
+
     {:ok,
      socket
      |> assign(assigns)
      |> assign(settings: assigns.settings)
-     |> assign(form: to_form(assigns.settings))
-     |> assign(:lead_names, if(assigns.ecg_data, do: Map.get(assigns.ecg_data, "sig_name", []), else: []))
+     |> assign(form: form)
+     |> assign(
+       :lead_names,
+       if(assigns.ecg_data, do: Map.get(assigns.ecg_data, "sig_name", []), else: [])
+     )
      |> push_event("load_ecg_data", %{data: assigns.ecg_data})}
   end
 
@@ -220,25 +229,22 @@ defmodule AstrupWeb.Components.EcgPlayer do
   end
 
   def handle_event("settings_updated", %{"settings" => params}, socket) do
-    # Get the actual settings struct from the changeset
-    settings_struct = socket.assigns.settings.data
-    changeset = Settings.changeset(settings_struct, params)
-    
-    # Handle both new and existing settings
-    case settings_struct.id do
-      nil ->
-        # New settings - insert with user association
-        changeset
-        |> Ecto.Changeset.put_assoc(:user, socket.assigns.current_scope.user)
-        |> Repo.insert!()
-      
-      _id ->
-        # Existing settings - update
-        changeset
-        |> Repo.update!()
-    end
+    socket.assigns.settings
+    |> Settings.changeset(params)
+    |> case do
+      %Ecto.Changeset{valid?: true} = changeset ->
+        with {:ok, updated_settings} <- Repo.update(changeset) do
+          form = updated_settings |> Settings.changeset(%{}) |> to_form()
+          
+          {:noreply,
+           socket
+           |> assign(settings: updated_settings)
+           |> assign(form: form)}
+        end
 
-    {:noreply, socket}
+      changeset ->
+        {:noreply, assign(socket, form: to_form(changeset))}
+    end
   end
 
   def handle_event("playback_changed", _params, socket), do: {:noreply, socket}

@@ -27,8 +27,7 @@ defmodule Astrup.Accounts.Scope do
   Returns nil if no user is given.
   """
   def for_user(%User{} = user) do
-    user_with_settings = Repo.preload(user, :settings)
-    %__MODULE__{user: user_with_settings}
+    %__MODULE__{user: user}
   end
 
   def for_user(nil), do: nil
