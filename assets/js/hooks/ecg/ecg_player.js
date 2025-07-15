@@ -24,10 +24,13 @@ import {
   bufferCount,
   scan,
   share,
+  shareReplay,
   of,
   takeLast,
+  take,
   BehaviorSubject,
   distinctUntilChanged,
+  combineLatest,
   // @ts-ignore
 } from "rxjs";
 
@@ -753,18 +756,89 @@ const ECGPlayer = {
     this.animationCycle$ = new BehaviorSubject(0);
     this.cursorPosition$ = new BehaviorSubject(0);
 
+    // Derived streams for computed values
     this.cursorWidth$ = this.displayMode$.pipe(
       map((mode) =>
         mode === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH
       ),
       distinctUntilChanged(),
-      share()
+      shareReplay(1)
     );
 
     this.leadHeight$ = this.heightScale$.pipe(
       map((scale) => CHART_HEIGHT * scale),
       distinctUntilChanged(),
-      share()
+      shareReplay(1)
+    );
+
+    // Canvas dimensions stream
+    this.canvasDimensions$ = combineLatest([
+      this.displayMode$,
+      this.heightScale$,
+      this.leadHeight$
+    ]).pipe(
+      map(([displayMode, heightScale, leadHeight]) => {
+        const canvasHeight = displayMode === "multi"
+          ? ROWS_PER_DISPLAY * (leadHeight / MULTI_LEAD_HEIGHT_SCALE) + (ROWS_PER_DISPLAY - 1) * ROW_PADDING
+          : CHART_HEIGHT * heightScale;
+        
+        const actualLeadHeight = displayMode === "multi"
+          ? leadHeight / MULTI_LEAD_HEIGHT_SCALE
+          : leadHeight;
+          
+        return { canvasHeight, leadHeight: actualLeadHeight };
+      }),
+      distinctUntilChanged((prev, curr) => 
+        prev.canvasHeight === curr.canvasHeight && prev.leadHeight === curr.leadHeight
+      ),
+      shareReplay(1)
+    );
+
+    // Grid dimensions stream
+    this.gridDimensions$ = this.gridScale$.pipe(
+      map((scale) => ({
+        scaledPixelsPerMm: PIXELS_PER_MM * scale,
+        smallSquareSize: PIXELS_PER_MM * scale,
+        largeSquareSize: 5 * PIXELS_PER_MM * scale,
+        dotSpacing: 5 * PIXELS_PER_MM * scale
+      })),
+      distinctUntilChanged(),
+      shareReplay(1)
+    );
+
+    // Medically accurate chart dimensions
+    this.chartDimensions$ = this.gridScale$.pipe(
+      map((gridScale) => {
+        const container = this.el.querySelector("[data-ecg-chart]");
+        const scaledPixelsPerMm = PIXELS_PER_MM * gridScale;
+        const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * scaledPixelsPerMm;
+        
+        if (!container) {
+          return {
+            chartWidth: minWidth,
+            widthSeconds: DEFAULT_WIDTH_SECONDS
+          };
+        }
+        
+        const containerWidth = container.offsetWidth - CONTAINER_PADDING;
+        
+        if (containerWidth < minWidth) {
+          return {
+            chartWidth: minWidth,
+            widthSeconds: DEFAULT_WIDTH_SECONDS
+          };
+        }
+        
+        const widthSeconds = containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
+        return {
+          chartWidth: widthSeconds * MM_PER_SECOND * scaledPixelsPerMm,
+          widthSeconds
+        };
+      }),
+      distinctUntilChanged((prev, curr) => 
+        prev.chartWidth === curr.chartWidth && prev.widthSeconds === curr.widthSeconds
+      ),
+      shareReplay(1)
     );
 
     // Remove duplicate imperative state - use reactive streams as single source of truth
@@ -1244,25 +1318,11 @@ const ECGPlayer = {
    * @returns {void}
    */
   calculateMedicallyAccurateDimensions() {
-    const container = this.el.querySelector("[data-ecg-chart]");
-    if (!container) {
-      this.chartWidth =
-        DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM * this.gridScale;
-      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
-      return;
-    }
-
-    const containerWidth = container.offsetWidth - CONTAINER_PADDING;
-    const scaledPixelsPerMm = PIXELS_PER_MM * this.gridScale$.value;
-    const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * scaledPixelsPerMm;
-
-    if (containerWidth < minWidth) {
-      this.chartWidth = minWidth;
-      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
-    } else {
-      this.widthSeconds = containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
-      this.chartWidth = this.widthSeconds * MM_PER_SECOND * scaledPixelsPerMm;
-    }
+    // Use derived stream to update dimensions reactively
+    this.chartDimensions$.pipe(take(1)).subscribe(({ chartWidth, widthSeconds }) => {
+      this.chartWidth = chartWidth;
+      this.widthSeconds = widthSeconds;
+    });
   },
 
   /**
@@ -1274,14 +1334,13 @@ const ECGPlayer = {
   recreateCanvas() {
     this.cleanupCanvases();
 
-    const heightScale = this.heightScale$.value;
-    const canvasHeight =
-      this.displayMode$.value === "multi"
-        ? ROWS_PER_DISPLAY *
-            ((CHART_HEIGHT * heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
-          (ROWS_PER_DISPLAY - 1) * ROW_PADDING
-        : CHART_HEIGHT * heightScale;
+    // Use derived canvas dimensions
+    this.canvasDimensions$.pipe(take(1)).subscribe(({ canvasHeight }) => {
+      this.createCanvasElements(canvasHeight);
+    });
+  },
 
+  createCanvasElements(canvasHeight) {
     const container = this.el.querySelector("[data-ecg-chart]");
     const devicePixelRatio = window.devicePixelRatio || 1;
 
@@ -2108,8 +2167,14 @@ const ECGPlayer = {
       bounds: { xOffset, yOffset, width, height },
       context = this.waveformContext,
     } = options;
-    const smallSquareSize = PIXELS_PER_MM * this.gridScale$.value;
-    const largeSquareSize = 5 * PIXELS_PER_MM * this.gridScale$.value;
+    
+    // Use derived grid dimensions
+    const { smallSquareSize, largeSquareSize } = this.gridDimensions$.pipe(take(1)).subscribe(dimensions => {
+      this.renderMedicalGridLines(context, xOffset, yOffset, width, height, dimensions.smallSquareSize, dimensions.largeSquareSize);
+    });
+  },
+  
+  renderMedicalGridLines(context, xOffset, yOffset, width, height, smallSquareSize, largeSquareSize) {
 
     context.strokeStyle = this.colors.gridFine;
     context.lineWidth = 0.5;
@@ -2172,7 +2237,14 @@ const ECGPlayer = {
       bounds: { xOffset, yOffset, width, height },
       context = this.waveformContext,
     } = options;
-    const dotSpacing = 5 * PIXELS_PER_MM * this.gridScale$.value;
+    
+    // Use derived grid dimensions
+    this.gridDimensions$.pipe(take(1)).subscribe(({ dotSpacing }) => {
+      this.renderSimpleGridDots(context, xOffset, yOffset, width, height, dotSpacing);
+    });
+  },
+  
+  renderSimpleGridDots(context, xOffset, yOffset, width, height, dotSpacing) {
     context.fillStyle = this.colors.gridDots;
 
     for (let x = xOffset + 5; x < xOffset + width - 5; x += dotSpacing) {
