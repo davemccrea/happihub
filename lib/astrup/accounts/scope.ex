@@ -17,7 +17,6 @@ defmodule Astrup.Accounts.Scope do
   """
 
   alias Astrup.Accounts.User
-  alias Astrup.Repo
 
   defstruct user: nil
 
