@@ -104,11 +104,12 @@ const ECGPlayer = {
     this.activeCursorData = null;
   },
 
+  // =====================================
+  // REACTIVE STREAMS
+  // =====================================
+
   setupEventStreams() {
-    // Create all reactive streams
     const streams = this.createAllReactiveStreams();
-    
-    // Consolidate all streams into a single subscription
     const consolidatedStream$ = merge(
       ...Object.values(streams)
     ).pipe(
@@ -118,27 +119,17 @@ const ECGPlayer = {
         return EMPTY;
       })
     );
-
-    // Single subscription for all reactive behavior
     this.subscriptions.add(consolidatedStream$.subscribe());
   },
 
   createAllReactiveStreams() {
-    // Animation and QRS streams
     const animationStreams = this.createAnimationStreams();
     const qrsStreams = this.createQrsStreams();
-    
-    // UI and interaction streams  
     const uiStreams = this.createUIStreams();
     const formStreams = this.createFormStreams();
     const keyboardStreams = this.createKeyboardStreams();
-    
-    // System event streams
     const systemStreams = this.createSystemEventStreams();
-    
-    // State effect streams
     const stateStreams = this.createStateEffectStreams();
-    
     return {
       ...animationStreams,
       ...qrsStreams,
@@ -1214,8 +1205,6 @@ const ECGPlayer = {
 
       this.setupPlayPauseEvents();
 
-      this.setupSelectors();
-
       this.updateLeadSelectorVisibility(this.displayMode$.value);
 
       console.log("ECG data loaded successfully:", {
@@ -1802,193 +1791,6 @@ const ECGPlayer = {
    * @returns {void}
    */
   // Helper to setup event listener with duplicate prevention
-  /**
-   * @param {string} elementId
-   * @param {string} eventType
-   * @param {EventListener} handler
-   * @param {((element: HTMLElement) => void) | null} [initializer]
-   */
-  setupElementListener(elementId, eventType, handler, initializer = null) {
-    const element = document.getElementById(elementId);
-    if (element && !element.dataset.listenerAdded) {
-      if (initializer) initializer(element);
-      element.addEventListener(eventType, handler);
-      element.dataset.listenerAdded = "true";
-    }
-  },
-
-  setupBasicSelectors() {
-    this.setupElementListener("lead-selector", "change", (e) => {
-      const leadIndex = parseInt(
-        /** @type {HTMLSelectElement} */ (e.target).value
-      );
-      this.currentLead$.next(leadIndex);
-    });
-
-    this.setupElementListener("display-mode-selector", "change", (e) => {
-      const value = /** @type {HTMLSelectElement} */ (e.target).value;
-      this.displayMode$.next(value);
-    });
-
-    this.setupElementListener("grid-type-selector", "change", (e) => {
-      const value = /** @type {HTMLSelectElement} */ (e.target).value;
-      this.gridType$.next(value);
-    });
-  },
-
-  setupCheckboxes() {
-    this.setupElementListener(
-      "loop-checkbox",
-      "change",
-      (event) => {
-        const checked = /** @type {HTMLInputElement} */ (event.target).checked;
-        this.loopEnabled$.next(checked);
-      },
-      (element) => {
-        /** @type {HTMLInputElement} */ (element).checked =
-          this.loopEnabled$.value;
-      }
-    );
-
-    this.setupElementListener(
-      "qrs-indicator-checkbox",
-      "change",
-      (event) => {
-        const checked = /** @type {HTMLInputElement} */ (event.target).checked;
-        this.qrsIndicatorEnabled$.next(checked);
-        if (!checked && this.qrsFlashActive$.value) {
-          this.qrsFlashActive$.next(false);
-        }
-      },
-      (element) => {
-        /** @type {HTMLInputElement} */ (element).checked =
-          this.qrsIndicatorEnabled$.value;
-      }
-    );
-  },
-
-  setupScaleSliders() {
-    this.setupElementListener(
-      "grid-scale-slider",
-      "input",
-      (event) => {
-        const value = parseFloat(
-          /** @type {HTMLInputElement} */ (event.target).value
-        );
-        this.gridScale$.next(value);
-      },
-      (element) => {
-        /** @type {HTMLInputElement} */ (element).value =
-          this.gridScale$.value.toString();
-        this.updateGridScaleDisplay();
-      }
-    );
-
-    this.setupElementListener(
-      "amplitude-scale-slider",
-      "input",
-      (event) => {
-        const value = parseFloat(
-          /** @type {HTMLInputElement} */ (event.target).value
-        );
-        this.amplitudeScale$.next(value);
-      },
-      (element) => {
-        /** @type {HTMLInputElement} */ (element).value =
-          this.amplitudeScale$.value.toString();
-        this.updateAmplitudeScaleDisplay();
-      }
-    );
-
-    this.setupElementListener(
-      "height-scale-slider",
-      "input",
-      (event) => {
-        const value = parseFloat(
-          /** @type {HTMLInputElement} */ (event.target).value
-        );
-        this.heightScale$.next(value);
-      },
-      (element) => {
-        /** @type {HTMLInputElement} */ (element).value =
-          this.heightScale$.value.toString();
-        this.updateHeightScaleDisplay();
-      }
-    );
-  },
-
-  setupSelectors() {
-    this.setupBasicSelectors();
-    this.setupCheckboxes();
-    this.setupScaleSliders();
-
-    this.syncFormElementsWithState();
-  },
-
-  /**
-   * Synchronizes all form elements with the current JavaScript state
-   * @returns {void}
-   */
-  syncFormElementsWithState() {
-    const leadSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("lead-selector")
-    );
-    if (leadSelector) {
-      leadSelector.value = this.currentLead$.value.toString();
-    }
-
-    const displayModeSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("display-mode-selector")
-    );
-    if (displayModeSelector) {
-      displayModeSelector.value = this.displayMode$.value;
-    }
-
-    const gridTypeSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("grid-type-selector")
-    );
-    if (gridTypeSelector) {
-      gridTypeSelector.value = this.gridType$.value;
-    }
-
-    const loopCheckbox = /** @type {HTMLInputElement} */ (
-      document.getElementById("loop-checkbox")
-    );
-    if (loopCheckbox) {
-      loopCheckbox.checked = this.loopEnabled$.value;
-    }
-
-    const qrsCheckbox = /** @type {HTMLInputElement} */ (
-      document.getElementById("qrs-indicator-checkbox")
-    );
-    if (qrsCheckbox) {
-      qrsCheckbox.checked = this.qrsIndicatorEnabled$.value;
-    }
-
-    const gridScaleSlider = /** @type {HTMLInputElement} */ (
-      document.getElementById("grid-scale-slider")
-    );
-    if (gridScaleSlider) {
-      gridScaleSlider.value = this.gridScale$.value.toString();
-      this.updateGridScaleDisplay();
-    }
-
-    const amplitudeScaleSlider = /** @type {HTMLInputElement} */ (
-      document.getElementById("amplitude-scale-slider")
-    );
-    if (amplitudeScaleSlider) {
-      amplitudeScaleSlider.value = this.amplitudeScale$.value.toString();
-      this.updateAmplitudeScaleDisplay();
-    }
-
-    const heightScaleSlider = /** @type {HTMLInputElement} */ (
-      document.getElementById("height-scale-slider")
-    );
-    if (heightScaleSlider) {
-      heightScaleSlider.value = this.heightScale$.value.toString();
-      this.updateHeightScaleDisplay();
-    }
-  },
 
   /**
    * Shows or hides the lead selector based on display mode.

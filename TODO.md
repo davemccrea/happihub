@@ -5,3 +5,4 @@
 - If no ECGs are saved, show placeholder instead of table
 - Fullscreen mode
 - Add Playwright for browser testing. Add Playwright MCP to Claude. Write tests for key functionality, then refactor to RxJS.
+- Should the handleEvent also be refactored to RxJS?
