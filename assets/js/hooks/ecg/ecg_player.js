@@ -73,6 +73,7 @@ const ECGPlayer = {
     this.initializeState();
     this.calculateMedicallyAccurateDimensions();
 
+    // Initialize reactive system with consolidated streams
     this.setupEventStreams();
 
     this.handleEvent("load_ecg_data", (payload) => {
@@ -84,169 +85,114 @@ const ECGPlayer = {
   },
 
   setupEventStreams() {
-    this.setupAnimationStream();
-
-    this.setupReactiveStateSubscriptions();
-
-    this.setupReactiveUIUpdates();
-
-    const resizeEvents$ = fromEvent(window, "resize").pipe(
-      debounceTime(100),
-      tap(() => {
-        this.calculateMedicallyAccurateDimensions();
-        this.canvasRecreationTrigger$.next();
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const themeChangeEvents$ = new Observable((subscriber) => {
-      const observer = new MutationObserver((mutations) => {
-        const themeChange = mutations.find(
-          (mutation) =>
-            mutation.type === "attributes" &&
-            mutation.attributeName === "data-theme"
-        );
-        if (themeChange) subscriber.next();
-      });
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["data-theme"],
-      });
-      return () => observer.disconnect();
-    }).pipe(
-      tap(() => this.themeChange$.next()),
-      takeUntil(this.destroy$)
-    );
-
-    const keyboardEvents$ = fromEvent(document, "keydown").pipe(
-      filter((event) => {
-        const target = event.target;
-        if (!target) return false;
-        return !(
-          target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable
-        );
-      }),
-      filter((event) => {
-        return ["j", "ArrowDown", "k", "ArrowUp", " "].includes(event.key);
-      }),
-      tap((event) => {
-        event.preventDefault();
-        switch (event.key) {
-          case "j":
-          case "ArrowDown":
-            this.switchToNextLead();
-            break;
-          case "k":
-          case "ArrowUp":
-            this.switchToPrevLead();
-            break;
-          case " ":
-            this.togglePlayback();
-            break;
-        }
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const formEvents$ = this.setupFormEventStreams();
-
-    const allEvents$ = merge(
-      resizeEvents$,
-      themeChangeEvents$,
-      keyboardEvents$,
-      formEvents$
-    ).pipe(
-      catchError((error) => {
-        console.error("Event stream error:", error);
-        return EMPTY;
-      })
-    );
-
-    this.subscriptions.add(allEvents$.subscribe());
-  },
-
-  setupFormEventStreams() {
-    // Create reactive form streams with proper typing
-    const leadSelectorChange$ = this.createElementStream("lead-selector", "change").pipe(
-      map(e => parseInt(e.target.value)),
-      distinctUntilChanged(),
-      tap(leadIndex => {
-        this.currentLead$.next(leadIndex);
-        this.switchLead(leadIndex);
-      })
-    );
-
-    const displayModeChange$ = this.createElementStream("display-mode-selector", "change").pipe(
-      map(e => e.target.value),
-      distinctUntilChanged(),
-      tap(value => {
-        this.displayMode$.next(value);
-        this.updateDisplayModeSelector(value);
-      })
-    );
-
-    const gridTypeChange$ = this.createElementStream("grid-type-selector", "change").pipe(
-      map(e => e.target.value),
-      distinctUntilChanged(),
-      tap(value => this.gridType$.next(value))
-    );
-
-    const loopCheckboxChange$ = this.createElementStream("loop-checkbox", "change").pipe(
-      map(e => e.target.checked),
-      distinctUntilChanged(),
-      tap(checked => this.loopEnabled$.next(checked))
-    );
-
-    const qrsIndicatorChange$ = this.createElementStream("qrs-indicator-checkbox", "change").pipe(
-      map(e => e.target.checked),
-      distinctUntilChanged(),
-      tap(checked => this.qrsIndicatorEnabled$.next(checked))
-    );
-
-    // Debounced slider streams for performance
-    const gridScaleSlider$ = this.createElementStream("grid-scale-slider", "input").pipe(
-      map(e => parseFloat(e.target.value)),
-      debounceTime(100),
-      distinctUntilChanged(),
-      tap(value => this.gridScale$.next(value))
-    );
-
-    const amplitudeScaleSlider$ = this.createElementStream("amplitude-scale-slider", "input").pipe(
-      map(e => parseFloat(e.target.value)),
-      debounceTime(100),
-      distinctUntilChanged(),
-      tap(value => this.amplitudeScale$.next(value))
-    );
-
-    const heightScaleSlider$ = this.createElementStream("height-scale-slider", "input").pipe(
-      map(e => parseFloat(e.target.value)),
-      debounceTime(100),
-      distinctUntilChanged(),
-      tap(value => this.heightScale$.next(value))
-    );
-
-    // Combine all form streams with error handling
-    return merge(
-      leadSelectorChange$,
-      displayModeChange$,
-      gridTypeChange$,
-      loopCheckboxChange$,
-      qrsIndicatorChange$,
-      gridScaleSlider$,
-      amplitudeScaleSlider$,
-      heightScaleSlider$
+    // Create all reactive streams
+    const streams = this.createAllReactiveStreams();
+    
+    // Consolidate all streams into a single subscription
+    const consolidatedStream$ = merge(
+      ...Object.values(streams)
     ).pipe(
       takeUntil(this.destroy$),
-      catchError(error => {
-        console.error('Form event stream error:', error);
+      catchError((error) => {
+        console.error("Consolidated stream error:", error);
         return EMPTY;
       })
     );
+
+    // Single subscription for all reactive behavior
+    this.subscriptions.add(consolidatedStream$.subscribe());
+  },
+
+  createAllReactiveStreams() {
+    // Animation and QRS streams
+    const animationStreams = this.createAnimationStreams();
+    const qrsStreams = this.createQrsStreams();
+    
+    // UI and interaction streams  
+    const uiStreams = this.createUIStreams();
+    const formStreams = this.createFormStreams();
+    const keyboardStreams = this.createKeyboardStreams();
+    
+    // System event streams
+    const systemStreams = this.createSystemEventStreams();
+    
+    // State effect streams
+    const stateStreams = this.createStateEffectStreams();
+    
+    return {
+      ...animationStreams,
+      ...qrsStreams,
+      ...uiStreams,
+      ...formStreams,
+      ...keyboardStreams,
+      ...systemStreams,
+      ...stateStreams
+    };
+  },
+
+  createFormStreams() {
+    return {
+      leadSelectorChange: this.createElementStream("lead-selector", "change").pipe(
+        map(e => parseInt(e.target.value)),
+        distinctUntilChanged(),
+        tap(leadIndex => {
+          this.currentLead$.next(leadIndex);
+          this.switchLead(leadIndex);
+        })
+      ),
+      
+      displayModeChange: this.createElementStream("display-mode-selector", "change").pipe(
+        map(e => e.target.value),
+        distinctUntilChanged(),
+        tap(value => {
+          this.displayMode$.next(value);
+          this.updateDisplayModeSelector(value);
+        })
+      ),
+      
+      gridTypeChange: this.createElementStream("grid-type-selector", "change").pipe(
+        map(e => e.target.value),
+        distinctUntilChanged(),
+        tap(value => this.gridType$.next(value))
+      ),
+      
+      loopCheckboxChange: this.createElementStream("loop-checkbox", "change").pipe(
+        map(e => e.target.checked),
+        distinctUntilChanged(),
+        tap(checked => this.loopEnabled$.next(checked))
+      ),
+      
+      qrsIndicatorChange: this.createElementStream("qrs-indicator-checkbox", "change").pipe(
+        map(e => e.target.checked),
+        distinctUntilChanged(),
+        tap(checked => this.qrsIndicatorEnabled$.next(checked))
+      ),
+      
+      gridScaleSlider: this.createElementStream("grid-scale-slider", "input").pipe(
+        map(e => parseFloat(e.target.value)),
+        debounceTime(100),
+        distinctUntilChanged(),
+        tap(value => this.gridScale$.next(value))
+      ),
+      
+      amplitudeScaleSlider: this.createElementStream("amplitude-scale-slider", "input").pipe(
+        map(e => parseFloat(e.target.value)),
+        debounceTime(100),
+        distinctUntilChanged(),
+        tap(value => this.amplitudeScale$.next(value))
+      ),
+      
+      heightScaleSlider: this.createElementStream("height-scale-slider", "input").pipe(
+        map(e => parseFloat(e.target.value)),
+        debounceTime(100),
+        distinctUntilChanged(),
+        tap(value => this.heightScale$.next(value))
+      )
+    };
   },
 
   setupCanvasClickEvents() {
+    // Set up canvas click events separately since canvas is created dynamically
     if (!this.backgroundCanvas) return;
 
     if (this.canvasClickSubscription) {
@@ -288,21 +234,8 @@ const ECGPlayer = {
   },
 
   setupPlayPauseEvents() {
-    if (this.playPauseSubscription) {
-      this.playPauseSubscription.unsubscribe();
-    }
-
-    const playPauseButton = document.getElementById("play-pause-button");
-    if (playPauseButton) {
-      this.playPauseSubscription = fromEvent(playPauseButton, "click")
-        .pipe(
-          tap(() => this.togglePlayback()),
-          takeUntil(this.destroy$)
-        )
-        .subscribe();
-
-      this.subscriptions.add(this.playPauseSubscription);
-    }
+    // Play/pause events are now handled in the consolidated stream system
+    // This method is called during ECG data loading to ensure button exists
   },
 
   createElementStream(elementId, eventType) {
@@ -314,127 +247,169 @@ const ECGPlayer = {
     return fromEvent(element, eventType);
   },
 
-  setupReactiveStateSubscriptions() {
-    // Create consolidated reactive state effects
-    const cursorWidthEffect$ = this.cursorWidth$.pipe(
-      tap(() => this.updateCursorStyle()),
-      takeUntil(this.destroy$)
-    );
-
-    const displayModeEffect$ = this.displayMode$.pipe(
-      distinctUntilChanged(),
-      tap((mode) => {
-        this.updateLeadSelectorVisibility(mode);
-        this.canvasRecreationTrigger$.next();
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const currentLeadEffect$ = this.currentLead$.pipe(
-      distinctUntilChanged(),
-      tap((leadIndex) => {
-        if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
-          this.currentLeadData = this.ecgLeadDatasets[leadIndex];
-          this.updateLeadSelector(leadIndex);
-        }
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const gridScaleEffect$ = this.gridScale$.pipe(
-      distinctUntilChanged(),
-      tap((scale) => {
-        this.updateGridScaleDisplay();
-        this.handleGridScaleChange();
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const amplitudeScaleEffect$ = this.amplitudeScale$.pipe(
-      distinctUntilChanged(),
-      tap((scale) => {
-        this.updateAmplitudeScaleDisplay();
-        this.handleAmplitudeScaleChange();
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const heightScaleEffect$ = this.heightScale$.pipe(
-      distinctUntilChanged(),
-      tap((scale) => {
-        this.updateHeightScaleDisplay();
-        this.handleHeightScaleChange();
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const gridTypeEffect$ = this.gridType$.pipe(
-      distinctUntilChanged(),
-      tap(() => this.renderGridBackground()),
-      takeUntil(this.destroy$)
-    );
-
-    const qrsIndicatorEffect$ = this.qrsIndicatorEnabled$.pipe(
-      distinctUntilChanged(),
-      tap((enabled) => {
-        if (!enabled && this.qrsFlashActive$.value) {
-          this.qrsFlashActive$.next(false);
-          this.clearQrsFlashArea();
-        }
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    const canvasRecreationEffect$ = this.canvasRecreationTrigger$.pipe(
-      debounceTime(50),
-      tap(() => this.recreateCanvasAndRestart()),
-      takeUntil(this.destroy$)
-    );
-
-    const themeChangeEffect$ = this.themeChange$.pipe(
-      debounceTime(50),
-      tap(() => this.handleThemeChange()),
-      takeUntil(this.destroy$)
-    );
-
-    const ecgDataEffect$ = this.ecgDataLoaded$.pipe(
-      tap((payload) => this.processECGData(payload)),
-      takeUntil(this.destroy$)
-    );
-
-    // Combine all effects into a single subscription
-    const allEffects$ = merge(
-      cursorWidthEffect$,
-      displayModeEffect$,
-      currentLeadEffect$,
-      gridScaleEffect$,
-      amplitudeScaleEffect$,
-      heightScaleEffect$,
-      gridTypeEffect$,
-      qrsIndicatorEffect$,
-      canvasRecreationEffect$,
-      themeChangeEffect$,
-      ecgDataEffect$
-    );
-
-    this.subscriptions.add(allEffects$.subscribe());
-  },
-
-  setupReactiveUIUpdates() {
-    this.subscriptions.add(
-      this.isPlaying$
-        .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
-        .subscribe((isPlaying) => {
-          this.updatePlayPauseButton();
+  createStateEffectStreams() {
+    return {
+      cursorWidthEffect: this.cursorWidth$.pipe(
+        tap(() => this.updateCursorStyle())
+      ),
+      
+      displayModeEffect: this.displayMode$.pipe(
+        distinctUntilChanged(),
+        tap((mode) => {
+          this.updateLeadSelectorVisibility(mode);
+          this.canvasRecreationTrigger$.next();
         })
-    );
+      ),
+      
+      currentLeadEffect: this.currentLead$.pipe(
+        distinctUntilChanged(),
+        tap((leadIndex) => {
+          if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
+            this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+            this.updateLeadSelector(leadIndex);
+          }
+        })
+      ),
+      
+      gridScaleEffect: this.gridScale$.pipe(
+        distinctUntilChanged(),
+        tap(() => {
+          this.updateGridScaleDisplay();
+          this.handleGridScaleChange();
+        })
+      ),
+      
+      amplitudeScaleEffect: this.amplitudeScale$.pipe(
+        distinctUntilChanged(),
+        tap(() => {
+          this.updateAmplitudeScaleDisplay();
+          this.handleAmplitudeScaleChange();
+        })
+      ),
+      
+      heightScaleEffect: this.heightScale$.pipe(
+        distinctUntilChanged(),
+        tap(() => {
+          this.updateHeightScaleDisplay();
+          this.handleHeightScaleChange();
+        })
+      ),
+      
+      gridTypeEffect: this.gridType$.pipe(
+        distinctUntilChanged(),
+        tap(() => this.renderGridBackground())
+      ),
+      
+      qrsIndicatorEffect: this.qrsIndicatorEnabled$.pipe(
+        distinctUntilChanged(),
+        tap((enabled) => {
+          if (!enabled && this.qrsFlashActive$.value) {
+            this.qrsFlashActive$.next(false);
+            this.clearQrsFlashArea();
+          }
+        })
+      ),
+      
+      canvasRecreationEffect: this.canvasRecreationTrigger$.pipe(
+        debounceTime(50),
+        tap(() => this.recreateCanvasAndRestart())
+      ),
+      
+      themeChangeEffect: this.themeChange$.pipe(
+        debounceTime(50),
+        tap(() => this.handleThemeChange())
+      ),
+      
+      ecgDataEffect: this.ecgDataLoaded$.pipe(
+        tap((payload) => this.processECGData(payload))
+      )
+    };
   },
 
-  setupAnimationStream() {
-    this.qrsDetectionSubject$ = new Subject();
-    this.setupQrsFlashStream();
+  createUIStreams() {
+    const playPauseClickStream$ = this.createElementStream("play-pause-button", "click").pipe(
+      tap(() => this.togglePlayback())
+    );
 
-    // Pure animation data stream - no side effects
+    return {
+      playPauseButtonUpdate: this.isPlaying$.pipe(
+        distinctUntilChanged(),
+        tap(() => this.updatePlayPauseButton())
+      ),
+      
+      playPauseClick: playPauseClickStream$
+    };
+  },
+
+  createKeyboardStreams() {
+    return {
+      keyboardNavigation: fromEvent(document, "keydown").pipe(
+        filter((event) => {
+          const target = event.target;
+          if (!target) return false;
+          return !(
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable
+          );
+        }),
+        filter((event) => {
+          return ["j", "ArrowDown", "k", "ArrowUp", " "].includes(event.key);
+        }),
+        tap((event) => {
+          event.preventDefault();
+          switch (event.key) {
+            case "j":
+            case "ArrowDown":
+              this.switchToNextLead();
+              break;
+            case "k":
+            case "ArrowUp":
+              this.switchToPrevLead();
+              break;
+            case " ":
+              this.togglePlayback();
+              break;
+          }
+        })
+      )
+    };
+  },
+
+  createSystemEventStreams() {
+    return {
+      windowResize: fromEvent(window, "resize").pipe(
+        debounceTime(100),
+        tap(() => {
+          this.calculateMedicallyAccurateDimensions();
+          this.canvasRecreationTrigger$.next();
+        })
+      ),
+      
+      themeChange: new Observable((subscriber) => {
+        const observer = new MutationObserver((mutations) => {
+          const themeChange = mutations.find(
+            (mutation) =>
+              mutation.type === "attributes" &&
+              mutation.attributeName === "data-theme"
+          );
+          if (themeChange) subscriber.next();
+        });
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["data-theme"],
+        });
+        return () => observer.disconnect();
+      }).pipe(
+        tap(() => this.themeChange$.next())
+      )
+    };
+  },
+
+  createAnimationStreams() {
+    this.qrsDetectionSubject$ = new Subject();
+    
+    // Pure animation data stream
     const animationData$ = this.isPlaying$.pipe(
       distinctUntilChanged(),
       switchMap((isPlaying) => {
@@ -457,47 +432,33 @@ const ECGPlayer = {
           takeWhile((data) => !data.isComplete, true),
           shareReplay(1)
         );
-      }),
-      takeUntil(this.destroy$)
-    );
-
-    // Separate effect streams for different concerns
-    const animationStateEffect$ = animationData$.pipe(
-      filter(data => !data.isComplete),
-      tap((data) => {
-        if (data.animationCycle !== this.animationCycle$.value) {
-          this.animationCycle$.next(data.animationCycle);
-        }
-        this.cursorPosition$.next((data.cursorProgress * this.chartWidth) % this.chartWidth);
       })
     );
 
-    const animationRenderEffect$ = animationData$.pipe(
-      filter(data => !data.isComplete),
-      tap((data) => this.processAnimationFrame(data.cursorProgress, data.animationCycle))
-    );
-
-    const animationCompletionEffect$ = animationData$.pipe(
-      filter(data => data.isComplete),
-      tap(() => this.handlePlaybackEnd())
-    );
-
-    // Combine all animation effects
-    const allAnimationEffects$ = merge(
-      animationStateEffect$,
-      animationRenderEffect$,
-      animationCompletionEffect$
-    ).pipe(
-      catchError((error) => {
-        console.error("Animation stream error:", error);
-        return EMPTY;
-      })
-    );
-
-    this.subscriptions.add(allAnimationEffects$.subscribe());
+    return {
+      animationStateEffect: animationData$.pipe(
+        filter(data => !data.isComplete),
+        tap((data) => {
+          if (data.animationCycle !== this.animationCycle$.value) {
+            this.animationCycle$.next(data.animationCycle);
+          }
+          this.cursorPosition$.next((data.cursorProgress * this.chartWidth) % this.chartWidth);
+        })
+      ),
+      
+      animationRenderEffect: animationData$.pipe(
+        filter(data => !data.isComplete),
+        tap((data) => this.processAnimationFrame(data.cursorProgress, data.animationCycle))
+      ),
+      
+      animationCompletionEffect: animationData$.pipe(
+        filter(data => data.isComplete),
+        tap(() => this.handlePlaybackEnd())
+      )
+    };
   },
 
-  setupQrsFlashStream() {
+  createQrsStreams() {
     // Pure QRS flash data stream
     const qrsFlashData$ = this.qrsDetectionSubject$.pipe(
       withLatestFrom(this.qrsIndicatorEnabled$),
@@ -508,21 +469,19 @@ const ECGPlayer = {
           map((_, index) => index === 0)
         );
       }),
-      shareReplay(1),
-      takeUntil(this.destroy$)
+      shareReplay(1)
     );
 
-    // QRS flash effect stream
-    const qrsFlashEffect$ = qrsFlashData$.pipe(
-      tap((isFlashActive) => {
-        this.qrsFlashActive$.next(isFlashActive);
-        if (!isFlashActive) {
-          this.clearQrsFlashArea();
-        }
-      })
-    );
-
-    this.subscriptions.add(qrsFlashEffect$.subscribe());
+    return {
+      qrsFlashEffect: qrsFlashData$.pipe(
+        tap((isFlashActive) => {
+          this.qrsFlashActive$.next(isFlashActive);
+          if (!isFlashActive) {
+            this.clearQrsFlashArea();
+          }
+        })
+      )
+    };
   },
 
   setupDataPrecomputationStream() {
@@ -650,6 +609,7 @@ const ECGPlayer = {
   },
 
   destroyed() {
+    // Clean shutdown of reactive system
     if (this.destroy$) {
       this.destroy$.next();
       this.destroy$.complete();
@@ -659,54 +619,20 @@ const ECGPlayer = {
       this.subscriptions.unsubscribe();
     }
 
-    if (this.isPlaying$) {
-      this.isPlaying$.complete();
-    }
-    if (this.currentLead$) {
-      this.currentLead$.complete();
-    }
-    if (this.displayMode$) {
-      this.displayMode$.complete();
-    }
-    if (this.gridType$) {
-      this.gridType$.complete();
-    }
-    if (this.gridScale$) {
-      this.gridScale$.complete();
-    }
-    if (this.amplitudeScale$) {
-      this.amplitudeScale$.complete();
-    }
-    if (this.heightScale$) {
-      this.heightScale$.complete();
-    }
-    if (this.loopEnabled$) {
-      this.loopEnabled$.complete();
-    }
-    if (this.qrsIndicatorEnabled$) {
-      this.qrsIndicatorEnabled$.complete();
-    }
-    if (this.qrsFlashActive$) {
-      this.qrsFlashActive$.complete();
-    }
-    if (this.canvasRecreationTrigger$) {
-      this.canvasRecreationTrigger$.complete();
-    }
-    if (this.themeChange$) {
-      this.themeChange$.complete();
-    }
-    if (this.ecgDataLoaded$) {
-      this.ecgDataLoaded$.complete();
-    }
-    if (this.animationTime$) {
-      this.animationTime$.complete();
-    }
-    if (this.animationCycle$) {
-      this.animationCycle$.complete();
-    }
-    if (this.cursorPosition$) {
-      this.cursorPosition$.complete();
-    }
+    // Complete all subjects
+    const subjects = [
+      this.isPlaying$, this.currentLead$, this.displayMode$, this.gridType$,
+      this.gridScale$, this.amplitudeScale$, this.heightScale$, this.loopEnabled$,
+      this.qrsIndicatorEnabled$, this.qrsFlashActive$, this.canvasRecreationTrigger$,
+      this.themeChange$, this.ecgDataLoaded$, this.animationTime$,
+      this.animationCycle$, this.cursorPosition$, this.qrsDetectionSubject$
+    ];
+
+    subjects.forEach(subject => {
+      if (subject) {
+        subject.complete();
+      }
+    });
 
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
