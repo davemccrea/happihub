@@ -220,9 +220,23 @@ defmodule AstrupWeb.Components.EcgPlayer do
   end
 
   def handle_event("settings_updated", %{"settings" => params}, socket) do
-    socket.assigns.settings
-    |> Settings.changeset(params)
-    |> Repo.update!()
+    # Get the actual settings struct from the changeset
+    settings_struct = socket.assigns.settings.data
+    changeset = Settings.changeset(settings_struct, params)
+    
+    # Handle both new and existing settings
+    case settings_struct.id do
+      nil ->
+        # New settings - insert with user association
+        changeset
+        |> Ecto.Changeset.put_assoc(:user, socket.assigns.current_scope.user)
+        |> Repo.insert!()
+      
+      _id ->
+        # Existing settings - update
+        changeset
+        |> Repo.update!()
+    end
 
     {:noreply, socket}
   end
