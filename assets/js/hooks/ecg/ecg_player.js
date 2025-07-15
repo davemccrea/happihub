@@ -620,9 +620,9 @@ const ECGPlayer = {
   },
 
 
-  // =================
-  // STATE MANAGEMENT
-  // =================
+  // =====================================
+  // STATE INITIALIZATION
+  // =====================================
 
   initializeState() {
     const initialGridType = this.readFormValue("grid_type") || "telemetry";
@@ -773,15 +773,10 @@ const ECGPlayer = {
     this.qrsFlashContext = null;
   },
 
-  // =================
-  // UTILITY FUNCTIONS
-  // =================
+  // =====================================
+  // UTILITIES
+  // =====================================
 
-  /**
-   * Reads a form field value by name
-   * @param {string} fieldName - The name of the form field to read
-   * @returns {string|null} The field value or null if not found
-   */
   readFormValue(fieldName) {
     const input = /** @type {HTMLInputElement | HTMLSelectElement | null} */ (
       document.querySelector(
@@ -791,11 +786,6 @@ const ECGPlayer = {
     return input ? input.value : null;
   },
 
-  /**
-   * Reads a checkbox form field value by name
-   * @param {string} fieldName - The name of the checkbox field to read
-   * @returns {boolean} The checkbox state
-   */
   readFormCheckbox(fieldName) {
     const input = /** @type {HTMLInputElement | null} */ (
       document.querySelector(
@@ -805,7 +795,6 @@ const ECGPlayer = {
     return input ? input.checked : false;
   },
 
-  // Common utility for preserving canvas state during operations
   withCanvasStatePreservation(operation) {
     const wasPlaying = this.isPlaying$.value;
     if (wasPlaying) this.stopAnimation();
@@ -826,10 +815,6 @@ const ECGPlayer = {
     }
   },
 
-  /**
-   * Recreates canvas and restarts animation if it was playing
-   * @returns {void}
-   */
   recreateCanvasAndRestart() {
     this.withCanvasStatePreservation(() => {
       this.recreateCanvas();
@@ -837,11 +822,6 @@ const ECGPlayer = {
     });
   },
 
-  /**
-   * Updates the display mode selector in the DOM
-   * @param {string} mode - The display mode ("single" or "multi")
-   * @returns {void}
-   */
   updateDisplayModeSelector(mode) {
     const displayModeSelector = /** @type {HTMLSelectElement} */ (
       document.getElementById("display-mode-selector")
@@ -910,9 +890,9 @@ const ECGPlayer = {
     return coordinates;
   },
 
-  // ===================
-  // SCALE & UI CONTROLS
-  // ===================
+  // =====================================
+  // UI CONTROLS
+  // =====================================
 
   handleGridScaleChange() {
     this.withCanvasStatePreservation(() => {
@@ -981,14 +961,10 @@ const ECGPlayer = {
     }
   },
 
-  // ============================
-  // DISPLAY MODE & LEAD SWITCHING
-  // ============================
+  // =====================================
+  // LEAD MANAGEMENT
+  // =====================================
 
-  /**
-   * Updates the cursor style based on the current display mode.
-   * @returns {void}
-   */
   updateCursorStyle() {
     if (this.backgroundCanvas) {
       if (this.displayMode$.value === "single") {
@@ -1001,12 +977,6 @@ const ECGPlayer = {
     }
   },
 
-  /**
-   * Determines which lead was clicked based on click coordinates.
-   * @param {number} x - The x coordinate of the click.
-   * @param {number} y - The y coordinate of the click.
-   * @returns {number|null} The index of the clicked lead, or null if no lead was clicked.
-   */
   getLeadIndexFromClick(x, y) {
     if (!this.leadNames || this.displayMode$.value !== "multi") {
       return null;
@@ -1030,21 +1000,8 @@ const ECGPlayer = {
     return null;
   },
 
-  /**
-   * Switches from multi-lead mode to single-lead mode with the specified lead.
-   * @param {number} leadIndex - The index of the lead to switch to.
-   * @returns {void}
-   */
 
-  // =========================
-  // LEAD POSITIONING & LAYOUT
-  // =========================
 
-  /**
-   * Determines the grid column and row for a given lead index in multi-lead view.
-   * @param {number} leadIndex - The index of the ECG lead.
-   * @returns {{column: number, row: number}} The grid position.
-   */
   getLeadColumnAndRow(leadIndex) {
     const leadPositions = [
       { column: 0, row: 0 },
@@ -1064,11 +1021,6 @@ const ECGPlayer = {
     return leadPositions[leadIndex] || { column: 0, row: 0 };
   },
 
-  /**
-   * Calculates the pixel offset and width for a lead in the multi-lead display grid.
-   * @param {number} leadIndex - The index of the ECG lead.
-   * @returns {{xOffset: number, yOffset: number, columnWidth: number}} The position and width for the lead.
-   */
   calculateLeadGridCoordinates(leadIndex) {
     const { column, row } = this.getLeadColumnAndRow(leadIndex);
     const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
@@ -1081,15 +1033,10 @@ const ECGPlayer = {
     return { xOffset, yOffset, columnWidth };
   },
 
-  // =============================
-  // THEME & VISUAL CONFIGURATION
-  // =============================
+  // =====================================
+  // VISUAL CONFIGURATION
+  // =====================================
 
-  /**
-   * Reads the current `data-theme` from the HTML element and updates the color palette
-   * for the grid, waveform, and labels.
-   * @returns {void}
-   */
   updateThemeColors() {
     const theme =
       document.documentElement.getAttribute("data-theme") || "light";
@@ -1104,16 +1051,10 @@ const ECGPlayer = {
     };
   },
 
-  // ========================
-  // DATA LOADING & SETUP
-  // ========================
+  // =====================================
+  // DATA PROCESSING
+  // =====================================
 
-  /**
-   * Orchestrates the initial setup process: calculates dimensions,
-   * creates canvases, and renders the initial view.
-   * ECG data will be loaded separately when pushed from the server.
-   * @returns {void}
-   */
   initializeECGChart() {
     if (!this.widthSeconds) {
       this.calculateMedicallyAccurateDimensions();
@@ -1122,12 +1063,6 @@ const ECGPlayer = {
     this.renderGridBackground();
   },
 
-  /**
-   * Processes ECG data loaded from the server.
-   * Stores the data in memory and triggers reactive updates.
-   * @param {object} payload - The ECG data payload from the server.
-   * @returns {void}
-   */
   processECGData(payload) {
     try {
       const data = payload.data;
@@ -1219,15 +1154,10 @@ const ECGPlayer = {
     }
   },
 
-  // ===================
-  // CANVAS & DIMENSIONS
-  // ===================
+  // =====================================
+  // CANVAS MANAGEMENT
+  // =====================================
 
-  /**
-   * Calculates the chart's width in pixels based on standard medical units (mm/second).
-   * This ensures the visualization is medically accurate and scales correctly with the container.
-   * @returns {void}
-   */
   calculateMedicallyAccurateDimensions() {
     // Use derived stream to update dimensions reactively
     this.chartDimensions$.pipe(take(1)).subscribe(({ chartWidth, widthSeconds }) => {
@@ -1236,12 +1166,6 @@ const ECGPlayer = {
     });
   },
 
-  /**
-   * Creates and configures the dual-canvas system for rendering.
-   * A background canvas is used for the static grid, and a foreground canvas
-   * is used for the animated waveform to optimize performance.
-   * @returns {void}
-   */
   recreateCanvas() {
     this.cleanupCanvases();
 
@@ -1297,10 +1221,6 @@ const ECGPlayer = {
     this.qrsFlashContext.scale(devicePixelRatio, devicePixelRatio);
   },
 
-  /**
-   * Removes the canvas elements from the DOM to prevent memory leaks.
-   * @returns {void}
-   */
   cleanupCanvases() {
     if (this.backgroundCanvas) {
       this.backgroundCanvas.remove();
@@ -1319,18 +1239,12 @@ const ECGPlayer = {
     }
   },
 
-  // =================
-  // EVENT HANDLERS
-  // =================
 
   /**
    * Handles window resize events by recalculating dimensions and redrawing the chart.
    * @returns {void}
    */
 
-  // ====================
-  // DATA PRE-COMPUTATION
-  // ====================
 
   /**
    * Retrieves all the pre-computed data segments that fall within a given time range.
@@ -1362,9 +1276,6 @@ const ECGPlayer = {
     return segments;
   },
 
-  // ========================
-  // LEAD SWITCHING & CONTROL
-  // ========================
 
   /**
    * Switches the view to a different ECG lead.
@@ -1434,9 +1345,9 @@ const ECGPlayer = {
     }
   },
 
-  // =========================
-  // PLAYBACK & ANIMATION LOOP
-  // =========================
+  // =====================================
+  // ANIMATION & PLAYBACK
+  // =====================================
 
   /**
    * Toggles the playback state between playing and paused and notifies the server.
@@ -1556,7 +1467,6 @@ const ECGPlayer = {
    * @param {number} elapsedTime - The total time elapsed since playback started.
    * @returns {void}
    */
-  // Removed: calculateCursorPosition - now handled in animation stream
 
   /**
    * Prepares the waveform data for the single-lead view.
@@ -1652,9 +1562,6 @@ const ECGPlayer = {
     }
   },
 
-  // ==================
-  // QRS DETECTION & UI
-  // ==================
 
   checkQrsOccurrences(elapsedTime) {
     if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) {
@@ -1815,9 +1722,9 @@ const ECGPlayer = {
    * @returns {void}
    */
 
-  // =================
-  // RENDERING - GRID
-  // =================
+  // =====================================
+  // GRID RENDERING
+  // =====================================
 
   /**
    * Draws the grid for a single lead, dispatching to either the graph paper or telemetry grid style.
@@ -1970,9 +1877,9 @@ const ECGPlayer = {
     }
   },
 
-  // =====================
-  // RENDERING - WAVEFORM
-  // =====================
+  // =====================================
+  // WAVEFORM RENDERING
+  // =====================================
 
   /**
    * Clears the entire foreground (waveform) canvas.
@@ -1990,9 +1897,6 @@ const ECGPlayer = {
    * @returns {void}
    */
 
-  // ==============================
-  // RENDERING - CANVAS OPERATIONS
-  // ==============================
 
   /**
    * Sets up canvas context for waveform drawing.
@@ -2124,9 +2028,6 @@ const ECGPlayer = {
    * @returns {void}
    */
 
-  // ============================
-  // RENDERING - LEAD COMPONENTS
-  // ============================
 
   /**
    * Renders the background for a single lead, including its grid and label.
