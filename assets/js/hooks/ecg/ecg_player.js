@@ -28,6 +28,7 @@ import {
   of,
   takeLast,
   take,
+  withLatestFrom,
   BehaviorSubject,
   distinctUntilChanged,
   combineLatest,
@@ -431,10 +432,10 @@ const ECGPlayer = {
 
   setupAnimationStream() {
     this.qrsDetectionSubject$ = new Subject();
-
     this.setupQrsFlashStream();
 
-    const animationStream$ = this.isPlaying$.pipe(
+    // Pure animation data stream - no side effects
+    const animationData$ = this.isPlaying$.pipe(
       distinctUntilChanged(),
       switchMap((isPlaying) => {
         if (!isPlaying || !this.totalDuration || !this.waveformCanvas) {
@@ -442,71 +443,86 @@ const ECGPlayer = {
         }
 
         return animationFrames().pipe(
-          map(() => {
+          withLatestFrom(this.animationTime$),
+          map(([, timing]) => {
             const currentTime = Date.now();
-            const timing = this.animationTime$.value;
             const elapsedSeconds = (currentTime - timing.startTime) / 1000;
             return {
               elapsedSeconds,
-              cursorProgress:
-                (elapsedSeconds % this.widthSeconds) / this.widthSeconds,
+              cursorProgress: (elapsedSeconds % this.widthSeconds) / this.widthSeconds,
               animationCycle: Math.floor(elapsedSeconds / this.widthSeconds),
+              isComplete: elapsedSeconds >= this.totalDuration
             };
           }),
-          takeWhile((data) => data.elapsedSeconds < this.totalDuration, true)
+          takeWhile((data) => !data.isComplete, true),
+          shareReplay(1)
         );
-      })
+      }),
+      takeUntil(this.destroy$)
     );
 
-    const animationCompletionEvents$ = animationStream$.pipe(
-      filter((data) => data.elapsedSeconds >= this.totalDuration),
-      tap(() => this.handlePlaybackEnd())
-    );
-
-    const animationRenderEvents$ = animationStream$.pipe(
-      filter((data) => data.elapsedSeconds < this.totalDuration),
+    // Separate effect streams for different concerns
+    const animationStateEffect$ = animationData$.pipe(
+      filter(data => !data.isComplete),
       tap((data) => {
         if (data.animationCycle !== this.animationCycle$.value) {
           this.animationCycle$.next(data.animationCycle);
         }
-        this.processAnimationFrame(data.cursorProgress, data.animationCycle);
+        this.cursorPosition$.next((data.cursorProgress * this.chartWidth) % this.chartWidth);
       })
     );
 
-    const allAnimationEvents$ = merge(
-      animationCompletionEvents$,
-      animationRenderEvents$
+    const animationRenderEffect$ = animationData$.pipe(
+      filter(data => !data.isComplete),
+      tap((data) => this.processAnimationFrame(data.cursorProgress, data.animationCycle))
+    );
+
+    const animationCompletionEffect$ = animationData$.pipe(
+      filter(data => data.isComplete),
+      tap(() => this.handlePlaybackEnd())
+    );
+
+    // Combine all animation effects
+    const allAnimationEffects$ = merge(
+      animationStateEffect$,
+      animationRenderEffect$,
+      animationCompletionEffect$
     ).pipe(
-      takeUntil(this.destroy$),
       catchError((error) => {
         console.error("Animation stream error:", error);
         return EMPTY;
       })
     );
 
-    this.subscriptions.add(allAnimationEvents$.subscribe());
+    this.subscriptions.add(allAnimationEffects$.subscribe());
   },
 
   setupQrsFlashStream() {
-    const qrsFlashStream$ = this.qrsDetectionSubject$.pipe(
-      filter(() => this.qrsIndicatorEnabled$.value), // Only flash when indicator is enabled
+    // Pure QRS flash data stream
+    const qrsFlashData$ = this.qrsDetectionSubject$.pipe(
+      withLatestFrom(this.qrsIndicatorEnabled$),
+      filter(([, enabled]) => enabled),
       switchMap(() => {
-        // Emit true immediately, then false after flash duration
         return timer(this.qrsFlashDuration).pipe(
           startWith(true),
-          map((_, index) => index === 0) // true for startWith, false for timer
+          map((_, index) => index === 0)
         );
       }),
+      shareReplay(1),
+      takeUntil(this.destroy$)
+    );
+
+    // QRS flash effect stream
+    const qrsFlashEffect$ = qrsFlashData$.pipe(
       tap((isFlashActive) => {
         this.qrsFlashActive$.next(isFlashActive);
         if (!isFlashActive) {
           this.clearQrsFlashArea();
         }
-      }),
-      takeUntil(this.destroy$)
+      })
     );
 
-    this.subscriptions.add(qrsFlashStream$.subscribe());
+    this.subscriptions.add(qrsFlashEffect$.subscribe());
   },
 
   setupDataPrecomputationStream() {
@@ -1553,87 +1569,80 @@ const ECGPlayer = {
   },
 
   processAnimationFrame(cursorProgress, animationCycle) {
-    const elapsedTime =
-      animationCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
+    const elapsedTime = animationCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
 
-    if (elapsedTime >= this.totalDuration) {
-      this.handlePlaybackEnd();
-      return;
-    }
-
+    // Process QRS detection
     this.checkQrsOccurrences(elapsedTime);
-    this.calculateCursorPosition(elapsedTime);
 
-    this.animationCycle$.next(animationCycle);
-
+    // Load data based on display mode
     if (this.displayMode$.value === "single") {
       this.loadVisibleDataForSingleLead(elapsedTime);
+      this.renderSingleLeadFrame();
     } else {
       this.loadVisibleDataForAllLeads(elapsedTime);
+      this.renderMultiLeadFrame();
     }
 
-    if (this.displayMode$.value === "single") {
-      if (!this.activeCursorData || this.activeCursorData.times.length === 0)
-        return;
+    // Render QRS indicator if active
+    this.renderQrsIndicator();
+  },
 
-      const cursorClearWidth = SINGLE_LEAD_CURSOR_WIDTH;
+  renderSingleLeadFrame() {
+    if (!this.activeCursorData || this.activeCursorData.times.length === 0) return;
+
+    const cursorData = {
+      times: this.activeCursorData.times,
+      values: this.activeCursorData.values,
+      cursorPosition: this.cursorPosition$.value,
+      cursorWidth: SINGLE_LEAD_CURSOR_WIDTH,
+    };
+
+    this.renderLeadWaveform({
+      leadIndex: this.currentLead$.value,
+      leadData: null,
+      bounds: {
+        xOffset: 0,
+        yOffset: 0,
+        width: this.chartWidth,
+        height: CHART_HEIGHT * this.heightScale$.value,
+      },
+      timeSpan: this.widthSeconds,
+      cursorData,
+    });
+  },
+
+  renderMultiLeadFrame() {
+    if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0) return;
+
+    for (const leadData of this.allLeadsCursorData) {
+      const { xOffset, yOffset, columnWidth } = this.calculateLeadGridCoordinates(leadData.leadIndex);
+      const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
+      const columnProgress = (this.cursorPosition$.value / this.chartWidth) * (this.widthSeconds / columnTimeSpan);
+      const localCursorPosition = xOffset + (columnProgress % 1) * columnWidth;
+
       const cursorData = {
-        times: this.activeCursorData.times,
-        values: this.activeCursorData.values,
-        cursorPosition: this.cursorPosition$.value,
-        cursorWidth: cursorClearWidth,
+        times: leadData.times,
+        values: leadData.values,
+        cursorPosition: localCursorPosition,
+        cursorWidth: MULTI_LEAD_CURSOR_WIDTH,
       };
 
       this.renderLeadWaveform({
-        leadIndex: this.currentLead$.value,
+        leadIndex: leadData.leadIndex,
         leadData: null,
         bounds: {
-          xOffset: 0,
-          yOffset: 0,
-          width: this.chartWidth,
-          height: CHART_HEIGHT * this.heightScale$.value,
+          xOffset,
+          yOffset,
+          width: columnWidth,
+          height: this.leadHeight$.value,
         },
-        timeSpan: this.widthSeconds,
+        timeSpan: columnTimeSpan,
         cursorData,
       });
-    } else {
-      if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0)
-        return;
-
-      for (const leadData of this.allLeadsCursorData) {
-        const { xOffset, yOffset, columnWidth } =
-          this.calculateLeadGridCoordinates(leadData.leadIndex);
-
-        const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
-        const columnProgress =
-          (this.cursorPosition$.value / this.chartWidth) *
-          (this.widthSeconds / columnTimeSpan);
-        const localCursorPosition =
-          xOffset + (columnProgress % 1) * columnWidth;
-
-        const cursorClearWidth = MULTI_LEAD_CURSOR_WIDTH;
-        const cursorData = {
-          times: leadData.times,
-          values: leadData.values,
-          cursorPosition: localCursorPosition,
-          cursorWidth: cursorClearWidth,
-        };
-
-        this.renderLeadWaveform({
-          leadIndex: leadData.leadIndex,
-          leadData: null,
-          bounds: {
-            xOffset,
-            yOffset,
-            width: columnWidth,
-            height: this.leadHeight$.value,
-          },
-          timeSpan: columnTimeSpan,
-          cursorData,
-        });
-      }
     }
+  },
 
+  renderQrsIndicator() {
     if (!this.qrsFlashActive$.value || !this.qrsFlashContext) return;
 
     const dotRadius = 5;
@@ -1641,7 +1650,7 @@ const ECGPlayer = {
     const dotX = this.chartWidth - margin;
     const dotY = margin;
 
-    this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
+    this.qrsFlashContext.fillStyle = "#ff0000";
     this.qrsFlashContext.beginPath();
     this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
     this.qrsFlashContext.fill();
@@ -1652,10 +1661,7 @@ const ECGPlayer = {
    * @param {number} elapsedTime - The total time elapsed since playback started.
    * @returns {void}
    */
-  calculateCursorPosition(elapsedTime) {
-    const newPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
-    this.cursorPosition$.next(newPosition % this.chartWidth);
-  },
+  // Removed: calculateCursorPosition - now handled in animation stream
 
   /**
    * Prepares the waveform data for the single-lead view.
