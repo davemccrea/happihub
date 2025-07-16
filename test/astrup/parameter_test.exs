@@ -2,6 +2,82 @@ defmodule Astrup.ParameterTest do
   use ExUnit.Case, async: true
 
   alias Astrup.Lab.Fimlab
+  alias Astrup.Parameter
+
+  describe "get_label/1" do
+    test "returns correct label for pH" do
+      assert Parameter.get_label(:ph) == "pH"
+    end
+
+    test "returns correct label for pco2" do
+      assert Parameter.get_label(:pco2) == "Partial pressure of carbon dioxide"
+    end
+
+    test "returns correct label for po2" do
+      assert Parameter.get_label(:po2) == "Partial pressure of oxygen"
+    end
+
+    test "returns correct label for bicarbonate" do
+      assert Parameter.get_label(:bicarbonate) == "Bicarbonate"
+    end
+
+    test "returns correct label for base_excess" do
+      assert Parameter.get_label(:base_excess) == "Base excess"
+    end
+
+    test "returns correct label for anion_gap" do
+      assert Parameter.get_label(:anion_gap) == "Anion gap"
+    end
+
+    test "returns correct label for hemoglobin" do
+      assert Parameter.get_label(:hemoglobin) == "Hemoglobin"
+    end
+
+    test "returns correct label for oxygen_content" do
+      assert Parameter.get_label(:oxygen_content) == "Oxygen content"
+    end
+
+    test "returns correct label for oxygen_saturation" do
+      assert Parameter.get_label(:oxygen_saturation) == "Oxygen saturation"
+    end
+
+    test "returns correct label for carboxyhemoglobin" do
+      assert Parameter.get_label(:carboxyhemoglobin) == "Carboxyhemoglobin"
+    end
+
+    test "returns correct label for methemoglobin" do
+      assert Parameter.get_label(:methemoglobin) == "Methemoglobin"
+    end
+
+    test "returns correct label for potassium" do
+      assert Parameter.get_label(:potassium) == "Potassium"
+    end
+
+    test "returns correct label for sodium" do
+      assert Parameter.get_label(:sodium) == "Sodium"
+    end
+
+    test "returns correct label for ionized_calcium" do
+      assert Parameter.get_label(:ionized_calcium) == "Ionized calcium"
+    end
+
+    test "returns correct label for ionized_calcium_corrected_to_ph_7_4" do
+      assert Parameter.get_label(:ionized_calcium_corrected_to_ph_7_4) ==
+               "Ionized calcium corrected to pH 7.4"
+    end
+
+    test "returns correct label for chloride" do
+      assert Parameter.get_label(:chloride) == "Chloride"
+    end
+
+    test "returns correct label for glucose" do
+      assert Parameter.get_label(:glucose) == "Glucose"
+    end
+
+    test "returns correct label for lactate" do
+      assert Parameter.get_label(:lactate) == "Lactate"
+    end
+  end
 
   describe "check_value_against_reference_range/2" do
     test "returns :high for :ph when value is above reference range" do
