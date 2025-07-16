@@ -912,57 +912,6 @@ const ECGPlayer = {
   // ========================
 
   /**
-   * Switches the view to a different ECG lead.
-   * @param {number} leadIndex - The index of the lead to switch to.
-   * @returns {void}
-   */
-  switchLead(leadIndex) {
-    if (
-      !this.ecgLeadDatasets ||
-      leadIndex < 0 ||
-      leadIndex >= this.ecgLeadDatasets.length
-    ) {
-      console.warn(`Invalid lead index: ${leadIndex}`);
-      return;
-    }
-
-    const wasPlaying = this.isPlaying;
-    if (wasPlaying) this.stopAnimation();
-
-    this.currentLead = leadIndex;
-    this.currentLeadData = this.ecgLeadDatasets[leadIndex];
-
-    // Update the lead selector to match the current lead
-    const leadSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("lead-selector")
-    );
-    if (leadSelector) {
-      leadSelector.value = this.currentLead.toString();
-    }
-
-    if (this.displayMode === "single") {
-      // Clear both canvases and re-render for new lead
-      this.clearWaveform();
-      this.renderGridBackground();
-    }
-
-    if (wasPlaying) {
-      this.isPlaying = true;
-      this.startAnimationLoop();
-    } else {
-      if (this.startTime && this.pausedTime) {
-        const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-        const cursorProgress =
-          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-        const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.processAnimationFrame(cursorProgress, animationCycle);
-      } else {
-        this.clearWaveform();
-      }
-    }
-  },
-
-  /**
    * Switches to the next lead in the list and notifies the server.
    * @returns {void}
    */
@@ -972,10 +921,6 @@ const ECGPlayer = {
     if (this.currentLead < this.ecgLeadDatasets.length - 1) {
       const nextLead = this.currentLead + 1;
       this.switchLead(nextLead);
-
-      this.pushEventTo(this.targetComponent, "lead_changed", {
-        lead: nextLead,
-      });
     }
   },
 
@@ -989,10 +934,6 @@ const ECGPlayer = {
     if (this.currentLead > 0) {
       const prevLead = this.currentLead - 1;
       this.switchLead(prevLead);
-
-      this.pushEventTo(this.targetComponent, "lead_changed", {
-        lead: prevLead,
-      });
     }
   },
 
@@ -1008,10 +949,6 @@ const ECGPlayer = {
     const newPlayingState = !this.isPlaying;
     this.isPlaying = newPlayingState;
 
-    this.pushEventTo(this.targetComponent, "playback_changed", {
-      is_playing: newPlayingState,
-    });
-
     if (newPlayingState) {
       this.resumeAnimation();
     } else {
@@ -1026,7 +963,6 @@ const ECGPlayer = {
    * @returns {void}
    */
   handlePlaybackEnd() {
-    this.pushEventTo(this.targetComponent, "playback_ended", {});
     if (this.loopEnabled) {
       this.resetPlayback();
       this.startAnimation();

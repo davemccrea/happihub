@@ -5,83 +5,87 @@ defmodule AstrupWeb.ECGViewerLive do
   alias Astrup.ECG
   alias Astrup.ECG.DatasetRegistry
 
-  def mount(params, _session, socket) do
-    settings = Settings.get_settings(socket.assigns.current_scope)
-
+  def mount(_params, _session, socket) do
     socket =
       socket
       |> assign(:env, Application.get_env(:astrup, :env))
       |> assign(:ecg_saved, false)
       |> assign(:metadata, %{})
       |> assign(:ecg_data, nil)
-      |> assign(:settings, settings)
-
-    socket =
-      if params["db"] && params["filename"] do
-        load_ecg_from_params(socket, params["db"], params["filename"])
-      else
-        socket
-      end
+      |> assign(:settings, Settings.get_settings(socket.assigns.current_scope))
 
     {:ok, socket}
+  end
+
+  def handle_params(%{"dataset_name" => dataset_name, "filename" => filename}, _uri, socket)
+      when not is_nil(dataset_name) and not is_nil(filename) do
+    ecg_data = Astrup.Wfdb.read(dataset_name, filename)
+    qrs = Astrup.Wfdb.detect_qrs(dataset_name, filename)
+    ecg_saved = ECG.is_ecg_saved?(socket.assigns.current_scope, dataset_name, filename)
+    metadata = load_dataset_metadata(dataset_name, filename) |> dbg()
+
+    {:noreply,
+     socket
+     |> assign(:ecg_data, Map.put(ecg_data, :qrs, qrs))
+     |> assign(:dataset_name, dataset_name)
+     |> assign(:filename, filename)
+     |> assign(:ecg_saved, ecg_saved)
+     |> assign(:metadata, metadata)}
+  end
+
+  def handle_params(_params, _uri, socket) do
+    {:noreply, socket}
   end
 
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} locale={@locale} current_scope={@current_scope}>
-      <div class="space-y-8">
-        <div class="flex justify-between items-center">
-          <h1 class="text-2xl font-bold">{gettext("ECG Viewer")}</h1>
+      <%= if @ecg_data do %>
+        <div class="space-y-8">
+          <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold">{gettext("ECG Viewer")}</h1>
+          </div>
+
+          <.live_component
+            module={AstrupWeb.Components.EcgPlayer}
+            id="ecg-player"
+            env={@env}
+            ecg_data={@ecg_data}
+            settings={@settings}
+          >
+            <:actions>
+              <.button phx-click="load_random_ecg" class="btn btn-primary" id="load-random-ecg-button">
+                <.icon class="h-5 w-5" name="hero-arrow-path" /> Load Random ECG
+              </.button>
+
+              <.button
+                phx-click={if @ecg_saved, do: "unsave_ecg", else: "save_ecg"}
+                class="btn btn-square"
+                id="save-ecg-button"
+              >
+                <%= if @ecg_saved do %>
+                  Unsave <.icon class="h-5 w-5" name="hero-trash" />
+                <% else %>
+                  Save <.icon class="h-5 w-5" name="hero-document-arrow-down" />
+                <% end %>
+              </.button>
+            </:actions>
+
+            <:sidebar>
+              <AstrupWeb.Components.ClinicalInfoPanel.clinical_info_panel metadata={@metadata} />
+            </:sidebar>
+
+            <:instructions>
+              <AstrupWeb.Components.EcgInstructions.default_instructions />
+            </:instructions>
+          </.live_component>
         </div>
-
-        <.live_component
-          module={AstrupWeb.Components.EcgPlayer}
-          id="ecg-player"
-          env={@env}
-          ecg_data={@ecg_data}
-          settings={@settings}
-        >
-          <:actions>
-            <.button phx-click="load_random_ecg" class="btn btn-primary" id="load-random-ecg-button">
-              <.icon class="h-5 w-5" name="hero-arrow-path" /> Load Random ECG
-            </.button>
-
-            <.button
-              phx-click={if @ecg_saved, do: "unsave_ecg", else: "save_ecg"}
-              class="btn btn-square"
-              id="save-ecg-button"
-            >
-              <%= if @ecg_saved do %>
-                Unsave <.icon class="h-5 w-5" name="hero-trash" />
-              <% else %>
-                Save <.icon class="h-5 w-5" name="hero-document-arrow-down" />
-              <% end %>
-            </.button>
-          </:actions>
-
-          <:sidebar>
-            <AstrupWeb.Components.ClinicalInfoPanel.clinical_info_panel metadata={@metadata} />
-          </:sidebar>
-
-          <:instructions>
-            <AstrupWeb.Components.EcgInstructions.default_instructions />
-          </:instructions>
-
-          <:empty_state>
-            <div class="bg-base-100/90 rounded-lg p-8">
-              <div class="text-center space-y-4">
-                <div class="text-6xl opacity-30">
-                  <.icon name="hero-heart" class="w-16 h-16 mx-auto" />
-                </div>
-                <div class="space-y-2">
-                  <p class="text-lg font-medium">No ECG Data Loaded</p>
-                  <p class="text-sm text-base-content/60">Click "Load Random ECG" to begin</p>
-                </div>
-              </div>
-            </div>
-          </:empty_state>
-        </.live_component>
-      </div>
+      <% else %>
+        <div class="text-center space-y-2">
+          <.icon name="hero-heart" class="opacity-30 w-16 h-16 mx-auto" />
+          <p class="text-lg font-medium">No ECG Data Loaded</p>
+        </div>
+      <% end %>
     </Layouts.app>
     """
   end
@@ -117,35 +121,8 @@ defmodule AstrupWeb.ECGViewerLive do
   end
 
   def handle_event("load_random_ecg", _params, socket) do
-    dataset_name = Application.get_env(:astrup, :default_ecg_database, "ptbxl")
-
-    case get_random_record(dataset_name) do
-      {:ok, filename} ->
-        socket = load_ecg_from_params(socket, dataset_name, filename)
-        {:noreply, socket}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to load random ECG: #{reason}")}
-    end
-  end
-
-  defp load_ecg_from_params(socket, dataset_name, filename) do
-    ecg_data = Astrup.Wfdb.read(dataset_name, filename)
-    qrs = Astrup.Wfdb.detect_qrs(dataset_name, filename)
-    record = Map.put(ecg_data, "qrs", qrs)
-
-    # Check if ECG is already saved
-    ecg_saved = ECG.is_ecg_saved?(socket.assigns.current_scope, dataset_name, filename)
-
-    # Load dataset metadata if available
-    metadata = load_dataset_metadata(dataset_name, filename)
-
-    socket
-    |> assign(:dataset_name, dataset_name)
-    |> assign(:filename, filename)
-    |> assign(:ecg_saved, ecg_saved)
-    |> assign(:metadata, metadata)
-    |> assign(:ecg_data, record)
+    # TODO
+    {:noreply, socket}
   end
 
   defp load_dataset_metadata(dataset_name, filename) do
@@ -156,6 +133,7 @@ defmodule AstrupWeb.ECGViewerLive do
     else
       _ -> %{}
     end
+    |> dbg()
   end
 
   defp get_random_record(dataset_name) do

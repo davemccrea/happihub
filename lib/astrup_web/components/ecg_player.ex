@@ -32,7 +32,6 @@ defmodule AstrupWeb.Components.EcgPlayer do
   slot :actions, doc: "Action buttons displayed in the header"
   slot :sidebar, doc: "Content displayed in the sidebar panel"
   slot :instructions, doc: "Help text displayed when ECG is loaded"
-  slot :empty_state, doc: "Content displayed when no ECG data is loaded"
 
   def render(assigns) do
     ~H"""
@@ -48,12 +47,6 @@ defmodule AstrupWeb.Components.EcgPlayer do
           <div id="ecg-player" phx-hook="ECGPlayer" phx-update="ignore" phx-target={@myself}>
             <div data-ecg-chart></div>
           </div>
-
-          <%= if is_nil(@ecg_data) and @empty_state != [] do %>
-            <div class="absolute inset-0 flex items-center justify-center">
-              {render_slot(@empty_state)}
-            </div>
-          <% end %>
 
           <div class="flex justify-between mt-2">
             <.button id="play-pause-button" class="btn btn-sm">
@@ -246,8 +239,4 @@ defmodule AstrupWeb.Components.EcgPlayer do
         {:noreply, assign(socket, form: to_form(changeset))}
     end
   end
-
-  def handle_event("playback_changed", _params, socket), do: {:noreply, socket}
-  def handle_event("lead_changed", _params, socket), do: {:noreply, socket}
-  def handle_event("playback_ended", _params, socket), do: {:noreply, socket}
 end

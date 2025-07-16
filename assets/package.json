@@ -1,8 +1,4 @@
 {
-  "name": "happihub-assets",
-  "version": "1.0.0",
-  "description": "Frontend assets for HappiHub ECG player",
-  "type": "module",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest watch",
