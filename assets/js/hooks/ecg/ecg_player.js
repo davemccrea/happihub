@@ -1,845 +1,203 @@
-import {
-  fromEvent,
-  Observable,
-  Subject,
-  Subscription,
-  debounceTime,
-  filter,
-  map,
-  catchError,
-  EMPTY,
-  merge,
-  tap,
-  takeUntil,
-  animationFrames,
-  switchMap,
-  takeWhile,
-  timer,
-  startWith,
-  from,
-  concatMap,
-  mergeMap,
-  bufferCount,
-  scan,
-  share,
-  shareReplay,
-  of,
-  takeLast,
-  take,
-  withLatestFrom,
-  BehaviorSubject,
-  distinctUntilChanged,
-  combineLatest,
-} from "rxjs";
-
-// Medical constants
+// ==================
+// RENDERING CONSTANTS
+// ==================
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
-const HEIGHT_MILLIVOLTS = 2.5;
-
-// Display constants
 const PIXELS_PER_MM = 6;
+const HEIGHT_MILLIVOLTS = 2.5;
 const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
-const DEFAULT_WIDTH_SECONDS = 2.5;
 const WAVEFORM_LINE_WIDTH = 1.3;
 const DOT_RADIUS = 1.2;
 
-// Layout constants
+// ===============
+// LAYOUT CONSTANTS
+// ===============
+const DEFAULT_WIDTH_SECONDS = 2.5;
 const CONTAINER_PADDING = 0;
 const COLUMNS_PER_DISPLAY = 4;
 const ROWS_PER_DISPLAY = 3;
 const COLUMN_PADDING = 0;
 const ROW_PADDING = 0;
 
-// Cursor constants
+// ===================
+// ANIMATION CONSTANTS
+// ===================
 const SINGLE_LEAD_CURSOR_WIDTH = 20;
 const MULTI_LEAD_CURSOR_WIDTH = 8;
-const MULTI_LEAD_HEIGHT_SCALE = 0.8;
 
-// Animation constants
-const QRS_FLASH_DURATION_MS = 100;
-const SEGMENT_DURATION_SECONDS = 0.1;
+// Multi-lead display constants
+const MULTI_LEAD_HEIGHT_SCALE = 0.8; // Reduces individual lead height in multi-lead view
+const QRS_FLASH_DURATION_MS = 100; // Duration of QRS indicator flash in milliseconds
+const SEGMENT_DURATION_SECONDS = 0.1; // Pre-computed data segment size for performance
 
 const ECGPlayer = {
-  // =====================================
-  // LIFECYCLE
-  // =====================================
+  // ==========================
+  // INITIALIZATION & LIFECYCLE
+  // ==========================
 
   mounted() {
-    this.destroy$ = new Subject();
-    this.subscriptions = new Subscription();
     this.initializeState();
     this.calculateMedicallyAccurateDimensions();
-    this.setupEventStreams();
-    this.handleEvent("load_ecg_data", (payload) => {
-      this.ecgDataLoaded$.next(payload);
-    });
     this.updateThemeColors();
+    this.setupEventListeners();
     this.initializeECGChart();
+
+    // Get the target for push events (component ID)
+    this.targetComponent = this.el.getAttribute("phx-target");
   },
 
-  destroyed() {
-    if (this.destroy$) {
-      this.destroy$.next();
-      this.destroy$.complete();
-    }
-    if (this.subscriptions) {
-      this.subscriptions.unsubscribe();
-    }
-    const subjects = [
-      this.isPlaying$,
-      this.currentLead$,
-      this.displayMode$,
-      this.gridType$,
-      this.gridScale$,
-      this.amplitudeScale$,
-      this.heightScale$,
-      this.loopEnabled$,
-      this.qrsIndicatorEnabled$,
-      this.qrsFlashActive$,
-      this.canvasRecreationTrigger$,
-      this.themeChange$,
-      this.ecgDataLoaded$,
-      this.animationTime$,
-      this.animationCycle$,
-      this.cursorPosition$,
-      this.qrsDetectionSubject$,
-    ];
-    subjects.forEach((subject) => {
-      if (subject) {
-        subject.complete();
-      }
+  setupEventListeners() {
+    this.setupResizeListener();
+    this.setupThemeListener();
+    this.setupKeyboardListeners();
+    this.setupLiveViewListeners();
+  },
+
+  setupResizeListener() {
+    this.resizeHandler = () => {
+      this.calculateMedicallyAccurateDimensions();
+      this.recreateCanvasAndRestart();
+    };
+    window.addEventListener("resize", this.resizeHandler);
+  },
+
+  setupThemeListener() {
+    this.themeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (
+          mutation.type === "attributes" &&
+          mutation.attributeName === "data-theme"
+        ) {
+          this.handleThemeChange();
+        }
+      });
     });
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-    }
-    this.cleanupCanvases();
-    this.ecgLeadDatasets = null;
-    this.precomputedSegments = null;
-    this.dataIndexCache = null;
-    this.currentLeadData = null;
-    this.allLeadsCursorData = null;
-    this.activeCursorData = null;
-  },
-
-  // =====================================
-  // REACTIVE STREAMS
-  // =====================================
-
-  setupEventStreams() {
-    const streams = this.createAllReactiveStreams();
-    const consolidatedStream$ = merge(...Object.values(streams)).pipe(
-      takeUntil(this.destroy$),
-      catchError((error) => {
-        console.error("Consolidated stream error:", error);
-        return EMPTY;
-      })
-    );
-    this.subscriptions.add(consolidatedStream$.subscribe());
-  },
-
-  createAllReactiveStreams() {
-    const animationStreams = this.createAnimationStreams();
-    const qrsStreams = this.createQrsStreams();
-    const uiStreams = this.createUIStreams();
-    const formStreams = this.createFormStreams();
-    const keyboardStreams = this.createKeyboardStreams();
-    const systemStreams = this.createSystemEventStreams();
-    const stateStreams = this.createStateEffectStreams();
-    return {
-      ...animationStreams,
-      ...qrsStreams,
-      ...uiStreams,
-      ...formStreams,
-      ...keyboardStreams,
-      ...systemStreams,
-      ...stateStreams,
-    };
-  },
-
-  createFormStreams() {
-    return {
-      leadSelectorChange: this.createElementStream(
-        "lead-selector",
-        "change"
-      ).pipe(
-        map((e) => parseInt(e.target.value)),
-        distinctUntilChanged(),
-        tap((leadIndex) => {
-          this.currentLead$.next(leadIndex);
-          this.switchLead(leadIndex);
-        })
-      ),
-
-      displayModeChange: this.createElementStream(
-        "display-mode-selector",
-        "change"
-      ).pipe(
-        map((e) => e.target.value),
-        distinctUntilChanged(),
-        tap((value) => {
-          this.displayMode$.next(value);
-          this.updateDisplayModeSelector(value);
-        })
-      ),
-
-      gridTypeChange: this.createElementStream(
-        "grid-type-selector",
-        "change"
-      ).pipe(
-        map((e) => e.target.value),
-        distinctUntilChanged(),
-        tap((value) => this.gridType$.next(value))
-      ),
-
-      loopCheckboxChange: this.createElementStream(
-        "loop-checkbox",
-        "change"
-      ).pipe(
-        map((e) => e.target.checked),
-        distinctUntilChanged(),
-        tap((checked) => this.loopEnabled$.next(checked))
-      ),
-
-      qrsIndicatorChange: this.createElementStream(
-        "qrs-indicator-checkbox",
-        "change"
-      ).pipe(
-        map((e) => e.target.checked),
-        distinctUntilChanged(),
-        tap((checked) => this.qrsIndicatorEnabled$.next(checked))
-      ),
-
-      gridScaleSlider: this.createElementStream(
-        "grid-scale-slider",
-        "input"
-      ).pipe(
-        map((e) => parseFloat(e.target.value)),
-        debounceTime(100),
-        distinctUntilChanged(),
-        tap((value) => this.gridScale$.next(value))
-      ),
-
-      amplitudeScaleSlider: this.createElementStream(
-        "amplitude-scale-slider",
-        "input"
-      ).pipe(
-        map((e) => parseFloat(e.target.value)),
-        debounceTime(100),
-        distinctUntilChanged(),
-        tap((value) => this.amplitudeScale$.next(value))
-      ),
-
-      heightScaleSlider: this.createElementStream(
-        "height-scale-slider",
-        "input"
-      ).pipe(
-        map((e) => parseFloat(e.target.value)),
-        debounceTime(100),
-        distinctUntilChanged(),
-        tap((value) => this.heightScale$.next(value))
-      ),
-    };
-  },
-
-  setupCanvasClickEvents() {
-    if (!this.backgroundCanvas) return;
-
-    if (this.canvasClickSubscription) {
-      this.canvasClickSubscription.unsubscribe();
-    }
-
-    this.canvasClickSubscription = fromEvent(this.backgroundCanvas, "click")
-      .pipe(
-        map((event) => {
-          const rect = this.backgroundCanvas.getBoundingClientRect();
-          return {
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top,
-          };
-        }),
-        tap(({ x, y }) => {
-          if (this.displayMode$.value === "multi") {
-            const clickedLeadIndex = this.getLeadIndexFromClick(x, y);
-            if (clickedLeadIndex !== null) {
-              this.displayMode$.next("single");
-              this.currentLead$.next(clickedLeadIndex);
-              this.updateDisplayModeSelector("single");
-              this.switchLead(clickedLeadIndex);
-            }
-          } else if (this.displayMode$.value === "single") {
-            this.displayMode$.next("multi");
-            this.updateDisplayModeSelector("multi");
-          }
-        }),
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error("Canvas click error:", error);
-          return EMPTY;
-        })
-      )
-      .subscribe();
-
-    this.subscriptions.add(this.canvasClickSubscription);
-  },
-
-  createElementStream(elementId, eventType) {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      console.warn(`Element with id '${elementId}' not found`);
-      return EMPTY;
-    }
-    return fromEvent(element, eventType);
-  },
-
-  createStateEffectStreams() {
-    return {
-      cursorWidthEffect: this.cursorWidth$.pipe(
-        tap(() => this.updateCursorStyle())
-      ),
-
-      displayModeEffect: this.displayMode$.pipe(
-        distinctUntilChanged(),
-        tap((mode) => {
-          this.updateLeadSelectorVisibility(mode);
-          this.canvasRecreationTrigger$.next();
-        })
-      ),
-
-      currentLeadEffect: this.currentLead$.pipe(
-        distinctUntilChanged(),
-        tap((leadIndex) => {
-          if (this.ecgLeadDatasets && this.ecgLeadDatasets[leadIndex]) {
-            this.currentLeadData = this.ecgLeadDatasets[leadIndex];
-            this.updateLeadSelector(leadIndex);
-          }
-        })
-      ),
-
-      gridScaleEffect: this.gridScale$.pipe(
-        distinctUntilChanged(),
-        tap(() => {
-          this.updateGridScaleDisplay();
-          this.handleGridScaleChange();
-        })
-      ),
-
-      amplitudeScaleEffect: this.amplitudeScale$.pipe(
-        distinctUntilChanged(),
-        tap(() => {
-          this.updateAmplitudeScaleDisplay();
-          this.handleAmplitudeScaleChange();
-        })
-      ),
-
-      heightScaleEffect: this.heightScale$.pipe(
-        distinctUntilChanged(),
-        tap(() => {
-          this.updateHeightScaleDisplay();
-          this.handleHeightScaleChange();
-        })
-      ),
-
-      gridTypeEffect: this.gridType$.pipe(
-        distinctUntilChanged(),
-        tap(() => this.renderGridBackground())
-      ),
-
-      qrsIndicatorEffect: this.qrsIndicatorEnabled$.pipe(
-        distinctUntilChanged(),
-        tap((enabled) => {
-          if (!enabled && this.qrsFlashActive$.value) {
-            this.qrsFlashActive$.next(false);
-            this.clearQrsFlashArea();
-          }
-        })
-      ),
-
-      canvasRecreationEffect: this.canvasRecreationTrigger$.pipe(
-        debounceTime(50),
-        tap(() => this.recreateCanvasAndRestart())
-      ),
-
-      themeChangeEffect: this.themeChange$.pipe(
-        debounceTime(50),
-        tap(() => this.handleThemeChange())
-      ),
-
-      ecgDataEffect: this.ecgDataLoaded$.pipe(
-        tap((payload) => this.processECGData(payload))
-      ),
-
-      // HYBRID PATTERN: Keep imperative variable in sync with reactive stream
-      // WHY: Performance-critical code paths (animation rendering, click hit detection)
-      // need synchronous access to leadHeight for 60fps animation and responsive UX.
-      // The reactive stream handles state management and automatic updates, while
-      // this.leadHeight provides immediate access without subscription overhead.
-      leadHeightEffect: this.leadHeight$.pipe(
-        tap((height) => {
-          this.leadHeight = height;
-        })
-      ),
-    };
-  },
-
-  createUIStreams() {
-    const playPauseClickStream$ = this.createElementStream(
-      "play-pause-button",
-      "click"
-    ).pipe(tap(() => this.togglePlayback()));
-
-    return {
-      playPauseButtonUpdate: this.isPlaying$.pipe(
-        distinctUntilChanged(),
-        tap(() => this.updatePlayPauseButton())
-      ),
-
-      playPauseClick: playPauseClickStream$,
-    };
-  },
-
-  createKeyboardStreams() {
-    return {
-      keyboardNavigation: fromEvent(document, "keydown").pipe(
-        filter((event) => {
-          const target = event.target;
-          if (!target) return false;
-          return !(
-            target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable
-          );
-        }),
-        filter((event) => {
-          return ["j", "ArrowDown", "k", "ArrowUp", " "].includes(event.key);
-        }),
-        tap((event) => {
-          event.preventDefault();
-          switch (event.key) {
-            case "j":
-            case "ArrowDown":
-              this.switchToNextLead();
-              break;
-            case "k":
-            case "ArrowUp":
-              this.switchToPrevLead();
-              break;
-            case " ":
-              this.togglePlayback();
-              break;
-          }
-        })
-      ),
-    };
-  },
-
-  createSystemEventStreams() {
-    return {
-      windowResize: fromEvent(window, "resize").pipe(
-        debounceTime(100),
-        tap(() => {
-          this.calculateMedicallyAccurateDimensions();
-          this.canvasRecreationTrigger$.next();
-        })
-      ),
-
-      themeChange: new Observable((subscriber) => {
-        const observer = new MutationObserver((mutations) => {
-          const themeChange = mutations.find(
-            (mutation) =>
-              mutation.type === "attributes" &&
-              mutation.attributeName === "data-theme"
-          );
-          if (themeChange) subscriber.next();
-        });
-        observer.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ["data-theme"],
-        });
-        return () => observer.disconnect();
-      }).pipe(tap(() => this.themeChange$.next())),
-    };
-  },
-
-  createAnimationStreams() {
-    this.qrsDetectionSubject$ = new Subject();
-
-    // Pure animation data stream
-    const animationData$ = this.isPlaying$.pipe(
-      distinctUntilChanged(),
-      switchMap((isPlaying) => {
-        if (!isPlaying || !this.totalDuration || !this.waveformCanvas) {
-          return EMPTY;
-        }
-
-        return animationFrames().pipe(
-          withLatestFrom(this.animationTime$),
-          map(([, timing]) => {
-            const currentTime = Date.now();
-            const elapsedSeconds = (currentTime - timing.startTime) / 1000;
-            return {
-              elapsedSeconds,
-              cursorProgress:
-                (elapsedSeconds % this.widthSeconds) / this.widthSeconds,
-              animationCycle: Math.floor(elapsedSeconds / this.widthSeconds),
-              isComplete: elapsedSeconds >= this.totalDuration,
-            };
-          }),
-          takeWhile((data) => !data.isComplete, true),
-          shareReplay(1)
-        );
-      })
-    );
-
-    return {
-      animationStateEffect: animationData$.pipe(
-        filter((data) => !data.isComplete),
-        tap((data) => {
-          if (data.animationCycle !== this.animationCycle$.value) {
-            this.animationCycle$.next(data.animationCycle);
-          }
-          this.cursorPosition$.next(
-            (data.cursorProgress * this.chartWidth) % this.chartWidth
-          );
-        })
-      ),
-
-      animationRenderEffect: animationData$.pipe(
-        filter((data) => !data.isComplete),
-        tap((data) =>
-          this.processAnimationFrame(data.cursorProgress, data.animationCycle)
-        )
-      ),
-
-      animationCompletionEffect: animationData$.pipe(
-        filter((data) => data.isComplete),
-        tap(() => this.handlePlaybackEnd())
-      ),
-    };
-  },
-
-  createQrsStreams() {
-    // Pure QRS flash data stream
-    const qrsFlashData$ = this.qrsDetectionSubject$.pipe(
-      withLatestFrom(this.qrsIndicatorEnabled$),
-      filter(([, enabled]) => enabled),
-      switchMap(() => {
-        return timer(this.qrsFlashDuration).pipe(
-          startWith(true),
-          map((_, index) => index === 0)
-        );
-      }),
-      shareReplay(1)
-    );
-
-    return {
-      qrsFlashEffect: qrsFlashData$.pipe(
-        tap((isFlashActive) => {
-          this.qrsFlashActive$.next(isFlashActive);
-          if (!isFlashActive) {
-            this.clearQrsFlashArea();
-          }
-        })
-      ),
-    };
-  },
-
-  setupDataPrecomputationStream() {
-    this.precomputedSegments.clear();
-    this.dataIndexCache.clear();
-
-    if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) {
-      return of(null);
-    }
-
-    return from(this.ecgLeadDatasets).pipe(
-      mergeMap(
-        (leadData, leadIndex) =>
-          this.precomputeLeadSegments(leadData, leadIndex),
-        2
-      ),
-      scan((acc, leadResult) => {
-        if (leadResult) {
-          this.precomputedSegments.set(
-            leadResult.leadIndex,
-            leadResult.segments
-          );
-        }
-        return acc + 1;
-      }, 0),
-      catchError((error) => {
-        console.error("Data precomputation error:", error);
-        return of(null);
-      }),
-      share(),
-      takeUntil(this.destroy$)
-    );
-  },
-
-  precomputeLeadSegments(leadData, leadIndex) {
-    const leadSegments = new Map();
-    const timeSegments = [];
-
-    for (
-      let time = 0;
-      time < this.totalDuration;
-      time += this.segmentDuration
-    ) {
-      timeSegments.push(time);
-    }
-
-    // Process segments in batches to prevent blocking
-    return from(timeSegments).pipe(
-      bufferCount(10),
-      concatMap((segmentBatch) =>
-        timer(0).pipe(
-          map(() => {
-            const batchResults = [];
-            for (const time of segmentBatch) {
-              const segmentKey = Math.floor(time / this.segmentDuration);
-              const startTime = segmentKey * this.segmentDuration;
-              const endTime = Math.min(
-                startTime + this.segmentDuration,
-                this.totalDuration
-              );
-
-              const startIndex = this.calculateDataIndexForTime(
-                leadData,
-                startTime
-              );
-              const endIndex = this.calculateDataIndexForTime(
-                leadData,
-                endTime
-              );
-
-              if (
-                endIndex >= startIndex &&
-                startIndex < leadData.times.length
-              ) {
-                const times = leadData.times.slice(startIndex, endIndex + 1);
-                const values = leadData.values.slice(startIndex, endIndex + 1);
-
-                batchResults.push({
-                  segmentKey,
-                  segment: {
-                    times: times.map((t) => t - startTime),
-                    values: values,
-                    originalStartTime: startTime,
-                  },
-                });
-              }
-            }
-            return batchResults;
-          })
-        )
-      ),
-      mergeMap((batchResults) => from(batchResults)),
-      scan((acc, segmentResult) => {
-        acc.set(segmentResult.segmentKey, segmentResult.segment);
-        return acc;
-      }, leadSegments),
-      takeLast(1),
-      map(() => ({ leadIndex, segments: leadSegments }))
-    );
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
   },
 
   handleThemeChange() {
     this.updateThemeColors();
     this.renderGridBackground();
     this.clearWaveform();
-    if (!this.isPlaying$.value) {
-      const timing = this.animationTime$.value;
-      if (timing.startTime && timing.pausedTime) {
-        const elapsedSeconds = (timing.pausedTime - timing.startTime) / 1000;
-        const cursorProgress =
-          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-        const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-        this.processAnimationFrame(cursorProgress, animationCycle);
+    if (!this.isPlaying && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.processAnimationFrame(cursorProgress, animationCycle);
+    }
+  },
+
+  setupKeyboardListeners() {
+    this.keydownHandler = (event) => {
+      // Only handle shortcuts if not typing in an input field
+      if (
+        event.target.tagName === "INPUT" ||
+        event.target.tagName === "TEXTAREA" ||
+        event.target.isContentEditable
+      ) {
+        return;
       }
-    }
+
+      switch (event.key) {
+        case "j":
+        case "ArrowDown":
+          event.preventDefault();
+          this.switchToNextLead();
+          break;
+        case "k":
+        case "ArrowUp":
+          event.preventDefault();
+          this.switchToPrevLead();
+          break;
+        case " ":
+          event.preventDefault();
+          this.togglePlayback();
+          break;
+      }
+    };
+
+    // Add global keyboard listener
+    document.addEventListener("keydown", this.keydownHandler);
   },
 
-  updateLeadSelector(leadIndex) {
-    const leadSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("lead-selector")
-    );
-    if (leadSelector) {
-      leadSelector.value = leadIndex.toString();
-    }
+  setupLiveViewListeners() {
+    this.handleEvent("load_ecg_data", (payload) => {
+      this.handleECGDataLoaded(payload);
+    });
   },
 
-  // =====================================
-  // STATE INITIALIZATION
-  // =====================================
+  destroyed() {
+    this.cleanup();
+  },
+
+  cleanup() {
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+    }
+    if (this.qrsFlashTimeout) {
+      clearTimeout(this.qrsFlashTimeout);
+    }
+    this.cleanupCanvases();
+    if (this.resizeHandler) {
+      window.removeEventListener("resize", this.resizeHandler);
+    }
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+    if (this.keydownHandler) {
+      document.removeEventListener("keydown", this.keydownHandler);
+    }
+    if (this.canvasClickHandler && this.backgroundCanvas) {
+      this.backgroundCanvas.removeEventListener(
+        "click",
+        this.canvasClickHandler
+      );
+    }
+
+    // Explicitly nullify large data objects to break references
+    this.ecgLeadDatasets = null;
+    this.precomputedSegments = null;
+    this.dataIndexCache = null;
+    this.currentLeadData = null;
+    this.allLeadsCursorData = null;
+    this.activeCursorData = null;
+    this.eventHandlers = null;
+  },
+
+  // =================
+  // STATE MANAGEMENT
+  // =================
 
   initializeState() {
-    const initialGridType = this.readFormValue("grid_type") || "telemetry";
-    const initialDisplayMode = this.readFormValue("display_mode") || "single";
-    const initialCurrentLead = parseInt(
-      this.readFormValue("current_lead") || "0"
-    );
+    this.initializeFormValues();
 
-    const initialLoopEnabled = this.readFormCheckbox("loop_playback");
-    const initialQrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
-
-    const initialGridScale = parseFloat(
-      this.readFormValue("grid_scale") || "1.0"
-    );
-    const initialAmplitudeScale = parseFloat(
-      this.readFormValue("amplitude_scale") || "1.0"
-    );
-    const initialHeightScale = parseFloat(
-      this.readFormValue("height_scale") || "1.2"
-    );
-
-    this.isPlaying$ = new BehaviorSubject(false);
-    this.currentLead$ = new BehaviorSubject(initialCurrentLead);
-    this.displayMode$ = new BehaviorSubject(initialDisplayMode);
-    this.gridType$ = new BehaviorSubject(initialGridType);
-    this.gridScale$ = new BehaviorSubject(initialGridScale);
-    this.amplitudeScale$ = new BehaviorSubject(initialAmplitudeScale);
-    this.heightScale$ = new BehaviorSubject(initialHeightScale);
-    this.loopEnabled$ = new BehaviorSubject(initialLoopEnabled);
-    this.qrsIndicatorEnabled$ = new BehaviorSubject(initialQrsIndicatorEnabled);
-
-    this.qrsFlashActive$ = new BehaviorSubject(false);
-
-    this.canvasRecreationTrigger$ = new Subject();
-
-    this.themeChange$ = new Subject();
-
-    this.ecgDataLoaded$ = new Subject();
-
-    this.animationTime$ = new BehaviorSubject({
-      startTime: null,
-      pausedTime: 0,
-    });
-    this.animationCycle$ = new BehaviorSubject(0);
-    this.cursorPosition$ = new BehaviorSubject(0);
-
-    this.cursorWidth$ = this.displayMode$.pipe(
-      map((mode) =>
-        mode === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH
-      ),
-      distinctUntilChanged(),
-      shareReplay(1)
-    );
-
-    // HYBRID PATTERN: Reactive stream for leadHeight calculation
-    // This pure stream calculates the correct height based on display mode.
-    // Multi-lead mode uses MULTI_LEAD_HEIGHT_SCALE to fit multiple leads on screen.
-    // The calculated value is synchronized to this.leadHeight imperative variable
-    // via leadHeightEffect for performance-critical synchronous access.
-    this.leadHeight$ = combineLatest([
-      this.displayMode$,
-      this.heightScale$,
-    ]).pipe(
-      map(([displayMode, heightScale]) => {
-        return displayMode === "multi"
-          ? (CHART_HEIGHT * heightScale) / MULTI_LEAD_HEIGHT_SCALE
-          : CHART_HEIGHT * heightScale;
-      }),
-      distinctUntilChanged(),
-      shareReplay(1)
-    );
-
-    this.canvasDimensions$ = combineLatest([
-      this.displayMode$,
-      this.heightScale$,
-      this.leadHeight$,
-    ]).pipe(
-      map(([displayMode, heightScale, leadHeight]) => {
-        const canvasHeight =
-          displayMode === "multi"
-            ? ROWS_PER_DISPLAY * (leadHeight / MULTI_LEAD_HEIGHT_SCALE) +
-              (ROWS_PER_DISPLAY - 1) * ROW_PADDING
-            : CHART_HEIGHT * heightScale;
-
-        const actualLeadHeight =
-          displayMode === "multi"
-            ? leadHeight / MULTI_LEAD_HEIGHT_SCALE
-            : leadHeight;
-
-        return { canvasHeight, leadHeight: actualLeadHeight };
-      }),
-      distinctUntilChanged(
-        (prev, curr) =>
-          prev.canvasHeight === curr.canvasHeight &&
-          prev.leadHeight === curr.leadHeight
-      ),
-      shareReplay(1)
-    );
-
-    this.gridDimensions$ = this.gridScale$.pipe(
-      map((scale) => ({
-        scaledPixelsPerMm: PIXELS_PER_MM * scale,
-        smallSquareSize: PIXELS_PER_MM * scale,
-        largeSquareSize: 5 * PIXELS_PER_MM * scale,
-        dotSpacing: 5 * PIXELS_PER_MM * scale,
-      })),
-      distinctUntilChanged(),
-      shareReplay(1)
-    );
-
-    this.chartDimensions$ = this.gridScale$.pipe(
-      map((gridScale) => {
-        const container = this.el.querySelector("[data-ecg-chart]");
-        const scaledPixelsPerMm = PIXELS_PER_MM * gridScale;
-        const minWidth =
-          DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * scaledPixelsPerMm;
-
-        if (!container) {
-          return {
-            chartWidth: minWidth,
-            widthSeconds: DEFAULT_WIDTH_SECONDS,
-          };
-        }
-
-        const containerWidth = container.offsetWidth - CONTAINER_PADDING;
-
-        if (containerWidth < minWidth) {
-          return {
-            chartWidth: minWidth,
-            widthSeconds: DEFAULT_WIDTH_SECONDS,
-          };
-        }
-
-        const widthSeconds =
-          containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
-        return {
-          chartWidth: widthSeconds * MM_PER_SECOND * scaledPixelsPerMm,
-          widthSeconds,
-        };
-      }),
-      distinctUntilChanged(
-        (prev, curr) =>
-          prev.chartWidth === curr.chartWidth &&
-          prev.widthSeconds === curr.widthSeconds
-      ),
-      shareReplay(1)
-    );
-
+    this.isPlaying = false;
     this.activeSegments = [];
+    this.startTime = null;
+    this.pausedTime = 0;
+    this.animationCycle = 0;
     this.animationId = null;
+    this.cursorPosition = 0;
+    this.cursorWidth = SINGLE_LEAD_CURSOR_WIDTH;
     this.activeCursorData = null;
     this.allLeadsCursorData = null;
+    this.leadHeight = CHART_HEIGHT * this.heightScale;
+
+    // QRS flash indicator
+    this.qrsFlashActive = false;
+    this.qrsFlashTimeout = null;
     this.qrsFlashDuration = QRS_FLASH_DURATION_MS;
 
-    // HYBRID PATTERN: Initialize leadHeight for immediate synchronous access
-    // This imperative variable is kept in sync with leadHeight$ reactive stream
-    // via leadHeightEffect. Used by performance-critical code paths:
-    // - Animation rendering (60fps)
-    // - Click hit detection (immediate response)
-    // - Grid coordinate calculations
-    this.leadHeight =
-      initialDisplayMode === "multi"
-        ? (CHART_HEIGHT * initialHeightScale) / MULTI_LEAD_HEIGHT_SCALE
-        : CHART_HEIGHT * initialHeightScale;
-
+    // Pre-computed data segments for performance
     this.precomputedSegments = new Map();
     this.segmentDuration = SEGMENT_DURATION_SECONDS;
     this.dataIndexCache = new Map();
 
+    // Canvas layers for optimized rendering
     this.backgroundCanvas = null;
     this.backgroundContext = null;
     this.waveformCanvas = null;
@@ -848,10 +206,43 @@ const ECGPlayer = {
     this.qrsFlashContext = null;
   },
 
-  // =====================================
-  // UTILITIES
-  // =====================================
+  /**
+   * Initializes all form-controlled values with proper defaults
+   * @returns {void}
+   */
+  initializeFormValues() {
+    // Display and playback settings
+    this.gridType = this.readFormValue("grid_type") || "telemetry";
+    this.displayMode = this.readFormValue("display_mode") || "single";
+    this.currentLead = parseInt(this.readFormValue("current_lead") || "0");
 
+    // Playback options
+    this.loopEnabled = this.readFormCheckbox("loop_playback");
+    this.qrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
+
+    // Scale settings
+    this.gridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
+    this.amplitudeScale = parseFloat(
+      this.readFormValue("amplitude_scale") || "1.0"
+    );
+    this.heightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
+
+    // Update cursor width based on display mode
+    this.cursorWidth =
+      this.displayMode === "single"
+        ? SINGLE_LEAD_CURSOR_WIDTH
+        : MULTI_LEAD_CURSOR_WIDTH;
+  },
+
+  // =================
+  // UTILITY FUNCTIONS
+  // =================
+
+  /**
+   * Reads a form field value by name
+   * @param {string} fieldName - The name of the form field to read
+   * @returns {string|null} The field value or null if not found
+   */
   readFormValue(fieldName) {
     const input = /** @type {HTMLInputElement | HTMLSelectElement | null} */ (
       document.querySelector(
@@ -861,6 +252,11 @@ const ECGPlayer = {
     return input ? input.value : null;
   },
 
+  /**
+   * Reads a checkbox form field value by name
+   * @param {string} fieldName - The name of the checkbox field to read
+   * @returns {boolean} The checkbox state
+   */
   readFormCheckbox(fieldName) {
     const input = /** @type {HTMLInputElement | null} */ (
       document.querySelector(
@@ -868,6 +264,52 @@ const ECGPlayer = {
       )
     );
     return input ? input.checked : false;
+  },
+
+  // Common utility for preserving canvas state during operations
+  withCanvasStatePreservation(operation) {
+    const wasPlaying = this.isPlaying;
+    if (wasPlaying) this.stopAnimation();
+
+    operation();
+
+    if (!wasPlaying && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.processAnimationFrame(cursorProgress, animationCycle);
+    }
+
+    if (wasPlaying) {
+      this.isPlaying = true;
+      this.startAnimationLoop();
+    }
+  },
+
+  /**
+   * Recreates canvas and restarts animation if it was playing
+   * @returns {void}
+   */
+  recreateCanvasAndRestart() {
+    this.withCanvasStatePreservation(() => {
+      this.recreateCanvas();
+      this.renderGridBackground();
+    });
+  },
+
+  /**
+   * Updates the display mode selector in the DOM
+   * @param {string} mode - The display mode ("single" or "multi")
+   * @returns {void}
+   */
+  updateDisplayModeSelector(mode) {
+    const displayModeSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("display-mode-selector")
+    );
+    if (displayModeSelector) {
+      displayModeSelector.value = mode;
+    }
   },
 
   calculateDataIndexForTime(leadData, targetTime) {
@@ -886,6 +328,7 @@ const ECGPlayer = {
       return 0;
     }
 
+    // With a constant sampling rate, we can calculate the index directly.
     const estimatedIndex = Math.round(targetTime * this.samplingRate);
     return Math.min(estimatedIndex, leadData.times.length - 1);
   },
@@ -919,7 +362,8 @@ const ECGPlayer = {
     const coordinates = [];
     for (let i = 0; i < times.length; i++) {
       const x = xOffset + times[i] * xScale;
-      const scaledValue = values[i] * this.amplitudeScale$.value;
+      // Apply amplitude scale to the voltage values
+      const scaledValue = values[i] * this.amplitudeScale;
       const y = yOffset + height - (scaledValue - this.yMin) * yScale;
       coordinates.push({ x, y });
     }
@@ -927,45 +371,9 @@ const ECGPlayer = {
     return coordinates;
   },
 
-  withCanvasStatePreservation(operation) {
-    const wasPlaying = this.isPlaying$.value;
-    if (wasPlaying) this.stopAnimation();
-
-    operation();
-
-    const timing = this.animationTime$.value;
-    if (!wasPlaying && timing.startTime && timing.pausedTime) {
-      const elapsedSeconds = (timing.pausedTime - timing.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processAnimationFrame(cursorProgress, animationCycle);
-    }
-
-    if (wasPlaying) {
-      this.isPlaying$.next(true);
-    }
-  },
-
-  recreateCanvasAndRestart() {
-    this.withCanvasStatePreservation(() => {
-      this.recreateCanvas();
-      this.renderGridBackground();
-    });
-  },
-
-  updateDisplayModeSelector(mode) {
-    const displayModeSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("display-mode-selector")
-    );
-    if (displayModeSelector) {
-      displayModeSelector.value = mode;
-    }
-  },
-
-  // =====================================
-  // UI CONTROLS
-  // =====================================
+  // ===================
+  // SCALE & UI CONTROLS
+  // ===================
 
   handleGridScaleChange() {
     this.withCanvasStatePreservation(() => {
@@ -995,11 +403,11 @@ const ECGPlayer = {
     const gridScaleSpeed = document.getElementById("grid-scale-speed");
 
     if (gridScaleValue) {
-      gridScaleValue.textContent = `${this.gridScale$.value.toFixed(2)}x`;
+      gridScaleValue.textContent = `${this.gridScale.toFixed(2)}x`;
     }
 
     if (gridScaleSpeed) {
-      const actualSpeed = (MM_PER_SECOND * this.gridScale$.value).toFixed(1);
+      const actualSpeed = (MM_PER_SECOND * this.gridScale).toFixed(1);
       gridScaleSpeed.textContent = `${actualSpeed} mm/s`;
     }
   },
@@ -1011,15 +419,11 @@ const ECGPlayer = {
     const amplitudeScaleGain = document.getElementById("amplitude-scale-gain");
 
     if (amplitudeScaleValue) {
-      amplitudeScaleValue.textContent = `${this.amplitudeScale$.value.toFixed(
-        2
-      )}x`;
+      amplitudeScaleValue.textContent = `${this.amplitudeScale.toFixed(2)}x`;
     }
 
     if (amplitudeScaleGain) {
-      const actualGain = (
-        MM_PER_MILLIVOLT * this.amplitudeScale$.value
-      ).toFixed(1);
+      const actualGain = (MM_PER_MILLIVOLT * this.amplitudeScale).toFixed(1);
       amplitudeScaleGain.textContent = `${actualGain} mm/mV`;
     }
   },
@@ -1029,22 +433,26 @@ const ECGPlayer = {
     const heightScalePixels = document.getElementById("height-scale-pixels");
 
     if (heightScaleValue) {
-      heightScaleValue.textContent = `${this.heightScale$.value.toFixed(2)}x`;
+      heightScaleValue.textContent = `${this.heightScale.toFixed(2)}x`;
     }
 
     if (heightScalePixels) {
-      const actualHeight = Math.round(CHART_HEIGHT * this.heightScale$.value);
+      const actualHeight = Math.round(CHART_HEIGHT * this.heightScale);
       heightScalePixels.textContent = `${actualHeight}px`;
     }
   },
 
-  // =====================================
-  // LEAD MANAGEMENT
-  // =====================================
+  // ============================
+  // DISPLAY MODE & LEAD SWITCHING
+  // ============================
 
+  /**
+   * Updates the cursor style based on the current display mode.
+   * @returns {void}
+   */
   updateCursorStyle() {
     if (this.backgroundCanvas) {
-      if (this.displayMode$.value === "single") {
+      if (this.displayMode === "single") {
         // Single lead mode: show zoom-out cursor (click to show all leads)
         this.backgroundCanvas.style.cursor = "zoom-out";
       } else {
@@ -1054,8 +462,55 @@ const ECGPlayer = {
     }
   },
 
+  /**
+   * Sets up click event handler for canvas to allow lead selection in multi-lead mode.
+   * @returns {void}
+   */
+  setupCanvasClickHandler() {
+    if (this.canvasClickHandler) {
+      this.backgroundCanvas.removeEventListener(
+        "click",
+        this.canvasClickHandler
+      );
+    }
+
+    this.canvasClickHandler = (event) => {
+      const rect = this.backgroundCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      if (this.displayMode === "multi") {
+        const clickedLeadIndex = this.getLeadIndexFromClick(x, y);
+        if (clickedLeadIndex !== null) {
+          // TODO
+          this.displayMode = "single";
+          this.updateDisplayModeSelector("single");
+          this.switchLead(clickedLeadIndex);
+          this.updateLeadSelectorVisibility("single");
+          this.recreateCanvasAndRestart();
+          this.updateCursorStyle();
+        }
+      } else if (this.displayMode === "single") {
+        // In single lead mode, any click on the grid switches to multi-lead mode
+        this.displayMode = "multi";
+        this.updateDisplayModeSelector("multi");
+        this.updateLeadSelectorVisibility("multi");
+        this.recreateCanvasAndRestart();
+        this.updateCursorStyle();
+      }
+    };
+
+    this.backgroundCanvas.addEventListener("click", this.canvasClickHandler);
+  },
+
+  /**
+   * Determines which lead was clicked based on click coordinates.
+   * @param {number} x - The x coordinate of the click.
+   * @param {number} y - The y coordinate of the click.
+   * @returns {number|null} The index of the clicked lead, or null if no lead was clicked.
+   */
   getLeadIndexFromClick(x, y) {
-    if (!this.leadNames || this.displayMode$.value !== "multi") {
+    if (!this.leadNames || this.displayMode !== "multi") {
       return null;
     }
 
@@ -1077,6 +532,21 @@ const ECGPlayer = {
     return null;
   },
 
+  /**
+   * Switches from multi-lead mode to single-lead mode with the specified lead.
+   * @param {number} leadIndex - The index of the lead to switch to.
+   * @returns {void}
+   */
+
+  // =========================
+  // LEAD POSITIONING & LAYOUT
+  // =========================
+
+  /**
+   * Determines the grid column and row for a given lead index in multi-lead view.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @returns {{column: number, row: number}} The grid position.
+   */
   getLeadColumnAndRow(leadIndex) {
     const leadPositions = [
       { column: 0, row: 0 },
@@ -1096,6 +566,11 @@ const ECGPlayer = {
     return leadPositions[leadIndex] || { column: 0, row: 0 };
   },
 
+  /**
+   * Calculates the pixel offset and width for a lead in the multi-lead display grid.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @returns {{xOffset: number, yOffset: number, columnWidth: number}} The position and width for the lead.
+   */
   calculateLeadGridCoordinates(leadIndex) {
     const { column, row } = this.getLeadColumnAndRow(leadIndex);
     const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
@@ -1108,10 +583,15 @@ const ECGPlayer = {
     return { xOffset, yOffset, columnWidth };
   },
 
-  // =====================================
-  // VISUAL CONFIGURATION
-  // =====================================
+  // =============================
+  // THEME & VISUAL CONFIGURATION
+  // =============================
 
+  /**
+   * Reads the current `data-theme` from the HTML element and updates the color palette
+   * for the grid, waveform, and labels.
+   * @returns {void}
+   */
   updateThemeColors() {
     const theme =
       document.documentElement.getAttribute("data-theme") || "light";
@@ -1126,34 +606,40 @@ const ECGPlayer = {
     };
   },
 
-  // =====================================
-  // DATA PROCESSING
-  // =====================================
+  // ========================
+  // DATA LOADING & SETUP
+  // ========================
 
+  /**
+   * Orchestrates the initial setup process: calculates dimensions,
+   * creates canvases, and renders the initial view.
+   * ECG data will be loaded separately when pushed from the server.
+   * @returns {void}
+   */
   initializeECGChart() {
     if (!this.widthSeconds) {
       this.calculateMedicallyAccurateDimensions();
     }
     this.recreateCanvas();
     this.renderGridBackground();
-    // Initialize lead selector visibility based on current display mode
-    this.updateLeadSelectorVisibility(this.displayMode$.value);
   },
 
-  processECGData(payload) {
+  /**
+   * Handles ECG data loaded from the server.
+   * Processes the data and stores it in memory.
+   * @param {object} payload - The ECG data payload from the server.
+   * @returns {void}
+   */
+  handleECGDataLoaded(payload) {
     try {
-      if (!payload || !payload.data) {
-        console.error("Invalid ECG payload:", payload);
-        return;
-      }
-
       const data = payload.data;
 
-      if (!data || !data.fs || !data.sig_name || !data.p_signal) {
+      if (!data.fs || !data.sig_name || !data.p_signal) {
         console.error("Invalid ECG data format:", data);
         return;
       }
 
+      // Reset playback state when loading new ECG data
       this.stopAnimation();
 
       this.resetPlayback();
@@ -1162,6 +648,7 @@ const ECGPlayer = {
       this.leadNames = data.sig_name;
       this.totalDuration = data.p_signal.length / data.fs;
 
+      // Store QRS data for logging
       this.qrsIndexes = data.qrs || [];
       this.qrsTimestamps = this.qrsIndexes.map(
         (index) => index / this.samplingRate
@@ -1200,27 +687,24 @@ const ECGPlayer = {
       this.yMax = HEIGHT_MILLIVOLTS / 2;
       this.currentLeadData = this.ecgLeadDatasets[this.currentLead];
 
-      const precomputationStream$ = this.setupDataPrecomputationStream();
+      // Pre-compute data segments for all leads
+      this.precomputeDataSegments();
 
-      this.subscriptions.add(
-        precomputationStream$.subscribe({
-          next: (processedCount) => {
-            // Optional: Add progress feedback here
-            if (processedCount === this.ecgLeadDatasets.length) {
-              console.log("Data precomputation completed");
-            }
-          },
-          error: (error) => {
-            console.error("Precomputation failed:", error);
-          },
-        })
-      );
-
+      // Re-render the grid background with the new data
       this.renderGridBackground();
 
+      // Clear any existing waveform
       this.clearWaveform();
 
-      this.updateLeadSelectorVisibility(this.displayMode$.value);
+      // Setup and update button state (button now exists in DOM)
+      this.setupPlayPauseButton();
+      this.updatePlayPauseButton();
+
+      // Setup selectors (they now exist in DOM)
+      this.setupSelectors();
+
+      // Set initial lead selector visibility
+      this.updateLeadSelectorVisibility(this.displayMode);
 
       console.log("ECG data loaded successfully:", {
         samplingRate: this.samplingRate,
@@ -1234,33 +718,62 @@ const ECGPlayer = {
     }
   },
 
-  // =====================================
-  // CANVAS MANAGEMENT
-  // =====================================
+  // ===================
+  // CANVAS & DIMENSIONS
+  // ===================
 
+  /**
+   * Calculates the chart's width in pixels based on standard medical units (mm/second).
+   * This ensures the visualization is medically accurate and scales correctly with the container.
+   * @returns {void}
+   */
   calculateMedicallyAccurateDimensions() {
-    // Use derived stream to update dimensions reactively
-    this.chartDimensions$
-      .pipe(take(1))
-      .subscribe(({ chartWidth, widthSeconds }) => {
-        this.chartWidth = chartWidth;
-        this.widthSeconds = widthSeconds;
-      });
+    const container = this.el.querySelector("[data-ecg-chart]");
+    if (!container) {
+      this.chartWidth =
+        DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM * this.gridScale;
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
+      return;
+    }
+
+    const containerWidth = container.offsetWidth - CONTAINER_PADDING;
+    const scaledPixelsPerMm = PIXELS_PER_MM * this.gridScale;
+    const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * scaledPixelsPerMm;
+
+    if (containerWidth < minWidth) {
+      this.chartWidth = minWidth;
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
+    } else {
+      this.widthSeconds = containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
+      this.chartWidth = this.widthSeconds * MM_PER_SECOND * scaledPixelsPerMm;
+    }
   },
 
+  /**
+   * Creates and configures the dual-canvas system for rendering.
+   * A background canvas is used for the static grid, and a foreground canvas
+   * is used for the animated waveform to optimize performance.
+   * @returns {void}
+   */
   recreateCanvas() {
     this.cleanupCanvases();
 
-    // Use derived canvas dimensions
-    this.canvasDimensions$.pipe(take(1)).subscribe(({ canvasHeight }) => {
-      this.createCanvasElements(canvasHeight);
-    });
-  },
+    const canvasHeight =
+      this.displayMode === "multi"
+        ? ROWS_PER_DISPLAY *
+            ((CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE) +
+          (ROWS_PER_DISPLAY - 1) * ROW_PADDING
+        : CHART_HEIGHT * this.heightScale;
 
-  createCanvasElements(canvasHeight) {
+    this.leadHeight =
+      this.displayMode === "multi"
+        ? (CHART_HEIGHT * this.heightScale) / MULTI_LEAD_HEIGHT_SCALE
+        : CHART_HEIGHT * this.heightScale;
+
     const container = this.el.querySelector("[data-ecg-chart]");
     const devicePixelRatio = window.devicePixelRatio || 1;
 
+    // Create background canvas for static grid
     this.backgroundCanvas = document.createElement("canvas");
     this.backgroundCanvas.width = this.chartWidth * devicePixelRatio;
     this.backgroundCanvas.height = canvasHeight * devicePixelRatio;
@@ -1272,10 +785,13 @@ const ECGPlayer = {
     this.backgroundContext = this.backgroundCanvas.getContext("2d");
     this.backgroundContext.scale(devicePixelRatio, devicePixelRatio);
 
-    this.setupCanvasClickEvents();
+    // Add click event listener for lead selection in multi-lead mode
+    this.setupCanvasClickHandler();
 
+    // Set initial cursor based on display mode
     this.updateCursorStyle();
 
+    // Create foreground canvas for animated waveform (overlapping)
     this.waveformCanvas = document.createElement("canvas");
     this.waveformCanvas.width = this.chartWidth * devicePixelRatio;
     this.waveformCanvas.height = canvasHeight * devicePixelRatio;
@@ -1289,6 +805,7 @@ const ECGPlayer = {
     this.waveformContext = this.waveformCanvas.getContext("2d");
     this.waveformContext.scale(devicePixelRatio, devicePixelRatio);
 
+    // Create QRS flash canvas (top layer for indicators)
     this.qrsFlashCanvas = document.createElement("canvas");
     this.qrsFlashCanvas.width = this.chartWidth * devicePixelRatio;
     this.qrsFlashCanvas.height = canvasHeight * devicePixelRatio;
@@ -1303,8 +820,18 @@ const ECGPlayer = {
     this.qrsFlashContext.scale(devicePixelRatio, devicePixelRatio);
   },
 
+  /**
+   * Removes the canvas elements from the DOM to prevent memory leaks.
+   * @returns {void}
+   */
   cleanupCanvases() {
     if (this.backgroundCanvas) {
+      if (this.canvasClickHandler) {
+        this.backgroundCanvas.removeEventListener(
+          "click",
+          this.canvasClickHandler
+        );
+      }
       this.backgroundCanvas.remove();
       this.backgroundCanvas = null;
       this.backgroundContext = null;
@@ -1318,6 +845,75 @@ const ECGPlayer = {
       this.qrsFlashCanvas.remove();
       this.qrsFlashCanvas = null;
       this.qrsFlashContext = null;
+    }
+  },
+
+  // =================
+  // EVENT HANDLERS
+  // =================
+
+  /**
+   * Handles window resize events by recalculating dimensions and redrawing the chart.
+   * @returns {void}
+   */
+
+  // ====================
+  // DATA PRE-COMPUTATION
+  // ====================
+
+  /**
+   * A key performance optimization. This function runs once at startup to process
+   * the entire ECG dataset. It chunks the data for each lead into small, 100ms segments
+   * and stores them in a Map for extremely fast lookups during the animation loop.
+   * This avoids slow array searches on every frame.
+   * @returns {void}
+   */
+  precomputeDataSegments() {
+    this.precomputedSegments.clear();
+    this.dataIndexCache.clear();
+
+    if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) {
+      return;
+    }
+
+    // Pre-compute segments for each lead
+    for (
+      let leadIndex = 0;
+      leadIndex < this.ecgLeadDatasets.length;
+      leadIndex++
+    ) {
+      const leadData = this.ecgLeadDatasets[leadIndex];
+      const leadSegments = new Map();
+
+      // Create segments every 100ms
+      for (
+        let time = 0;
+        time < this.totalDuration;
+        time += this.segmentDuration
+      ) {
+        const segmentKey = Math.floor(time / this.segmentDuration);
+        const startTime = segmentKey * this.segmentDuration;
+        const endTime = Math.min(
+          startTime + this.segmentDuration,
+          this.totalDuration
+        );
+
+        const startIndex = this.calculateDataIndexForTime(leadData, startTime);
+        const endIndex = this.calculateDataIndexForTime(leadData, endTime);
+
+        if (endIndex >= startIndex && startIndex < leadData.times.length) {
+          const times = leadData.times.slice(startIndex, endIndex + 1);
+          const values = leadData.values.slice(startIndex, endIndex + 1);
+
+          leadSegments.set(segmentKey, {
+            times: times.map((t) => t - startTime),
+            values: values,
+            originalStartTime: startTime,
+          });
+        }
+      }
+
+      this.precomputedSegments.set(leadIndex, leadSegments);
     }
   },
 
@@ -1351,6 +947,10 @@ const ECGPlayer = {
     return segments;
   },
 
+  // ========================
+  // LEAD SWITCHING & CONTROL
+  // ========================
+
   /**
    * Switches the view to a different ECG lead.
    * @param {number} leadIndex - The index of the lead to switch to.
@@ -1366,22 +966,32 @@ const ECGPlayer = {
       return;
     }
 
-    const wasPlaying = this.isPlaying$.value;
+    const wasPlaying = this.isPlaying;
     if (wasPlaying) this.stopAnimation();
 
-    this.currentLead$.next(leadIndex);
+    this.currentLead = leadIndex;
+    this.currentLeadData = this.ecgLeadDatasets[leadIndex];
 
-    if (this.displayMode$.value === "single") {
+    // Update the lead selector to match the current lead
+    const leadSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("lead-selector")
+    );
+    if (leadSelector) {
+      leadSelector.value = this.currentLead.toString();
+    }
+
+    if (this.displayMode === "single") {
+      // Clear both canvases and re-render for new lead
       this.clearWaveform();
       this.renderGridBackground();
     }
 
     if (wasPlaying) {
-      this.isPlaying$.next(true);
+      this.isPlaying = true;
+      this.startAnimationLoop();
     } else {
-      const timing = this.animationTime$.value;
-      if (timing.startTime && timing.pausedTime) {
-        const elapsedSeconds = (timing.pausedTime - timing.startTime) / 1000;
+      if (this.startTime && this.pausedTime) {
+        const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
         const cursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
         const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
@@ -1399,10 +1009,13 @@ const ECGPlayer = {
   switchToNextLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
 
-    const currentLead = this.currentLead$.value;
-    if (currentLead < this.ecgLeadDatasets.length - 1) {
-      const nextLead = currentLead + 1;
+    if (this.currentLead < this.ecgLeadDatasets.length - 1) {
+      const nextLead = this.currentLead + 1;
       this.switchLead(nextLead);
+
+      this.pushEventTo(this.targetComponent, "lead_changed", {
+        lead: nextLead,
+      });
     }
   },
 
@@ -1413,39 +1026,50 @@ const ECGPlayer = {
   switchToPrevLead() {
     if (!this.ecgLeadDatasets || this.ecgLeadDatasets.length === 0) return;
 
-    const currentLead = this.currentLead$.value;
-    if (currentLead > 0) {
-      const prevLead = currentLead - 1;
+    if (this.currentLead > 0) {
+      const prevLead = this.currentLead - 1;
       this.switchLead(prevLead);
+
+      this.pushEventTo(this.targetComponent, "lead_changed", {
+        lead: prevLead,
+      });
     }
   },
 
-  // =====================================
-  // ANIMATION & PLAYBACK
-  // =====================================
+  // =========================
+  // PLAYBACK & ANIMATION LOOP
+  // =========================
 
   /**
    * Toggles the playback state between playing and paused and notifies the server.
    * @returns {void}
    */
   togglePlayback() {
-    const newPlayingState = !this.isPlaying$.value;
-    this.isPlaying$.next(newPlayingState);
+    const newPlayingState = !this.isPlaying;
+    this.isPlaying = newPlayingState;
+
+    this.pushEventTo(this.targetComponent, "playback_changed", {
+      is_playing: newPlayingState,
+    });
 
     if (newPlayingState) {
       this.resumeAnimation();
     } else {
       this.pauseAnimation();
     }
+
+    this.updatePlayPauseButton();
   },
 
   handlePlaybackEnd() {
-    if (this.loopEnabled$.value) {
+    this.pushEventTo(this.targetComponent, "playback_ended", {});
+    if (this.loopEnabled) {
       this.resetPlayback();
       this.startAnimation();
     } else {
       this.stopAnimation();
       this.resetPlayback();
+      this.updatePlayPauseButton();
     }
   },
 
@@ -1453,91 +1077,90 @@ const ECGPlayer = {
     const elapsedTime =
       animationCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
 
-    // Process QRS detection
-    this.checkQrsOccurrences(elapsedTime);
-
-    // Load data based on display mode
-    if (this.displayMode$.value === "single") {
-      this.loadVisibleDataForSingleLead(elapsedTime);
-      this.renderSingleLeadFrame();
-    } else {
-      this.loadVisibleDataForAllLeads(elapsedTime);
-      this.renderMultiLeadFrame();
+    if (elapsedTime >= this.totalDuration) {
+      this.handlePlaybackEnd();
+      return;
     }
 
-    // Render QRS indicator if active
-    this.renderQrsIndicator();
-  },
+    this.checkQrsOccurrences(elapsedTime);
+    this.calculateCursorPosition(elapsedTime);
 
-  renderSingleLeadFrame() {
-    if (!this.activeCursorData || this.activeCursorData.times.length === 0)
-      return;
+    if (this.displayMode === "single") {
+      this.loadVisibleDataForSingleLead(elapsedTime);
+    } else {
+      this.loadVisibleDataForAllLeads(elapsedTime);
+    }
 
-    const cursorData = {
-      times: this.activeCursorData.times,
-      values: this.activeCursorData.values,
-      cursorPosition: this.cursorPosition$.value,
-      cursorWidth: SINGLE_LEAD_CURSOR_WIDTH,
-    };
+    if (this.displayMode === "single") {
+      if (!this.activeCursorData || this.activeCursorData.times.length === 0)
+        return;
 
-    this.renderLeadWaveform({
-      leadIndex: this.currentLead$.value,
-      leadData: null,
-      bounds: {
-        xOffset: 0,
-        yOffset: 0,
-        width: this.chartWidth,
-        height: CHART_HEIGHT * this.heightScale$.value,
-      },
-      timeSpan: this.widthSeconds,
-      cursorData,
-    });
-  },
-
-  renderMultiLeadFrame() {
-    if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0)
-      return;
-
-    for (const leadData of this.allLeadsCursorData) {
-      const { xOffset, yOffset, columnWidth } =
-        this.calculateLeadGridCoordinates(leadData.leadIndex);
-      const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
-      const columnProgress =
-        (this.cursorPosition$.value / this.chartWidth) *
-        (this.widthSeconds / columnTimeSpan);
-      const localCursorPosition = xOffset + (columnProgress % 1) * columnWidth;
-
+      const cursorClearWidth = SINGLE_LEAD_CURSOR_WIDTH;
       const cursorData = {
-        times: leadData.times,
-        values: leadData.values,
-        cursorPosition: localCursorPosition,
-        cursorWidth: MULTI_LEAD_CURSOR_WIDTH,
+        times: this.activeCursorData.times,
+        values: this.activeCursorData.values,
+        cursorPosition: this.cursorPosition,
+        cursorWidth: cursorClearWidth,
       };
 
       this.renderLeadWaveform({
-        leadIndex: leadData.leadIndex,
+        leadIndex: this.currentLead,
         leadData: null,
         bounds: {
-          xOffset,
-          yOffset,
-          width: columnWidth,
-          height: this.leadHeight,
+          xOffset: 0,
+          yOffset: 0,
+          width: this.chartWidth,
+          height: CHART_HEIGHT * this.heightScale,
         },
-        timeSpan: columnTimeSpan,
+        timeSpan: this.widthSeconds,
         cursorData,
       });
-    }
-  },
+    } else {
+      if (!this.allLeadsCursorData || this.allLeadsCursorData.length === 0)
+        return;
 
-  renderQrsIndicator() {
-    if (!this.qrsFlashActive$.value || !this.qrsFlashContext) return;
+      for (const leadData of this.allLeadsCursorData) {
+        const { xOffset, yOffset, columnWidth } =
+          this.calculateLeadGridCoordinates(leadData.leadIndex);
+
+        const columnTimeSpan = this.widthSeconds / COLUMNS_PER_DISPLAY;
+        const columnProgress =
+          (this.cursorPosition / this.chartWidth) *
+          (this.widthSeconds / columnTimeSpan);
+        const localCursorPosition =
+          xOffset + (columnProgress % 1) * columnWidth;
+
+        const cursorClearWidth = MULTI_LEAD_CURSOR_WIDTH;
+        const cursorData = {
+          times: leadData.times,
+          values: leadData.values,
+          cursorPosition: localCursorPosition,
+          cursorWidth: cursorClearWidth,
+        };
+
+        this.renderLeadWaveform({
+          leadIndex: leadData.leadIndex,
+          leadData: null,
+          bounds: {
+            xOffset,
+            yOffset,
+            width: columnWidth,
+            height: this.leadHeight,
+          },
+          timeSpan: columnTimeSpan,
+          cursorData,
+        });
+      }
+    }
+
+    if (!this.qrsFlashActive || !this.qrsFlashContext) return;
 
     const dotRadius = 5;
     const margin = 15;
     const dotX = this.chartWidth - margin;
     const dotY = margin;
 
-    this.qrsFlashContext.fillStyle = "#ff0000";
+    this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
     this.qrsFlashContext.beginPath();
     this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
     this.qrsFlashContext.fill();
@@ -1548,6 +1171,10 @@ const ECGPlayer = {
    * @param {number} elapsedTime - The total time elapsed since playback started.
    * @returns {void}
    */
+  calculateCursorPosition(elapsedTime) {
+    this.cursorPosition = (elapsedTime * this.chartWidth) / this.widthSeconds;
+    this.cursorPosition = this.cursorPosition % this.chartWidth;
+  },
 
   /**
    * Prepares the waveform data for the single-lead view.
@@ -1559,14 +1186,16 @@ const ECGPlayer = {
     const currentScreenStartTime =
       Math.floor(elapsedTime / this.widthSeconds) * this.widthSeconds;
 
+    // Use pre-computed segments instead of real-time slicing
     const segments = this.getSegmentsForTimeRange(
-      this.currentLead$.value,
+      this.currentLead,
       currentScreenStartTime,
       elapsedTime
     );
     this.activeSegments = segments;
 
     if (segments.length > 0) {
+      // Combine segments into cursor data
       const times = [];
       const values = [];
 
@@ -1608,6 +1237,7 @@ const ECGPlayer = {
       leadIndex < this.ecgLeadDatasets.length;
       leadIndex++
     ) {
+      // Use pre-computed segments instead of real-time slicing
       const segments = this.getSegmentsForTimeRange(
         leadIndex,
         columnCycleStart,
@@ -1618,6 +1248,7 @@ const ECGPlayer = {
       }
 
       if (segments.length > 0) {
+        // Combine segments into cursor data
         const times = [];
         const values = [];
 
@@ -1643,26 +1274,50 @@ const ECGPlayer = {
     }
   },
 
+  // ==================
+  // QRS DETECTION & UI
+  // ==================
+
   checkQrsOccurrences(elapsedTime) {
     if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) {
       return;
     }
 
+    // Find QRS events that have occurred since the last check
     for (let i = this.lastQrsIndex + 1; i < this.qrsTimestamps.length; i++) {
       const qrsTime = this.qrsTimestamps[i];
 
       if (qrsTime <= elapsedTime) {
         this.qrsDetectedCount++;
 
-        if (this.qrsDetectionSubject$) {
-          this.qrsDetectionSubject$.next(qrsTime);
+        if (this.qrsIndicatorEnabled) {
+          this.triggerQrsFlash();
         }
 
         this.lastQrsIndex = i;
       } else {
+        // Since QRS timestamps are sorted, we can break early
         break;
       }
     }
+  },
+
+  triggerQrsFlash() {
+    // Clear any existing timeout
+    if (this.qrsFlashTimeout) {
+      clearTimeout(this.qrsFlashTimeout);
+    }
+
+    // Activate the flash
+    this.qrsFlashActive = true;
+
+    // Set timeout to deactivate the flash and clear the dot
+    this.qrsFlashTimeout = setTimeout(() => {
+      this.qrsFlashActive = false;
+      this.qrsFlashTimeout = null;
+      // Clear the flash dot area
+      this.clearQrsFlashArea();
+    }, this.qrsFlashDuration);
   },
 
   clearQrsFlashArea() {
@@ -1671,6 +1326,7 @@ const ECGPlayer = {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.qrsFlashCanvas.height / devicePixelRatio;
 
+    // Clear the entire QRS flash canvas
     this.qrsFlashContext.clearRect(0, 0, this.chartWidth, canvasHeight);
   },
 
@@ -1679,13 +1335,15 @@ const ECGPlayer = {
    * @returns {void}
    */
   startAnimation() {
-    this.isPlaying$.next(true);
-    const startTime = Date.now();
-    this.animationTime$.next({ startTime, pausedTime: 0 });
-    this.animationCycle$.next(0);
-    this.cursorPosition$.next(0);
+    this.isPlaying = true;
+    this.startTime = Date.now();
+    this.pausedTime = 0;
+    this.animationCycle = 0;
+    this.cursorPosition = 0;
 
     this.allLeadsVisibleData = null;
+
+    this.startAnimationLoop();
   },
 
   /**
@@ -1693,14 +1351,13 @@ const ECGPlayer = {
    * @returns {void}
    */
   resumeAnimation() {
-    const currentTime = this.animationTime$.value;
-    if (!currentTime.startTime) {
+    if (!this.startTime) {
       this.startAnimation();
     } else {
-      const pauseDuration = Date.now() - currentTime.pausedTime;
-      const newStartTime = currentTime.startTime + pauseDuration;
-      this.animationTime$.next({ startTime: newStartTime, pausedTime: 0 });
-      this.isPlaying$.next(true);
+      const pauseDuration = Date.now() - this.pausedTime;
+      this.startTime += pauseDuration;
+      this.pausedTime = 0;
+      this.startAnimationLoop();
     }
   },
 
@@ -1709,12 +1366,11 @@ const ECGPlayer = {
    * @returns {void}
    */
   pauseAnimation() {
-    const pausedTime = Date.now();
-    const currentTime = this.animationTime$.value;
-    this.animationTime$.next({ startTime: currentTime.startTime, pausedTime });
-    this.isPlaying$.next(false);
+    this.pausedTime = Date.now();
+    this.stopAnimation();
 
-    const elapsedSeconds = (pausedTime - currentTime.startTime) / 1000;
+    // Render the final frame when paused
+    const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
     const cursorProgress =
       (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
     const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
@@ -1722,11 +1378,15 @@ const ECGPlayer = {
   },
 
   /**
-   * Stops the animation by setting isPlaying to false.
+   * Stops the `requestAnimationFrame` loop.
    * @returns {void}
    */
   stopAnimation() {
-    this.isPlaying$.next(false);
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    this.isPlaying = false;
   },
 
   /**
@@ -1735,13 +1395,24 @@ const ECGPlayer = {
    */
   resetPlayback() {
     this.stopAnimation();
-    this.animationTime$.next({ startTime: null, pausedTime: 0 });
-    this.animationCycle$.next(0);
-    this.cursorPosition$.next(0);
+    this.startTime = null;
+    this.pausedTime = 0;
+    this.animationCycle = 0;
+    this.cursorPosition = 0;
+
     this.allLeadsVisibleData = null;
+
+    // Reset QRS tracking
     this.lastQrsIndex = -1;
     this.qrsDetectedCount = 0;
-    this.qrsFlashActive$.next(false);
+
+    // Reset QRS flash state
+    if (this.qrsFlashTimeout) {
+      clearTimeout(this.qrsFlashTimeout);
+      this.qrsFlashTimeout = null;
+    }
+    this.qrsFlashActive = false;
+
     this.clearWaveform();
   },
 
@@ -1752,20 +1423,36 @@ const ECGPlayer = {
   updatePlayPauseButton() {
     const button = document.getElementById("play-pause-button");
     if (button) {
-      const isPlaying = this.isPlaying$.value;
-      const iconClass = isPlaying ? "hero-pause" : "hero-play";
+      // Update icon
+      const iconClass = this.isPlaying ? "hero-pause" : "hero-play";
       const iconHtml = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24">
         ${
-          isPlaying
+          this.isPlaying
             ? '<path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />'
             : '<path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />'
         }
       </svg>`;
 
-      const buttonText = isPlaying ? "Pause" : "Play";
+      // Update text
+      const buttonText = this.isPlaying ? "Pause" : "Play";
       const textHtml = `<span class="ml-1">${buttonText}</span>`;
 
+      // Replace button content with icon + text
       button.innerHTML = iconHtml + textHtml;
+    }
+  },
+
+  /**
+   * Sets up the play/pause button click handler.
+   * @returns {void}
+   */
+  setupPlayPauseButton() {
+    const button = document.getElementById("play-pause-button");
+    if (button && !button.dataset.listenerAdded) {
+      button.addEventListener("click", () => {
+        this.togglePlayback();
+      });
+      button.dataset.listenerAdded = "true";
     }
   },
 
@@ -1774,6 +1461,214 @@ const ECGPlayer = {
    * @returns {void}
    */
   // Helper to setup event listener with duplicate prevention
+  /**
+   * @param {string} elementId
+   * @param {string} eventType
+   * @param {EventListener} handler
+   * @param {((element: HTMLElement) => void) | null} [initializer]
+   */
+  setupElementListener(elementId, eventType, handler, initializer = null) {
+    const element = document.getElementById(elementId);
+    if (element && !element.dataset.listenerAdded) {
+      if (initializer) initializer(element);
+      element.addEventListener(eventType, handler);
+      element.dataset.listenerAdded = "true";
+    }
+  },
+
+  setupBasicSelectors() {
+    this.setupElementListener("lead-selector", "change", (e) => {
+      const leadIndex = parseInt(
+        /** @type {HTMLSelectElement} */ (e.target).value
+      );
+      this.currentLead = leadIndex;
+      this.switchLead(leadIndex);
+    });
+
+    this.setupElementListener("display-mode-selector", "change", (e) => {
+      const value = /** @type {HTMLSelectElement} */ (e.target).value;
+      this.displayMode = value;
+      this.cursorWidth =
+        value === "single" ? SINGLE_LEAD_CURSOR_WIDTH : MULTI_LEAD_CURSOR_WIDTH;
+      this.recreateCanvasAndRestart();
+      this.updateCursorStyle();
+      this.updateLeadSelectorVisibility(value);
+    });
+
+    this.setupElementListener("grid-type-selector", "change", (e) => {
+      const value = /** @type {HTMLSelectElement} */ (e.target).value;
+      this.gridType = value;
+      this.renderGridBackground();
+    });
+  },
+
+  setupCheckboxes() {
+    this.setupElementListener(
+      "loop-checkbox",
+      "change",
+      (event) => {
+        this.loopEnabled = /** @type {HTMLInputElement} */ (
+          event.target
+        ).checked;
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).checked = this.loopEnabled;
+      }
+    );
+
+    this.setupElementListener(
+      "qrs-indicator-checkbox",
+      "change",
+      (event) => {
+        this.qrsIndicatorEnabled = /** @type {HTMLInputElement} */ (
+          event.target
+        ).checked;
+        if (!this.qrsIndicatorEnabled && this.qrsFlashActive) {
+          this.qrsFlashActive = false;
+          if (this.qrsFlashTimeout) {
+            clearTimeout(this.qrsFlashTimeout);
+            this.qrsFlashTimeout = null;
+          }
+          this.clearQrsFlashArea();
+        }
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).checked =
+          this.qrsIndicatorEnabled;
+      }
+    );
+  },
+
+  setupScaleSliders() {
+    this.setupElementListener(
+      "grid-scale-slider",
+      "input",
+      (event) => {
+        this.gridScale = parseFloat(
+          /** @type {HTMLInputElement} */ (event.target).value
+        );
+        this.updateGridScaleDisplay();
+        this.handleGridScaleChange();
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).value =
+          this.gridScale.toString();
+        this.updateGridScaleDisplay();
+      }
+    );
+
+    this.setupElementListener(
+      "amplitude-scale-slider",
+      "input",
+      (event) => {
+        this.amplitudeScale = parseFloat(
+          /** @type {HTMLInputElement} */ (event.target).value
+        );
+        this.updateAmplitudeScaleDisplay();
+        this.handleAmplitudeScaleChange();
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).value =
+          this.amplitudeScale.toString();
+        this.updateAmplitudeScaleDisplay();
+      }
+    );
+
+    this.setupElementListener(
+      "height-scale-slider",
+      "input",
+      (event) => {
+        this.heightScale = parseFloat(
+          /** @type {HTMLInputElement} */ (event.target).value
+        );
+        this.leadHeight = CHART_HEIGHT * this.heightScale;
+        this.updateHeightScaleDisplay();
+        this.handleHeightScaleChange();
+      },
+      (element) => {
+        /** @type {HTMLInputElement} */ (element).value =
+          this.heightScale.toString();
+        this.updateHeightScaleDisplay();
+      }
+    );
+  },
+
+  setupSelectors() {
+    this.setupBasicSelectors();
+    this.setupCheckboxes();
+    this.setupScaleSliders();
+
+    // Sync all form elements with current state
+    this.syncFormElementsWithState();
+  },
+
+  /**
+   * Synchronizes all form elements with the current JavaScript state
+   * @returns {void}
+   */
+  syncFormElementsWithState() {
+    // Update selectors
+    const leadSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("lead-selector")
+    );
+    if (leadSelector) {
+      leadSelector.value = this.currentLead.toString();
+    }
+
+    const displayModeSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("display-mode-selector")
+    );
+    if (displayModeSelector) {
+      displayModeSelector.value = this.displayMode;
+    }
+
+    const gridTypeSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("grid-type-selector")
+    );
+    if (gridTypeSelector) {
+      gridTypeSelector.value = this.gridType;
+    }
+
+    // Update checkboxes
+    const loopCheckbox = /** @type {HTMLInputElement} */ (
+      document.getElementById("loop-checkbox")
+    );
+    if (loopCheckbox) {
+      loopCheckbox.checked = this.loopEnabled;
+    }
+
+    const qrsCheckbox = /** @type {HTMLInputElement} */ (
+      document.getElementById("qrs-indicator-checkbox")
+    );
+    if (qrsCheckbox) {
+      qrsCheckbox.checked = this.qrsIndicatorEnabled;
+    }
+
+    // Update sliders
+    const gridScaleSlider = /** @type {HTMLInputElement} */ (
+      document.getElementById("grid-scale-slider")
+    );
+    if (gridScaleSlider) {
+      gridScaleSlider.value = this.gridScale.toString();
+      this.updateGridScaleDisplay();
+    }
+
+    const amplitudeScaleSlider = /** @type {HTMLInputElement} */ (
+      document.getElementById("amplitude-scale-slider")
+    );
+    if (amplitudeScaleSlider) {
+      amplitudeScaleSlider.value = this.amplitudeScale.toString();
+      this.updateAmplitudeScaleDisplay();
+    }
+
+    const heightScaleSlider = /** @type {HTMLInputElement} */ (
+      document.getElementById("height-scale-slider")
+    );
+    if (heightScaleSlider) {
+      heightScaleSlider.value = this.heightScale.toString();
+      this.updateHeightScaleDisplay();
+    }
+  },
 
   /**
    * Shows or hides the lead selector based on display mode.
@@ -1798,9 +1693,45 @@ const ECGPlayer = {
    * @returns {void}
    */
 
-  // =====================================
-  // GRID RENDERING
-  // =====================================
+  /**
+   * The main animation driver. It uses `requestAnimationFrame` to repeatedly
+   * call itself, creating a smooth animation loop that is synchronized with
+   * the browser's rendering cycle.
+   * @returns {void}
+   */
+  startAnimationLoop() {
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+
+    const animate = () => {
+      if (!this.isPlaying || !this.waveformCanvas) {
+        this.stopAnimation();
+        return;
+      }
+
+      const currentTime = Date.now();
+      const elapsedSeconds = (currentTime - this.startTime) / 1000;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+
+      if (animationCycle !== this.animationCycle) {
+        this.animationCycle = animationCycle;
+      }
+
+      this.processAnimationFrame(cursorProgress, animationCycle);
+
+      this.animationId = requestAnimationFrame(animate);
+    };
+
+    this.animationId = requestAnimationFrame(animate);
+  },
+
+  // =================
+  // RENDERING - GRID
+  // =================
 
   /**
    * Draws the grid for a single lead, dispatching to either the graph paper or telemetry grid style.
@@ -1864,30 +1795,9 @@ const ECGPlayer = {
       bounds: { xOffset, yOffset, width, height },
       context = this.waveformContext,
     } = options;
+    const smallSquareSize = PIXELS_PER_MM * this.gridScale;
+    const largeSquareSize = 5 * PIXELS_PER_MM * this.gridScale;
 
-    // Use derived grid dimensions
-    this.gridDimensions$.pipe(take(1)).subscribe((dimensions) => {
-      this.renderMedicalGridLines(
-        context,
-        xOffset,
-        yOffset,
-        width,
-        height,
-        dimensions.smallSquareSize,
-        dimensions.largeSquareSize
-      );
-    });
-  },
-
-  renderMedicalGridLines(
-    context,
-    xOffset,
-    yOffset,
-    width,
-    height,
-    smallSquareSize,
-    largeSquareSize
-  ) {
     context.strokeStyle = this.colors.gridFine;
     context.lineWidth = 0.5;
     context.beginPath();
@@ -1949,21 +1859,7 @@ const ECGPlayer = {
       bounds: { xOffset, yOffset, width, height },
       context = this.waveformContext,
     } = options;
-
-    // Use derived grid dimensions
-    this.gridDimensions$.pipe(take(1)).subscribe(({ dotSpacing }) => {
-      this.renderSimpleGridDots(
-        context,
-        xOffset,
-        yOffset,
-        width,
-        height,
-        dotSpacing
-      );
-    });
-  },
-
-  renderSimpleGridDots(context, xOffset, yOffset, width, height, dotSpacing) {
+    const dotSpacing = 5 * PIXELS_PER_MM * this.gridScale;
     context.fillStyle = this.colors.gridDots;
 
     for (let x = xOffset + 5; x < xOffset + width - 5; x += dotSpacing) {
@@ -1975,9 +1871,9 @@ const ECGPlayer = {
     }
   },
 
-  // =====================================
-  // WAVEFORM RENDERING
-  // =====================================
+  // =====================
+  // RENDERING - WAVEFORM
+  // =====================
 
   /**
    * Clears the entire foreground (waveform) canvas.
@@ -1986,6 +1882,7 @@ const ECGPlayer = {
   clearWaveform() {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
+    // Only clear waveform canvas, background grid persists
     this.waveformContext.clearRect(0, 0, this.chartWidth, canvasHeight);
   },
 
@@ -1994,6 +1891,10 @@ const ECGPlayer = {
    * It dispatches to the correct drawing function based on the display mode (single vs multi-lead).
    * @returns {void}
    */
+
+  // ==============================
+  // RENDERING - CANVAS OPERATIONS
+  // ==============================
 
   /**
    * Sets up canvas context for waveform drawing.
@@ -2035,6 +1936,7 @@ const ECGPlayer = {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
 
+    // Only clear the waveform canvas, background grid remains untouched
     this.waveformContext.clearRect(x, 0, width, canvasHeight);
   },
 
@@ -2125,6 +2027,10 @@ const ECGPlayer = {
    * @returns {void}
    */
 
+  // ============================
+  // RENDERING - LEAD COMPONENTS
+  // ============================
+
   /**
    * Renders the background for a single lead, including its grid and label.
    * This is drawn to the static background canvas for performance.
@@ -2175,6 +2081,9 @@ const ECGPlayer = {
       cursorData = null,
     } = options;
 
+    // Background is already rendered on the background canvas
+    // Only draw waveform data on the foreground canvas
+
     if (cursorData) {
       this.drawWaveformToCursor({
         times: cursorData.times,
@@ -2208,9 +2117,11 @@ const ECGPlayer = {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.backgroundCanvas.height / devicePixelRatio;
 
+    // Clear and render to background canvas only
     this.backgroundContext.clearRect(0, 0, this.chartWidth, canvasHeight);
 
-    if (this.displayMode$.value === "multi" && this.leadNames) {
+    // Render grid directly to background context
+    if (this.displayMode === "multi" && this.leadNames) {
       for (let i = 0; i < this.leadNames.length; i++) {
         const { xOffset, yOffset, columnWidth } =
           this.calculateLeadGridCoordinates(i);
@@ -2225,11 +2136,11 @@ const ECGPlayer = {
       }
     } else if (this.leadNames) {
       this.renderLeadBackground(
-        this.currentLead$.value,
+        this.currentLead,
         0,
         0,
         this.chartWidth,
-        CHART_HEIGHT * this.heightScale$.value,
+        CHART_HEIGHT * this.heightScale,
         this.backgroundContext
       );
     }
