@@ -54,10 +54,6 @@ defmodule AstrupWeb.ECGViewerLive do
             settings={@settings}
           >
             <:actions>
-              <.button phx-click="load_random_ecg" class="btn btn-primary" id="load-random-ecg-button">
-                <.icon class="h-5 w-5" name="hero-arrow-path" /> Load Random ECG
-              </.button>
-
               <.button
                 phx-click={if @ecg_saved, do: "unsave_ecg", else: "save_ecg"}
                 class="btn btn-square"
