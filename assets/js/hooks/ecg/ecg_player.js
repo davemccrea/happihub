@@ -53,6 +53,10 @@ const ECGPlayer = {
     this.setupLiveViewListeners();
   },
 
+  /**
+   * Sets up the window resize event listener.
+   * @returns {void}
+   */
   setupResizeListener() {
     this.resizeHandler = () => {
       this.calculateMedicallyAccurateDimensions();
@@ -61,6 +65,10 @@ const ECGPlayer = {
     window.addEventListener("resize", this.resizeHandler);
   },
 
+  /**
+   * Sets up the theme change observer using MutationObserver.
+   * @returns {void}
+   */
   setupThemeListener() {
     this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -78,6 +86,10 @@ const ECGPlayer = {
     });
   },
 
+  /**
+   * Handles theme changes by updating colors and re-rendering.
+   * @returns {void}
+   */
   handleThemeChange() {
     this.updateThemeColors();
     this.renderGridBackground();
@@ -91,6 +103,10 @@ const ECGPlayer = {
     }
   },
 
+  /**
+   * Sets up keyboard event listeners for playback controls and lead switching.
+   * @returns {void}
+   */
   setupKeyboardListeners() {
     this.keydownHandler = (event) => {
       // Only handle shortcuts if not typing in an input field
@@ -124,16 +140,28 @@ const ECGPlayer = {
     document.addEventListener("keydown", this.keydownHandler);
   },
 
+  /**
+   * Sets up LiveView event listeners for ECG data loading.
+   * @returns {void}
+   */
   setupLiveViewListeners() {
     this.handleEvent("load_ecg_data", (payload) => {
       this.handleECGDataLoaded(payload);
     });
   },
 
+  /**
+   * Phoenix LiveView hook lifecycle method called when the component is destroyed.
+   * @returns {void}
+   */
   destroyed() {
     this.cleanup();
   },
 
+  /**
+   * Performs cleanup of resources, event listeners, and memory references.
+   * @returns {void}
+   */
   cleanup() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
@@ -204,406 +232,6 @@ const ECGPlayer = {
     this.waveformContext = null;
     this.qrsFlashCanvas = null;
     this.qrsFlashContext = null;
-  },
-
-  /**
-   * Initializes all form-controlled values with proper defaults
-   * @returns {void}
-   */
-  initializeFormValues() {
-    // Display and playback settings
-    this.gridType = this.readFormValue("grid_type") || "telemetry";
-    this.displayMode = this.readFormValue("display_mode") || "single";
-    this.currentLead = parseInt(this.readFormValue("current_lead") || "0");
-
-    // Playback options
-    this.loopEnabled = this.readFormCheckbox("loop_playback");
-    this.qrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
-
-    // Scale settings
-    this.gridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
-    this.amplitudeScale = parseFloat(
-      this.readFormValue("amplitude_scale") || "1.0"
-    );
-    this.heightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
-
-    // Update cursor width based on display mode
-    this.cursorWidth =
-      this.displayMode === "single"
-        ? SINGLE_LEAD_CURSOR_WIDTH
-        : MULTI_LEAD_CURSOR_WIDTH;
-  },
-
-  // =================
-  // UTILITY FUNCTIONS
-  // =================
-
-  /**
-   * Reads a form field value by name
-   * @param {string} fieldName - The name of the form field to read
-   * @returns {string|null} The field value or null if not found
-   */
-  readFormValue(fieldName) {
-    const input = /** @type {HTMLInputElement | HTMLSelectElement | null} */ (
-      document.querySelector(
-        `input[name="settings[${fieldName}]"], select[name="settings[${fieldName}]"]`
-      )
-    );
-    return input ? input.value : null;
-  },
-
-  /**
-   * Reads a checkbox form field value by name
-   * @param {string} fieldName - The name of the checkbox field to read
-   * @returns {boolean} The checkbox state
-   */
-  readFormCheckbox(fieldName) {
-    const input = /** @type {HTMLInputElement | null} */ (
-      document.querySelector(
-        `input[name="settings[${fieldName}]"][type="checkbox"]`
-      )
-    );
-    return input ? input.checked : false;
-  },
-
-  // Common utility for preserving canvas state during operations
-  withCanvasStatePreservation(operation) {
-    const wasPlaying = this.isPlaying;
-    if (wasPlaying) this.stopAnimation();
-
-    operation();
-
-    if (!wasPlaying && this.startTime && this.pausedTime) {
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.processAnimationFrame(cursorProgress, animationCycle);
-    }
-
-    if (wasPlaying) {
-      this.isPlaying = true;
-      this.startAnimationLoop();
-    }
-  },
-
-  /**
-   * Recreates canvas and restarts animation if it was playing
-   * @returns {void}
-   */
-  recreateCanvasAndRestart() {
-    this.withCanvasStatePreservation(() => {
-      this.recreateCanvas();
-      this.renderGridBackground();
-    });
-  },
-
-  /**
-   * Updates the display mode selector in the DOM
-   * @param {string} mode - The display mode ("single" or "multi")
-   * @returns {void}
-   */
-  updateDisplayModeSelector(mode) {
-    const displayModeSelector = /** @type {HTMLSelectElement} */ (
-      document.getElementById("display-mode-selector")
-    );
-    if (displayModeSelector) {
-      displayModeSelector.value = mode;
-    }
-  },
-
-  calculateDataIndexForTime(leadData, targetTime) {
-    if (!leadData || !leadData.times || leadData.times.length === 0) {
-      console.warn("Invalid lead data provided to calculateDataIndexForTime");
-      return 0;
-    }
-
-    if (typeof targetTime !== "number" || targetTime < 0) {
-      console.warn(`Invalid target time: ${targetTime}`);
-      return 0;
-    }
-
-    if (!this.samplingRate || this.samplingRate <= 0) {
-      console.warn(`Invalid sampling rate: ${this.samplingRate}`);
-      return 0;
-    }
-
-    // With a constant sampling rate, we can calculate the index directly.
-    const estimatedIndex = Math.round(targetTime * this.samplingRate);
-    return Math.min(estimatedIndex, leadData.times.length - 1);
-  },
-
-  transformCoordinates(options) {
-    if (!options || !options.times || !options.values || !options.bounds) {
-      console.warn("Invalid options provided to transformCoordinates");
-      return [];
-    }
-
-    const {
-      times,
-      values,
-      bounds: { xOffset, yOffset, width, height },
-      timeSpan,
-    } = options;
-
-    if (times.length !== values.length) {
-      console.warn("Times and values arrays must have the same length");
-      return [];
-    }
-
-    if (timeSpan <= 0 || width <= 0 || height <= 0) {
-      console.warn("Invalid dimensions provided to transformCoordinates");
-      return [];
-    }
-
-    const xScale = width / timeSpan;
-    const yScale = height / (this.yMax - this.yMin);
-
-    const coordinates = [];
-    for (let i = 0; i < times.length; i++) {
-      const x = xOffset + times[i] * xScale;
-      // Apply amplitude scale to the voltage values
-      const scaledValue = values[i] * this.amplitudeScale;
-      const y = yOffset + height - (scaledValue - this.yMin) * yScale;
-      coordinates.push({ x, y });
-    }
-
-    return coordinates;
-  },
-
-  // ===================
-  // SCALE & UI CONTROLS
-  // ===================
-
-  handleGridScaleChange() {
-    this.withCanvasStatePreservation(() => {
-      this.calculateMedicallyAccurateDimensions();
-      this.recreateCanvas();
-      this.renderGridBackground();
-      this.clearWaveform();
-    });
-  },
-
-  handleAmplitudeScaleChange() {
-    this.withCanvasStatePreservation(() => {
-      this.clearWaveform();
-    });
-  },
-
-  handleHeightScaleChange() {
-    this.withCanvasStatePreservation(() => {
-      this.recreateCanvas();
-      this.renderGridBackground();
-      this.clearWaveform();
-    });
-  },
-
-  updateGridScaleDisplay() {
-    const gridScaleValue = document.getElementById("grid-scale-value");
-    const gridScaleSpeed = document.getElementById("grid-scale-speed");
-
-    if (gridScaleValue) {
-      gridScaleValue.textContent = `${this.gridScale.toFixed(2)}x`;
-    }
-
-    if (gridScaleSpeed) {
-      const actualSpeed = (MM_PER_SECOND * this.gridScale).toFixed(1);
-      gridScaleSpeed.textContent = `${actualSpeed} mm/s`;
-    }
-  },
-
-  updateAmplitudeScaleDisplay() {
-    const amplitudeScaleValue = document.getElementById(
-      "amplitude-scale-value"
-    );
-    const amplitudeScaleGain = document.getElementById("amplitude-scale-gain");
-
-    if (amplitudeScaleValue) {
-      amplitudeScaleValue.textContent = `${this.amplitudeScale.toFixed(2)}x`;
-    }
-
-    if (amplitudeScaleGain) {
-      const actualGain = (MM_PER_MILLIVOLT * this.amplitudeScale).toFixed(1);
-      amplitudeScaleGain.textContent = `${actualGain} mm/mV`;
-    }
-  },
-
-  updateHeightScaleDisplay() {
-    const heightScaleValue = document.getElementById("height-scale-value");
-    const heightScalePixels = document.getElementById("height-scale-pixels");
-
-    if (heightScaleValue) {
-      heightScaleValue.textContent = `${this.heightScale.toFixed(2)}x`;
-    }
-
-    if (heightScalePixels) {
-      const actualHeight = Math.round(CHART_HEIGHT * this.heightScale);
-      heightScalePixels.textContent = `${actualHeight}px`;
-    }
-  },
-
-  // ============================
-  // DISPLAY MODE & LEAD SWITCHING
-  // ============================
-
-  /**
-   * Updates the cursor style based on the current display mode.
-   * @returns {void}
-   */
-  updateCursorStyle() {
-    if (this.backgroundCanvas) {
-      if (this.displayMode === "single") {
-        // Single lead mode: show zoom-out cursor (click to show all leads)
-        this.backgroundCanvas.style.cursor = "zoom-out";
-      } else {
-        // Multi lead mode: show zoom-in cursor (click to zoom into a specific lead)
-        this.backgroundCanvas.style.cursor = "zoom-in";
-      }
-    }
-  },
-
-  /**
-   * Sets up click event handler for canvas to allow lead selection in multi-lead mode.
-   * @returns {void}
-   */
-  setupCanvasClickHandler() {
-    if (this.canvasClickHandler) {
-      this.backgroundCanvas.removeEventListener(
-        "click",
-        this.canvasClickHandler
-      );
-    }
-
-    this.canvasClickHandler = (event) => {
-      const rect = this.backgroundCanvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      if (this.displayMode === "multi") {
-        const clickedLeadIndex = this.getLeadIndexFromClick(x, y);
-        if (clickedLeadIndex !== null) {
-          // TODO
-          this.displayMode = "single";
-          this.updateDisplayModeSelector("single");
-          this.switchLead(clickedLeadIndex);
-          this.updateLeadSelectorVisibility("single");
-          this.recreateCanvasAndRestart();
-          this.updateCursorStyle();
-        }
-      } else if (this.displayMode === "single") {
-        // In single lead mode, any click on the grid switches to multi-lead mode
-        this.displayMode = "multi";
-        this.updateDisplayModeSelector("multi");
-        this.updateLeadSelectorVisibility("multi");
-        this.recreateCanvasAndRestart();
-        this.updateCursorStyle();
-      }
-    };
-
-    this.backgroundCanvas.addEventListener("click", this.canvasClickHandler);
-  },
-
-  /**
-   * Determines which lead was clicked based on click coordinates.
-   * @param {number} x - The x coordinate of the click.
-   * @param {number} y - The y coordinate of the click.
-   * @returns {number|null} The index of the clicked lead, or null if no lead was clicked.
-   */
-  getLeadIndexFromClick(x, y) {
-    if (!this.leadNames || this.displayMode !== "multi") {
-      return null;
-    }
-
-    for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
-      const { xOffset, yOffset, columnWidth } =
-        this.calculateLeadGridCoordinates(leadIndex);
-
-      // Check if click is within this lead's bounds
-      if (
-        x >= xOffset &&
-        x <= xOffset + columnWidth &&
-        y >= yOffset &&
-        y <= yOffset + this.leadHeight
-      ) {
-        return leadIndex;
-      }
-    }
-
-    return null;
-  },
-
-  /**
-   * Switches from multi-lead mode to single-lead mode with the specified lead.
-   * @param {number} leadIndex - The index of the lead to switch to.
-   * @returns {void}
-   */
-
-  // =========================
-  // LEAD POSITIONING & LAYOUT
-  // =========================
-
-  /**
-   * Determines the grid column and row for a given lead index in multi-lead view.
-   * @param {number} leadIndex - The index of the ECG lead.
-   * @returns {{column: number, row: number}} The grid position.
-   */
-  getLeadColumnAndRow(leadIndex) {
-    const leadPositions = [
-      { column: 0, row: 0 },
-      { column: 0, row: 1 },
-      { column: 0, row: 2 },
-      { column: 1, row: 0 },
-      { column: 1, row: 1 },
-      { column: 1, row: 2 },
-      { column: 2, row: 0 },
-      { column: 2, row: 1 },
-      { column: 2, row: 2 },
-      { column: 3, row: 0 },
-      { column: 3, row: 1 },
-      { column: 3, row: 2 },
-    ];
-
-    return leadPositions[leadIndex] || { column: 0, row: 0 };
-  },
-
-  /**
-   * Calculates the pixel offset and width for a lead in the multi-lead display grid.
-   * @param {number} leadIndex - The index of the ECG lead.
-   * @returns {{xOffset: number, yOffset: number, columnWidth: number}} The position and width for the lead.
-   */
-  calculateLeadGridCoordinates(leadIndex) {
-    const { column, row } = this.getLeadColumnAndRow(leadIndex);
-    const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
-    const columnWidth =
-      (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
-
-    const xOffset = column * (columnWidth + COLUMN_PADDING);
-    const yOffset = row * (this.leadHeight + ROW_PADDING);
-
-    return { xOffset, yOffset, columnWidth };
-  },
-
-  // =============================
-  // THEME & VISUAL CONFIGURATION
-  // =============================
-
-  /**
-   * Reads the current `data-theme` from the HTML element and updates the color palette
-   * for the grid, waveform, and labels.
-   * @returns {void}
-   */
-  updateThemeColors() {
-    const theme =
-      document.documentElement.getAttribute("data-theme") || "light";
-    const isDark = theme === "dark";
-
-    this.colors = {
-      waveform: isDark ? "#ffffff" : "#000000",
-      gridFine: isDark ? "#660000" : "#ff9999",
-      gridBold: isDark ? "#990000" : "#ff6666",
-      gridDots: isDark ? "#666666" : "#999999",
-      labels: isDark ? "#ffffff" : "#333333",
-    };
   },
 
   // ========================
@@ -716,6 +344,338 @@ const ECGPlayer = {
     } catch (error) {
       console.error("Error processing ECG data:", error);
     }
+  },
+
+  /**
+   * Initializes all form-controlled values with proper defaults
+   * @returns {void}
+   */
+  initializeFormValues() {
+    // Display and playback settings
+    this.gridType = this.readFormValue("grid_type") || "telemetry";
+    this.displayMode = this.readFormValue("display_mode") || "single";
+    this.currentLead = parseInt(this.readFormValue("current_lead") || "0");
+
+    // Playback options
+    this.loopEnabled = this.readFormCheckbox("loop_playback");
+    this.qrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
+
+    // Scale settings
+    this.gridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
+    this.amplitudeScale = parseFloat(
+      this.readFormValue("amplitude_scale") || "1.0"
+    );
+    this.heightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
+
+    // Update cursor width based on display mode
+    this.cursorWidth =
+      this.displayMode === "single"
+        ? SINGLE_LEAD_CURSOR_WIDTH
+        : MULTI_LEAD_CURSOR_WIDTH;
+  },
+
+  // ===================
+  // SCALE & UI CONTROLS
+  // ===================
+
+  /**
+   * Handles grid scale changes by updating dimensions and re-rendering.
+   * @returns {void}
+   */
+  handleGridScaleChange() {
+    this.withCanvasStatePreservation(() => {
+      this.calculateMedicallyAccurateDimensions();
+      this.recreateCanvas();
+      this.renderGridBackground();
+      this.clearWaveform();
+    });
+  },
+
+  /**
+   * Handles amplitude scale changes by clearing and re-rendering the waveform.
+   * @returns {void}
+   */
+  handleAmplitudeScaleChange() {
+    this.withCanvasStatePreservation(() => {
+      this.clearWaveform();
+    });
+  },
+
+  /**
+   * Handles height scale changes by recreating canvas and re-rendering.
+   * @returns {void}
+   */
+  handleHeightScaleChange() {
+    this.withCanvasStatePreservation(() => {
+      this.recreateCanvas();
+      this.renderGridBackground();
+      this.clearWaveform();
+    });
+  },
+
+  /**
+   * Updates the grid scale display elements with current values.
+   * @returns {void}
+   */
+  updateGridScaleDisplay() {
+    const gridScaleValue = document.getElementById("grid-scale-value");
+    const gridScaleSpeed = document.getElementById("grid-scale-speed");
+
+    if (gridScaleValue) {
+      gridScaleValue.textContent = `${this.gridScale.toFixed(2)}x`;
+    }
+
+    if (gridScaleSpeed) {
+      const actualSpeed = (MM_PER_SECOND * this.gridScale).toFixed(1);
+      gridScaleSpeed.textContent = `${actualSpeed} mm/s`;
+    }
+  },
+
+  /**
+   * Updates the amplitude scale display elements with current values.
+   * @returns {void}
+   */
+  updateAmplitudeScaleDisplay() {
+    const amplitudeScaleValue = document.getElementById(
+      "amplitude-scale-value"
+    );
+    const amplitudeScaleGain = document.getElementById("amplitude-scale-gain");
+
+    if (amplitudeScaleValue) {
+      amplitudeScaleValue.textContent = `${this.amplitudeScale.toFixed(2)}x`;
+    }
+
+    if (amplitudeScaleGain) {
+      const actualGain = (MM_PER_MILLIVOLT * this.amplitudeScale).toFixed(1);
+      amplitudeScaleGain.textContent = `${actualGain} mm/mV`;
+    }
+  },
+
+  /**
+   * Updates the height scale display elements with current values.
+   * @returns {void}
+   */
+  updateHeightScaleDisplay() {
+    const heightScaleValue = document.getElementById("height-scale-value");
+    const heightScalePixels = document.getElementById("height-scale-pixels");
+
+    if (heightScaleValue) {
+      heightScaleValue.textContent = `${this.heightScale.toFixed(2)}x`;
+    }
+
+    if (heightScalePixels) {
+      const actualHeight = Math.round(CHART_HEIGHT * this.heightScale);
+      heightScalePixels.textContent = `${actualHeight}px`;
+    }
+  },
+
+  // ============================
+  // DISPLAY MODE & LEAD SWITCHING
+  // ============================
+
+  /**
+   * Updates the cursor style based on the current display mode.
+   * @returns {void}
+   */
+  updateCursorStyle() {
+    if (this.backgroundCanvas) {
+      if (this.displayMode === "single") {
+        // Single lead mode: show zoom-out cursor (click to show all leads)
+        this.backgroundCanvas.style.cursor = "zoom-out";
+      } else {
+        // Multi lead mode: show zoom-in cursor (click to zoom into a specific lead)
+        this.backgroundCanvas.style.cursor = "zoom-in";
+      }
+    }
+  },
+
+  /**
+   * Sets up click event handler for canvas to allow lead selection in multi-lead mode.
+   * @returns {void}
+   */
+  setupCanvasClickHandler() {
+    if (this.canvasClickHandler) {
+      this.backgroundCanvas.removeEventListener(
+        "click",
+        this.canvasClickHandler
+      );
+    }
+
+    this.canvasClickHandler = (event) => {
+      const rect = this.backgroundCanvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      if (this.displayMode === "multi") {
+        const clickedLeadIndex = this.getLeadIndexFromClick(x, y);
+        if (clickedLeadIndex !== null) {
+          // TODO
+          this.displayMode = "single";
+          this.updateDisplayModeSelector("single");
+          this.switchLead(clickedLeadIndex);
+          this.updateLeadSelectorVisibility("single");
+          this.recreateCanvasAndRestart();
+          this.updateCursorStyle();
+        }
+      } else if (this.displayMode === "single") {
+        // In single lead mode, any click on the grid switches to multi-lead mode
+        this.displayMode = "multi";
+        this.updateDisplayModeSelector("multi");
+        this.updateLeadSelectorVisibility("multi");
+        this.recreateCanvasAndRestart();
+        this.updateCursorStyle();
+      }
+    };
+
+    this.backgroundCanvas.addEventListener("click", this.canvasClickHandler);
+  },
+
+  /**
+   * Determines which lead was clicked based on click coordinates.
+   * @param {number} x - The x coordinate of the click.
+   * @param {number} y - The y coordinate of the click.
+   * @returns {number|null} The index of the clicked lead, or null if no lead was clicked.
+   */
+  getLeadIndexFromClick(x, y) {
+    if (!this.leadNames || this.displayMode !== "multi") {
+      return null;
+    }
+
+    for (let leadIndex = 0; leadIndex < this.leadNames.length; leadIndex++) {
+      const { xOffset, yOffset, columnWidth } =
+        this.calculateLeadGridCoordinates(leadIndex);
+
+      // Check if click is within this lead's bounds
+      if (
+        x >= xOffset &&
+        x <= xOffset + columnWidth &&
+        y >= yOffset &&
+        y <= yOffset + this.leadHeight
+      ) {
+        return leadIndex;
+      }
+    }
+
+    return null;
+  },
+
+  /**
+   * Switches from multi-lead mode to single-lead mode with the specified lead.
+   * @param {number} leadIndex - The index of the lead to switch to.
+   * @returns {void}
+   */
+  switchLead(leadIndex) {
+    if (
+      !this.ecgLeadDatasets ||
+      leadIndex < 0 ||
+      leadIndex >= this.ecgLeadDatasets.length
+    ) {
+      console.warn(`Invalid lead index: ${leadIndex}`);
+      return;
+    }
+
+    const wasPlaying = this.isPlaying;
+    if (wasPlaying) this.stopAnimation();
+
+    this.currentLead = leadIndex;
+    this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+
+    // Update the lead selector to match the current lead
+    const leadSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("lead-selector")
+    );
+    if (leadSelector) {
+      leadSelector.value = this.currentLead.toString();
+    }
+
+    if (this.displayMode === "single") {
+      // Clear both canvases and re-render for new lead
+      this.clearWaveform();
+      this.renderGridBackground();
+    }
+
+    if (wasPlaying) {
+      this.isPlaying = true;
+      this.startAnimationLoop();
+    } else {
+      if (this.startTime && this.pausedTime) {
+        const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+        const cursorProgress =
+          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+        const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+        this.processAnimationFrame(cursorProgress, animationCycle);
+      } else {
+        this.clearWaveform();
+      }
+    }
+  },
+
+  // =========================
+  // LEAD POSITIONING & LAYOUT
+  // =========================
+
+  /**
+   * Determines the grid column and row for a given lead index in multi-lead view.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @returns {{column: number, row: number}} The grid position.
+   */
+  getLeadColumnAndRow(leadIndex) {
+    const leadPositions = [
+      { column: 0, row: 0 },
+      { column: 0, row: 1 },
+      { column: 0, row: 2 },
+      { column: 1, row: 0 },
+      { column: 1, row: 1 },
+      { column: 1, row: 2 },
+      { column: 2, row: 0 },
+      { column: 2, row: 1 },
+      { column: 2, row: 2 },
+      { column: 3, row: 0 },
+      { column: 3, row: 1 },
+      { column: 3, row: 2 },
+    ];
+
+    return leadPositions[leadIndex] || { column: 0, row: 0 };
+  },
+
+  /**
+   * Calculates the pixel offset and width for a lead in the multi-lead display grid.
+   * @param {number} leadIndex - The index of the ECG lead.
+   * @returns {{xOffset: number, yOffset: number, columnWidth: number}} The position and width for the lead.
+   */
+  calculateLeadGridCoordinates(leadIndex) {
+    const { column, row } = this.getLeadColumnAndRow(leadIndex);
+    const totalColumnPadding = (COLUMNS_PER_DISPLAY - 1) * COLUMN_PADDING;
+    const columnWidth =
+      (this.chartWidth - totalColumnPadding) / COLUMNS_PER_DISPLAY;
+
+    const xOffset = column * (columnWidth + COLUMN_PADDING);
+    const yOffset = row * (this.leadHeight + ROW_PADDING);
+
+    return { xOffset, yOffset, columnWidth };
+  },
+
+  // =============================
+  // THEME & VISUAL CONFIGURATION
+  // =============================
+
+  /**
+   * Reads the current `data-theme` from the HTML element and updates the color palette
+   * for the grid, waveform, and labels.
+   * @returns {void}
+   */
+  updateThemeColors() {
+    const theme =
+      document.documentElement.getAttribute("data-theme") || "light";
+    const isDark = theme === "dark";
+
+    this.colors = {
+      waveform: isDark ? "#ffffff" : "#000000",
+      gridFine: isDark ? "#660000" : "#ff9999",
+      gridBold: isDark ? "#990000" : "#ff6666",
+      gridDots: isDark ? "#666666" : "#999999",
+      labels: isDark ? "#ffffff" : "#333333",
+    };
   },
 
   // ===================
@@ -1061,6 +1021,10 @@ const ECGPlayer = {
     this.updatePlayPauseButton();
   },
 
+  /**
+   * Handles playback end events, managing looping and state updates.
+   * @returns {void}
+   */
   handlePlaybackEnd() {
     this.pushEventTo(this.targetComponent, "playback_ended", {});
     if (this.loopEnabled) {
@@ -1073,6 +1037,12 @@ const ECGPlayer = {
     }
   },
 
+  /**
+   * Processes a single animation frame, updating cursor position and rendering.
+   * @param {number} cursorProgress - The cursor progress within the current cycle (0-1).
+   * @param {number} animationCycle - The current animation cycle number.
+   * @returns {void}
+   */
   processAnimationFrame(cursorProgress, animationCycle) {
     const elapsedTime =
       animationCycle * this.widthSeconds + cursorProgress * this.widthSeconds;
@@ -1278,6 +1248,11 @@ const ECGPlayer = {
   // QRS DETECTION & UI
   // ==================
 
+  /**
+   * Checks for QRS occurrences at the given elapsed time and triggers indicators.
+   * @param {number} elapsedTime - The elapsed time in seconds.
+   * @returns {void}
+   */
   checkQrsOccurrences(elapsedTime) {
     if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) {
       return;
@@ -1302,6 +1277,10 @@ const ECGPlayer = {
     }
   },
 
+  /**
+   * Triggers a QRS flash indicator with automatic timeout.
+   * @returns {void}
+   */
   triggerQrsFlash() {
     // Clear any existing timeout
     if (this.qrsFlashTimeout) {
@@ -1320,6 +1299,10 @@ const ECGPlayer = {
     }, this.qrsFlashDuration);
   },
 
+  /**
+   * Clears the QRS flash indicator area on the canvas.
+   * @returns {void}
+   */
   clearQrsFlashArea() {
     if (!this.qrsFlashContext || !this.qrsFlashCanvas) return;
 
@@ -2205,6 +2188,166 @@ const ECGPlayer = {
     }
 
     this.waveformContext.stroke();
+  },
+
+  // =================
+  // UTILITY FUNCTIONS
+  // =================
+
+  /**
+   * Reads a form field value by name
+   * @param {string} fieldName - The name of the form field to read
+   * @returns {string|null} The field value or null if not found
+   */
+  readFormValue(fieldName) {
+    const input = /** @type {HTMLInputElement | HTMLSelectElement | null} */ (
+      document.querySelector(
+        `input[name="settings[${fieldName}]"], select[name="settings[${fieldName}]"]`
+      )
+    );
+    return input ? input.value : null;
+  },
+
+  /**
+   * Reads a checkbox form field value by name
+   * @param {string} fieldName - The name of the checkbox field to read
+   * @returns {boolean} The checkbox state
+   */
+  readFormCheckbox(fieldName) {
+    const input = /** @type {HTMLInputElement | null} */ (
+      document.querySelector(
+        `input[name="settings[${fieldName}]"][type="checkbox"]`
+      )
+    );
+    return input ? input.checked : false;
+  },
+
+  /**
+   * Preserves canvas state during operations by managing animation lifecycle.
+   * @param {Function} operation - The operation to execute while preserving state.
+   * @returns {void}
+   */
+  withCanvasStatePreservation(operation) {
+    const wasPlaying = this.isPlaying;
+    if (wasPlaying) this.stopAnimation();
+
+    operation();
+
+    if (!wasPlaying && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress =
+        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.processAnimationFrame(cursorProgress, animationCycle);
+    }
+
+    if (wasPlaying) {
+      this.isPlaying = true;
+      this.startAnimationLoop();
+    }
+  },
+
+  /**
+   * Recreates canvas and restarts animation if it was playing
+   * @returns {void}
+   */
+  recreateCanvasAndRestart() {
+    this.withCanvasStatePreservation(() => {
+      this.recreateCanvas();
+      this.renderGridBackground();
+    });
+  },
+
+  /**
+   * Updates the display mode selector in the DOM
+   * @param {string} mode - The display mode ("single" or "multi")
+   * @returns {void}
+   */
+  updateDisplayModeSelector(mode) {
+    const displayModeSelector = /** @type {HTMLSelectElement} */ (
+      document.getElementById("display-mode-selector")
+    );
+    if (displayModeSelector) {
+      displayModeSelector.value = mode;
+    }
+  },
+
+  /**
+   * Calculates the data index for a given time using the sampling rate.
+   * @param {object} leadData - The lead data containing times and values arrays.
+   * @param {number} targetTime - The target time in seconds.
+   * @returns {number} The calculated data index.
+   */
+  calculateDataIndexForTime(leadData, targetTime) {
+    if (!leadData || !leadData.times || leadData.times.length === 0) {
+      console.warn("Invalid lead data provided to calculateDataIndexForTime");
+      return 0;
+    }
+
+    if (typeof targetTime !== "number" || targetTime < 0) {
+      console.warn(`Invalid target time: ${targetTime}`);
+      return 0;
+    }
+
+    if (!this.samplingRate || this.samplingRate <= 0) {
+      console.warn(`Invalid sampling rate: ${this.samplingRate}`);
+      return 0;
+    }
+
+    // With a constant sampling rate, we can calculate the index directly.
+    const estimatedIndex = Math.round(targetTime * this.samplingRate);
+    return Math.min(estimatedIndex, leadData.times.length - 1);
+  },
+
+  /**
+   * Transforms time and value data into screen coordinates.
+   * @param {object} options - The transformation options.
+   * @param {Array<number>} options.times - Array of time points.
+   * @param {Array<number>} options.values - Array of voltage values.
+   * @param {object} options.bounds - The drawing bounds.
+   * @param {number} options.bounds.xOffset - Horizontal offset.
+   * @param {number} options.bounds.yOffset - Vertical offset.
+   * @param {number} options.bounds.width - Width of the drawing area.
+   * @param {number} options.bounds.height - Height of the drawing area.
+   * @param {number} options.timeSpan - The time span for the display.
+   * @returns {Array<{x: number, y: number}>} Array of screen coordinates.
+   */
+  transformCoordinates(options) {
+    if (!options || !options.times || !options.values || !options.bounds) {
+      console.warn("Invalid options provided to transformCoordinates");
+      return [];
+    }
+
+    const {
+      times,
+      values,
+      bounds: { xOffset, yOffset, width, height },
+      timeSpan,
+    } = options;
+
+    if (times.length !== values.length) {
+      console.warn("Times and values arrays must have the same length");
+      return [];
+    }
+
+    if (timeSpan <= 0 || width <= 0 || height <= 0) {
+      console.warn("Invalid dimensions provided to transformCoordinates");
+      return [];
+    }
+
+    const xScale = width / timeSpan;
+    const yScale = height / (this.yMax - this.yMin);
+
+    const coordinates = [];
+    for (let i = 0; i < times.length; i++) {
+      const x = xOffset + times[i] * xScale;
+      // Apply amplitude scale to the voltage values
+      const scaledValue = values[i] * this.amplitudeScale;
+      const y = yOffset + height - (scaledValue - this.yMin) * yScale;
+      coordinates.push({ x, y });
+    }
+
+    return coordinates;
   },
 };
 
