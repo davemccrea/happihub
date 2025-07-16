@@ -1,23 +1,18 @@
 {
-  "name": "assets",
+  "name": "happihub-assets",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "description": "Frontend assets for HappiHub ECG player",
+  "type": "module",
   "scripts": {
-    "test:debug": "npx playwright test --debug",
-    "test:unit": "vitest",
-    "test:unit:watch": "vitest --watch",
-    "test:unit:ui": "vitest --ui",
-    "test:unit:coverage": "vitest --coverage"
-  },
-  "dependencies": {
-    "rxjs": "^7.8.2"
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "devDependencies": {
-    "jsdom": "^26.1.0",
-    "vitest": "^3.2.4"
+    "@vitest/ui": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "vitest": "^1.0.0",
+    "jsdom": "^23.0.0"
   }
 }
