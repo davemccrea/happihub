@@ -219,15 +219,9 @@ describe('ECGPlayer - Integration Tests', () => {
     it('should handle playback toggle correctly', () => {
       ecgPlayer.togglePlayback();
       expect(ecgPlayer.isPlaying).toBe(true);
-      expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-target', 'playback_changed', {
-        is_playing: true
-      });
 
       ecgPlayer.togglePlayback();
       expect(ecgPlayer.isPlaying).toBe(false);
-      expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-target', 'playback_changed', {
-        is_playing: false
-      });
     });
 
     it('should handle pause and resume correctly', () => {

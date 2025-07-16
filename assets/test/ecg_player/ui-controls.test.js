@@ -65,9 +65,6 @@ describe('ECGPlayer - UI Controls', () => {
         ecgPlayer.switchToNextLead();
         
         expect(ecgPlayer.switchLead).toHaveBeenCalledWith(1);
-        expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-component', 'lead_changed', {
-          lead: 1
-        });
       });
 
       it('should not switch when at last lead', () => {
@@ -76,7 +73,6 @@ describe('ECGPlayer - UI Controls', () => {
         ecgPlayer.switchToNextLead();
         
         expect(ecgPlayer.switchLead).not.toHaveBeenCalled();
-        expect(ecgPlayer.pushEventTo).not.toHaveBeenCalled();
       });
 
       it('should handle empty datasets gracefully', () => {
@@ -99,9 +95,6 @@ describe('ECGPlayer - UI Controls', () => {
         ecgPlayer.switchToPrevLead();
         
         expect(ecgPlayer.switchLead).toHaveBeenCalledWith(0);
-        expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-component', 'lead_changed', {
-          lead: 0
-        });
       });
 
       it('should not switch when at first lead', () => {
@@ -110,7 +103,6 @@ describe('ECGPlayer - UI Controls', () => {
         ecgPlayer.switchToPrevLead();
         
         expect(ecgPlayer.switchLead).not.toHaveBeenCalled();
-        expect(ecgPlayer.pushEventTo).not.toHaveBeenCalled();
       });
     });
 

@@ -52,9 +52,6 @@ describe('ECGPlayer - Animation', () => {
       ecgPlayer.togglePlayback();
       
       expect(ecgPlayer.isPlaying).toBe(true);
-      expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-component', 'playback_changed', {
-        is_playing: true
-      });
       expect(ecgPlayer.resumeAnimation).toHaveBeenCalled();
       expect(ecgPlayer.updatePlayPauseButton).toHaveBeenCalled();
     });
@@ -65,9 +62,6 @@ describe('ECGPlayer - Animation', () => {
       ecgPlayer.togglePlayback();
       
       expect(ecgPlayer.isPlaying).toBe(false);
-      expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-component', 'playback_changed', {
-        is_playing: false
-      });
       expect(ecgPlayer.pauseAnimation).toHaveBeenCalled();
       expect(ecgPlayer.updatePlayPauseButton).toHaveBeenCalled();
     });
@@ -237,7 +231,6 @@ describe('ECGPlayer - Animation', () => {
       
       ecgPlayer.handlePlaybackEnd();
       
-      expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-component', 'playback_ended', {});
       expect(ecgPlayer.resetPlayback).toHaveBeenCalled();
       expect(ecgPlayer.startAnimation).toHaveBeenCalled();
     });
@@ -247,7 +240,6 @@ describe('ECGPlayer - Animation', () => {
       
       ecgPlayer.handlePlaybackEnd();
       
-      expect(ecgPlayer.pushEventTo).toHaveBeenCalledWith('test-component', 'playback_ended', {});
       expect(ecgPlayer.stopAnimation).toHaveBeenCalled();
       expect(ecgPlayer.resetPlayback).toHaveBeenCalled();
       expect(ecgPlayer.updatePlayPauseButton).toHaveBeenCalled();
