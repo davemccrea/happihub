@@ -1,7 +1,7 @@
 defmodule Astrup.EcgDatabases.Ptbxl.QueryTest do
   use ExUnit.Case, async: true
 
-  alias Astrup.Ecgs.Databases.Ptbxl.Query
+  alias Astrup.ECG.Datasets.Ptbxl.Query
 
   describe "get_primary_diagnosis/1" do
     test "returns NORM for normal ECG" do

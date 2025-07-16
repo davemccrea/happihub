@@ -20,21 +20,21 @@ if System.get_env("PHX_SERVER") do
   config :astrup, AstrupWeb.Endpoint, server: true
 end
 
-claude_api_key =
-  System.get_env("CLAUDE_API_KEY") ||
-    raise """
-    environment variable CLAUDE_API_KEY is missing.
-    """
-
-sendgrid_api_key =
-  System.get_env("SENDGRID_API_KEY") ||
-    raise """
-    environment variable SENDGRID_API_KEY is missing.
-    """
-
-config :astrup, :claude_api_key, claude_api_key
-
 if(config_env() == :prod) do
+  claude_api_key =
+    System.get_env("CLAUDE_API_KEY") ||
+      raise """
+      environment variable CLAUDE_API_KEY is missing.
+      """
+
+  config :astrup, :claude_api_key, claude_api_key
+
+  sendgrid_api_key =
+    System.get_env("SENDGRID_API_KEY") ||
+      raise """
+      environment variable SENDGRID_API_KEY is missing.
+      """
+
   ecg_databases_path =
     System.get_env("ecg_databases_path") ||
       raise "environment variable ecg_databases_path is missing."

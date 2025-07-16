@@ -1,7 +1,7 @@
 defmodule Astrup.EcgDatabases.Ptbxl.ParserTest do
   use ExUnit.Case, async: true
 
-  alias Astrup.EcgDatabases.Ptbxl.Parser
+  alias Astrup.ECG.Datasets.Ptbxl.Parser
 
   describe "parse_string/1" do
     test "parses valid CSV content successfully" do

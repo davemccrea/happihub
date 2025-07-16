@@ -10,6 +10,9 @@ config :bcrypt_elixir, :log_rounds, 1
 # Run `mix help test` for more information.
 config :astrup, ecg_databases_path: "/Users/david/ecg_databases"
 
+# Optional api keys for testing (allows tests to run without it)
+config :astrup, :claude_api_key, System.get_env("CLAUDE_API_KEY") || "test_key"
+
 config :astrup, Astrup.Repo,
   username: "postgres",
   password: "postgres",

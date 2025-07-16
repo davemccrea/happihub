@@ -71,6 +71,16 @@ config :logger, :default_formatter, format: "[$level] $message\n"
 
 config :astrup, ecg_databases_path: "/Users/david/ecg_databases"
 
+# Require CLAUDE_API_KEY in development
+claude_api_key =
+  System.get_env("CLAUDE_API_KEY") ||
+    raise """
+    environment variable CLAUDE_API_KEY is missing.
+    Please set it in your environment or .env file.
+    """
+
+config :astrup, :claude_api_key, claude_api_key
+
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20

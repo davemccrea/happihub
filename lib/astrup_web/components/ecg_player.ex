@@ -235,7 +235,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
       %Ecto.Changeset{valid?: true} = changeset ->
         with {:ok, updated_settings} <- Repo.update(changeset) do
           form = updated_settings |> Settings.changeset(%{}) |> to_form()
-          
+
           {:noreply,
            socket
            |> assign(settings: updated_settings)

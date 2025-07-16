@@ -1,7 +1,7 @@
 defmodule Astrup.Ecgs.Databases.PtbxlTest do
   use ExUnit.Case, async: true
 
-  alias Astrup.Ecgs.Databases.Ptbxl
+  alias Astrup.ECG.Datasets.Ptbxl
 
   describe "get_by_filename/1" do
     test "returns nil when PTB-XL server is not running" do
