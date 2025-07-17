@@ -134,29 +134,56 @@ The state machine itself will remain pure. It will not directly manipulate the D
 
 ## 5. Implementation Approach
 
-### Phase 1: Parallel Implementation
+### Phase 1: Parallel Implementation ✅ COMPLETED
 
-- Keep original `ecg_player.js` untouched.
-- Create new `ecg_player_v2.js` (the Phoenix hook).
-- Create `ecg_player_machine.js` to define the XState machine.
+- ✅ Keep original `ecg_player.js` untouched.
+- ✅ Create new `ecg_player_v2.js` (the Phoenix hook).
+- ✅ Create `ecg_player_machine.js` to define the XState machine.
+- ✅ Implement parallel states architecture (`playback`, `calipers`, `display`, `fullscreen`).
+- ✅ Implement animation actor and `TICK` event flow.
+- ✅ Set up event-driven UI control handlers.
 
-### Phase 2: Core States & Animation Actor
+### Phase 2A: Canvas Infrastructure
 
-- Implement the `playback` state (`loading` → `idle` → `playing`/`paused`).
-- Implement the animation actor and the `TICK` event flow.
-- Get basic single-lead waveform rendering working, driven by the machine's state.
+- Implement `initializeCanvas()` - set up the 4 canvas layers (background, waveform, QRS flash, calipers)
+- Implement `calculateMedicallyAccurateDimensions()` - medical scaling calculations (25mm/sec, 10mm/mV)
+- Implement `updateThemeColors()` - theme-aware color management
+- Implement `clearCanvas()` - basic canvas clearing functionality
 
-### Phase 3: Advanced Features & Parallel States
+### Phase 2B: Basic Rendering Pipeline
 
-- Implement the `calipers`, `display`, and `fullscreen` parallel states.
-- Implement the nested logic for caliper drawing.
-- Add event handling for all UI controls (sliders, buttons, keyboard shortcuts).
+- Implement `renderSingleLead()` - render one ECG lead waveform from machine context
+- Implement animation-driven cursor positioning via `TICK` events
+- Implement `renderCursor()` - draw playback cursor at correct position
+- Test basic playback (play/pause/stop) with cursor movement and waveform display
 
-### Phase 4: Migration & Cleanup
+### Phase 2C: Multi-Lead Display
 
-- Ensure full feature parity with the original implementation.
-- Conduct thorough testing.
-- Once stable, remove the feature flag and the original `ecg_player.js` file.
+- Implement `renderMultiLead()` - 12-lead grid layout (4 columns × 3 rows)
+- Update cursor rendering for multi-lead mode (different cursor width)
+- Implement display mode switching between single and multi-lead views
+- Add lead selection controls for single-lead mode
+
+### Phase 3A: Calipers System
+
+- Implement canvas mouse/touch event handling for caliper interaction
+- Implement `renderCalipers()` - draw measurement overlays and calculation displays
+- Connect mouse events to `START_DRAWING`/`FINISH_DRAWING` state machine events
+- Add caliper measurement calculations (time and voltage) and display
+
+### Phase 3B: Advanced Controls
+
+- Implement keyboard shortcuts (spacebar for play/pause, etc.)
+- Add fullscreen mode handling and display transitions
+- Implement QRS detection indicators with flash animations
+- Add scale controls (grid scale, amplitude scale, height scale)
+
+### Phase 4: Migration & Testing
+
+- Add feature flag to switch between original and XState implementations
+- Comprehensive testing against original implementation (2,975 lines → simplified)
+- Performance comparison and optimization
+- Remove original `ecg_player.js` when XState version is stable
 
 ## 6. Benefits
 
