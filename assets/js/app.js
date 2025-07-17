@@ -25,13 +25,14 @@ import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
 import { Hooks as BackpexHooks } from "backpex";
 import ECGPlayer from "./hooks/ecg/ecg_player";
+import ECGPlayerV2 from "./hooks/ecg/ecg_player_v2";
 import ClearFlash from "./hooks/clear_flash";
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: { _csrf_token: csrfToken },
-  hooks: { ...BackpexHooks, ECGPlayer, ClearFlash },
+  hooks: { ...BackpexHooks, ECGPlayer, ECGPlayerV2, ClearFlash },
 });
 
 // Show progress bar on live navigation and form submits

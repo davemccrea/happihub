@@ -6,9 +6,12 @@
     "test:coverage": "vitest --coverage"
   },
   "devDependencies": {
-    "@vitest/ui": "^1.0.0",
     "@vitest/coverage-v8": "^1.0.0",
-    "vitest": "^1.0.0",
-    "jsdom": "^23.0.0"
+    "@vitest/ui": "^1.0.0",
+    "jsdom": "^23.0.0",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "xstate": "^5.20.1"
   }
 }

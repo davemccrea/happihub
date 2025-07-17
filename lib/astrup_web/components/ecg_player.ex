@@ -49,7 +49,7 @@ defmodule AstrupWeb.Components.EcgPlayer do
             <div
               id="ecg-player"
               class="fullscreen:flex-1 fullscreen:flex fullscreen:flex-col"
-              phx-hook="ECGPlayer"
+              phx-hook="ECGPlayerV2"
               phx-update="ignore"
               phx-target={@myself}
             >
