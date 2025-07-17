@@ -1,448 +1,174 @@
-# ECG Player State Management Refactoring Plan
+# ECG Player State Management - XState Refined Plan
 
-## Current State Analysis
+## 1. Problem
 
-### Problems Identified
+The current ECG Player (`assets/js/hooks/ecg/ecg_player.js`) utilizes approximately 30 scattered state properties. This leads to complex manual state synchronization, making the component difficult to maintain, debug, and extend.
 
-- **Complex state management**: ~30+ scattered state properties in `assets/js/hooks/ecg/ecg_player.js` (~3000 LOC)
-- **Manual synchronization**: Multiple `this.updateCursorStyle()` calls scattered throughout codebase
-- **State consistency issues**: Manual property updates prone to forgotten updates and race conditions
-- **Complex side effects**: Animation loops, DOM manipulation, event handling all mixed together
-- **Hard to debug**: State changes and side effects are implicit and scattered
+## 2. Solution: XState State Machine
 
-### Current State Properties
+We will replace the manual state management with a single, robust XState machine. This machine will be the definitive source of truth, orchestrating all state transitions, side effects, and event handling.
 
-```javascript
-// From initializeState() - 30+ properties including:
-this.isPlaying = false;
-this.cursorPosition = 0;
-this.displayMode = "single";
-this.calipersMode = false;
-this.activeCaliper = null;
-this.animationId = null;
-this.startTime = null;
-this.pausedTime = 0;
-// ... many more
-```
+## 3. State Machine Design
 
-## Recommended Solution: MobX + XState
+### 3.1. States (Parallel and Nested)
 
-### Architecture Overview
-
-1. **MobX Store** - Manages data state and automatic UI reactivity
-2. **XState Machine** - Manages business logic, state transitions, and side effects
-3. **Phoenix Hook** - Coordinates between LiveView, XState, and MobX
-
-### Benefits
-
-- **Automatic reactivity**: UI updates automatically when data changes
-- **Bulletproof state transitions**: Prevents invalid states like "measuring calipers while changing display mode"
-- **Reduced LOC**: Estimated 500-900 lines reduction (20-30%)
-- **Better debugging**: XState DevTools + MobX DevTools
-- **Cleaner code**: Separation of concerns between data, business logic, and UI
-
-## Implementation Plan
-
-### Phase 1: Setup Dependencies
-
-```bash
-cd assets
-npm install xstate mobx
-```
-
-### Phase 2: Create Parallel Implementation Structure
-
-**IMPORTANT**: We will create a completely new implementation alongside the existing `ecg_player.js` file. This allows for gradual migration and easy rollback if needed.
-
-**New File Structure**:
-```
-assets/js/hooks/ecg/
-├── ecg_player.js              # Original implementation (keep untouched)
-├── ecg_player_v2.js           # New MobX/XState implementation
-├── stores/
-│   └── ecg_player_store.js    # MobX store
-└── machines/
-    └── ecg_player_machine.js  # XState machine
-```
-
-### Phase 3: Create MobX Store
-
-**File**: `assets/js/hooks/ecg/stores/ecg_player_store.js`
+To accurately model the UI's behavior, we will use a parallel state machine. This allows us to manage orthogonal concerns (like playback and display mode) independently.
 
 ```javascript
-import { makeObservable, observable, action, computed, reaction } from "mobx";
-
-class ECGPlayerStore {
-  constructor() {
-    makeObservable(this, {
-      // Observable state
-      isPlaying: observable,
-      cursorPosition: observable,
-      displayMode: observable,
-      selectedLead: observable,
-      calipersMode: observable,
-      calipers: observable,
-
-      // Actions
-      play: action,
-      pause: action,
-      updateCursor: action,
-      changeDisplayMode: action,
-
-      // Computed values
-      cursorPixelPosition: computed,
-      canChangeLead: computed,
-    });
-  }
-
-  // State properties with defaults
-  isPlaying = false;
-  cursorPosition = 0;
-  displayMode = "single";
-  selectedLead = "II";
-  calipersMode = false;
-  calipers = [];
-
-  // Actions
-  play() {
-    this.isPlaying = true;
-  }
-  pause() {
-    this.isPlaying = false;
-  }
-  updateCursor(position) {
-    this.cursorPosition = position;
-  }
-  changeDisplayMode(mode) {
-    this.displayMode = mode;
-  }
-
-  // Computed values
-  get cursorPixelPosition() {
-    return (this.cursorPosition * this.chartWidth) / this.widthSeconds;
-  }
-
-  get canChangeLead() {
-    return this.displayMode === "single";
+// High-level overview of the parallel states
+{
+  type: 'parallel',
+  states: {
+    playback: { /* ... */ },
+    calipers: { /* ... */ },
+    display: { /* ... */ },
+    fullscreen: { /* ... */ }
   }
 }
 ```
 
-### Phase 4: Create XState Machine
+#### a. `playback` State (Handles Playback Logic)
 
-**File**: `assets/js/hooks/ecg/machines/ecg_player_machine.js`
+Manages the core media-player-like functionality.
+
+```
+loading → idle → playing ⇄ paused
+```
+
+- **loading**: Initial state. Waiting for the `DATA_LOADED` event.
+- **idle**: Data is loaded, player is ready.
+- **playing**: Active playback. Spawns an **animation actor** to drive the `requestAnimationFrame` loop.
+- **paused**: Playback is paused. The animation actor is stopped.
+
+#### b. `calipers` State (Nested, Handles Measurement)
+
+Manages the state of the measurement calipers. This is a nested state machine.
+
+```
+disabled → enabled
+             └── idle → drawing → placed
+```
+
+- **disabled**: Default state. Calipers are not active.
+- **enabled**: User has activated calipers mode.
+  - **idle**: Ready to start drawing a new caliper.
+  - **drawing**: User is actively dragging to draw a caliper.
+  - **placed**: A caliper measurement is complete and displayed.
+
+#### c. `display` State (Handles View Mode)
+
+Manages whether the user is viewing a single lead or the multi-lead view.
+
+```
+single ⇄ multi
+```
+
+#### d. `fullscreen` State (Handles Fullscreen Mode)
+
+Manages the fullscreen state of the component.
+
+```
+off ⇄ on
+```
+
+### 3.2. State Machine `context`
+
+The machine's `context` will be the single source of truth for all dynamic data, eliminating scattered state properties.
 
 ```javascript
-import { createMachine, assign } from "xstate";
-
-export const ecgPlayerMachine = createMachine(
-  {
-    id: "ecgPlayer",
-    initial: "loading",
-    context: {
-      store: null,
-      animationId: null,
-      startTime: null,
-    },
-    states: {
-      loading: {
-        on: {
-          DATA_LOADED: "idle",
-        },
-      },
-      idle: {
-        on: {
-          PLAY: "playing",
-          START_CALIPER: "measuring",
-          TOGGLE_DISPLAY: {
-            actions: "changeDisplayMode",
-          },
-        },
-      },
-      playing: {
-        entry: ["startPlaying", "beginAnimation"],
-        exit: ["stopPlaying", "endAnimation"],
-        on: {
-          PAUSE: "paused",
-          SPACEBAR: "paused",
-          STOP: "idle",
-          CHANGE_LEAD: {
-            guard: "canChangeLead",
-            actions: "setLead",
-          },
-          TOGGLE_DISPLAY: {
-            actions: "changeDisplayMode",
-            target: "paused",
-          },
-        },
-      },
-      paused: {
-        on: {
-          PLAY: "playing",
-          SPACEBAR: "playing",
-          STOP: "idle",
-          START_CALIPER: "measuring",
-        },
-      },
-      measuring: {
-        on: {
-          FINISH_CALIPER: "paused",
-          CANCEL_CALIPER: "paused",
-        },
-      },
-    },
+// The machine's extended state (memory)
+{
+  // Static ECG data loaded from the server
+  ecgData: {
+    samplingRate: number,
+    leadNames: string[],
+    totalDuration: number,
+    qrsTimestamps: number[],
+    ecgLeadDatasets: object[],
+    precomputedSegments: Map
   },
-  {
-    guards: {
-      canChangeLead: (context) => context.store.canChangeLead,
-    },
-    actions: {
-      startPlaying: (context) => {
-        context.store.play();
-        context.startTime = Date.now();
-      },
-      stopPlaying: (context) => {
-        context.store.pause();
-      },
-      beginAnimation: (context) => {
-        // Animation loop implementation
-      },
-      endAnimation: (context) => {
-        if (context.animationId) {
-          cancelAnimationFrame(context.animationId);
-          context.animationId = null;
-        }
-      },
-      changeDisplayMode: (context, event) => {
-        context.store.changeDisplayMode(event.mode);
-      },
-      setLead: (context, event) => {
-        context.store.selectedLead = event.lead;
-      },
-    },
+  // Real-time playback data
+  playback: {
+    startTime: number,
+    pausedTime: number,
+    loopEnabled: boolean,
+    elapsedTime: number // Updated by the animation actor
+  },
+  // UI settings and display options
+  display: {
+    currentLead: number,
+    gridScale: number,
+    amplitudeScale: number,
+    heightScale: number,
+    qrsIndicatorEnabled: boolean
+  },
+  // Data for active caliper measurements
+  calipers: {
+    measurements: object[] // Array of caliper data objects
   }
-);
+}
 ```
 
-### Phase 5: Create New Phoenix Hook Implementation
+### 3.3. Key Events
 
-**File**: `assets/js/hooks/ecg/ecg_player_v2.js`
+Events will drive all transitions within the machine.
 
-```javascript
-import { interpret } from "xstate";
-import { reaction } from "mobx";
-import { ECGPlayerStore } from "./stores/ecg_player_store";
-import { ecgPlayerMachine } from "./machines/ecg_player_machine";
+- **Data Events**: `DATA_LOADED`
+- **Playback Control**: `PLAY`, `PAUSE`, `STOP`, `TOGGLE_LOOP`
+- **Animation Actor Events**: `TICK` (sent from the animation actor to the machine)
+- **User Interface**: `TOGGLE_CALIPERS`, `TOGGLE_DISPLAY_MODE`, `TOGGLE_FULLSCREEN`
+- **Caliper Actions**: `START_DRAWING`, `FINISH_DRAWING`, `CLEAR_CALIPERS`
+- **Settings Changes**: `CHANGE_LEAD`, `UPDATE_GRID_SCALE`, etc.
 
-const ECGPlayer = {
-  mounted() {
-    // Initialize MobX store
-    this.store = new ECGPlayerStore();
+## 4. Side Effects and Actors
 
-    // Initialize XState machine with store
-    this.service = interpret(
-      ecgPlayerMachine.withContext({
-        store: this.store,
-      })
-    );
-    this.service.start();
+The state machine itself will remain pure. It will not directly manipulate the DOM or canvas.
 
-    // Set up MobX reactions for DOM updates
-    this.setupMobXReactions();
+- **Side Effects**: Are handled in response to state transitions. For example, when entering the `playing` state, the machine will spawn an animation actor.
+- **Rendering**: The `ecg_player_v2.js` hook will subscribe to state machine changes. It will be responsible for all canvas rendering based on the current state and context of the machine.
+- **Animation Actor**: The `requestAnimationFrame` loop will be encapsulated within an XState Actor.
+  - The `playing` state **spawns** this actor.
+  - The actor sends `TICK` events with the `elapsedTime` back to the machine.
+  - The machine updates its `context.playback.elapsedTime` on each `TICK`.
+  - Exiting the `playing` state automatically **stops** the actor, ensuring perfect cleanup.
 
-    // Traditional Phoenix Hook setup
-    this.setupEventListeners();
-    this.initializeCanvas();
-  },
+## 5. Implementation Approach
 
-  setupMobXReactions() {
-    // Automatic cursor updates
-    this.cursorReaction = reaction(
-      () => this.store.cursorPixelPosition,
-      (position) => this.updateCursorDOM(position)
-    );
+### Phase 1: Parallel Implementation
 
-    // Automatic display mode updates
-    this.displayModeReaction = reaction(
-      () => this.store.displayMode,
-      (mode) => this.updateDisplayModeDOM(mode)
-    );
-  },
+- Keep original `ecg_player.js` untouched.
+- Create new `ecg_player_v2.js` (the Phoenix hook).
+- Create `ecg_player_machine.js` to define the XState machine.
 
-  setupEventListeners() {
-    this.playButton.onclick = () => this.service.send("PLAY");
+### Phase 2: Core States & Animation Actor
 
-    document.onkeydown = (e) => {
-      if (e.code === "Space") {
-        this.service.send("SPACEBAR");
-      }
-    };
+- Implement the `playback` state (`loading` → `idle` → `playing`/`paused`).
+- Implement the animation actor and the `TICK` event flow.
+- Get basic single-lead waveform rendering working, driven by the machine's state.
 
-    this.displayModeSelect.onchange = (e) => {
-      this.service.send("TOGGLE_DISPLAY", { mode: e.target.value });
-    };
-  },
+### Phase 3: Advanced Features & Parallel States
 
-  // Phoenix LiveView integration
-  handleEvent(event, payload) {
-    switch (event) {
-      case "ecg_data_loaded":
-        this.loadECGData(payload);
-        this.service.send("DATA_LOADED");
-        break;
-      case "play_command":
-        this.service.send("PLAY");
-        break;
-    }
-  },
+- Implement the `calipers`, `display`, and `fullscreen` parallel states.
+- Implement the nested logic for caliper drawing.
+- Add event handling for all UI controls (sliders, buttons, keyboard shortcuts).
 
-  destroyed() {
-    // Clean up MobX reactions
-    this.cursorReaction?.();
-    this.displayModeReaction?.();
+### Phase 4: Migration & Cleanup
 
-    // Clean up XState
-    this.service.stop();
-  },
-};
-```
+- Ensure full feature parity with the original implementation.
+- Conduct thorough testing.
+- Once stable, remove the feature flag and the original `ecg_player.js` file.
 
-## Migration Strategy
+## 6. Benefits
 
-### Step 1: Parallel Implementation Foundation
+- **Eliminates Impossible States**: The machine cannot be `playing` and `drawing calipers` in an invalid way.
+- **Single Source of Truth**: The machine's `context` holds all state.
+- **Predictable & Debuggable**: State transitions are explicit and can be visualized with XState DevTools.
+- **Simplified Code**: The hook becomes a simple "renderer" of the state, while the machine handles all the logic.
+- **Automatic Cleanup**: Actors and state entry/exit actions handle resource management (e.g., animation loops).
 
-1. **Keep original `ecg_player.js` completely untouched**
-2. Create new `ecg_player_v2.js` with MobX + XState architecture
-3. Start with minimal functionality (just play/pause state)
-4. Test integration with Phoenix LiveView using the new hook
+## 7. Success Criteria
 
-### Step 2: Feature-by-Feature Migration
-
-**Phase 2A: Basic Playback Control**
-- Implement play/pause/stop functionality
-- Basic cursor position tracking
-- Simple animation loop
-- Test with existing ECG data
-
-**Phase 2B: Display Management**
-- Display mode switching (single/multi-lead)
-- Lead selection with business logic
-- Canvas rendering setup
-- Theme support
-
-**Phase 2C: Advanced Features**
-- Calipers functionality
-- QRS flash indicators
-- Fullscreen mode
-- Keyboard shortcuts
-
-**Phase 2D: Additional Features**
-- Error handling and edge cases
-- Keyboard shortcuts
-- Fullscreen mode enhancements
-- Additional user interactions
-
-### Step 3: LiveView Integration Points
-
-1. **Maintain identical Phoenix events**: Ensure `ecg_player_v2.js` handles the same LiveView events as original
-2. **Feature flags**: Use LiveView assigns to switch between implementations
-3. **Gradual rollout**: Test with subset of users before full migration
-4. **Functional testing**: Compare behavior between implementations
-
-### Step 4: Production Transition
-
-1. **A/B testing**: Run both implementations in parallel
-2. **Gradual migration**: Move features from v1 to v2 incrementally
-3. **Rollback capability**: Keep original implementation as fallback
-4. **Final cleanup**: Remove original implementation only after v2 is stable
-
-### Step 5: Development Process
-
-**For each feature migration:**
-1. **Write failing tests** for the feature in v2
-2. **Copy core logic** from original implementation
-3. **Refactor to use MobX/XState** patterns
-4. **Ensure tests pass**
-5. **Test integration** with Phoenix LiveView
-6. **Functional testing** against original
-7. **Code review** and documentation
-
-## Testing Strategy
-
-### Unit Tests
-
-- Test MobX store actions and computed values
-- Test XState machine transitions and guards
-- Test Phoenix Hook integration points
-
-### Integration Tests
-
-- Test complete user workflows (play → pause → change display mode)
-- Test edge cases prevented by state machine
-- Test Phoenix LiveView event handling
-
-### Functional Tests
-
-- Test feature parity between implementations
-- Verify identical behavior for user interactions
-- Test edge cases and error conditions
-
-## Expected Outcomes
-
-### Code Quality
-
-- **20-30% reduction in LOC** (500-900 lines)
-- **Elimination of manual synchronization** code
-- **Better separation of concerns**
-- **Improved debugging capabilities**
-
-### User Experience
-
-- **Consistent behavior** with automatic reactivity
-- **Fewer UI bugs** from state consistency
-- **More reliable interactions** with proper state management
-
-### Developer Experience
-
-- **Easier to add new features**
-- **Better debugging tools**
-- **More predictable state management**
-- **Cleaner code architecture**
-
-## Next Steps
-
-### Immediate Actions (Phase 1)
-
-1. **Review this plan** and adjust based on project priorities
-2. **Set up development environment** with MobX and XState dependencies
-3. **Create directory structure** for parallel implementation
-4. **Set up Phoenix LiveView feature flag** to switch between implementations
-
-### Short-term Goals (Phase 2-3)
-
-1. **Build minimal viable v2 implementation** with just play/pause functionality
-2. **Test Phoenix LiveView integration** with the new hook
-3. **Validate architecture** with a simple feature before expanding
-4. **Create testing framework** for comparing implementations
-
-### Long-term Goals (Phase 4-5)
-
-1. **Incrementally migrate features** from original to v2 implementation
-2. **Maintain production stability** with rollback capabilities
-3. **Full transition** to v2 implementation
-
-### Success Criteria
-
-- **No disruption** to existing functionality during migration
-- **Measurable improvements** in code maintainability
-- **Smooth developer experience** with better debugging tools
-- **Reduced bugs** from improved state management
-- **Successful feature flag rollout** with easy rollback capability
-
-### Risk Mitigation
-
-- **Parallel implementation** allows safe experimentation
-- **Feature flags** enable gradual rollout and easy rollback
-- **Comprehensive testing** ensures compatibility
-- **Functional testing** validates behavior matches original
-- **Original implementation** remains as fallback option
+- Eliminate all manual state synchronization from the hook.
+- Reduce the logical complexity of `ecg_player.js` significantly.
+- Achieve a fully interactive and bug-free player experience, identical to the original.
+- Ensure a safe, reversible migration path via feature flagging.
