@@ -183,23 +183,234 @@ const ECGPlayerV2 = {
   },
   
   clearCanvas() {
-    // TODO: Implement canvas clearing
-    console.log('Clearing canvas');
+    // Clear all canvas layers
+    const canvases = [
+      { canvas: this.backgroundCanvas, context: this.backgroundContext },
+      { canvas: this.waveformCanvas, context: this.waveformContext },
+      { canvas: this.qrsFlashCanvas, context: this.qrsFlashContext },
+      { canvas: this.calipersCanvas, context: this.calipersContext }
+    ];
+    
+    canvases.forEach(({ canvas, context }) => {
+      if (canvas && context) {
+        // Clear the entire canvas
+        context.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    });
+    
+    console.log('All canvas layers cleared');
   },
   
   initializeCanvas() {
-    // TODO: Initialize canvas layers
-    console.log('Initializing canvas');
+    // Get the container for canvas elements
+    const container = this.el.querySelector("[data-ecg-chart]");
+    if (!container) {
+      console.error('ECG chart container not found');
+      return;
+    }
+    
+    // Clean up any existing canvases
+    this.cleanupCanvases();
+    
+    // Calculate canvas dimensions
+    this.calculateCanvasDimensions();
+    
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const canvasHeight = this.canvasHeight;
+    const canvasWidth = this.chartWidth;
+    
+    // Create background canvas for static grid (bottom layer)
+    this.backgroundCanvas = document.createElement("canvas");
+    this.backgroundCanvas.width = canvasWidth * devicePixelRatio;
+    this.backgroundCanvas.height = canvasHeight * devicePixelRatio;
+    this.backgroundCanvas.style.width = canvasWidth + "px";
+    this.backgroundCanvas.style.height = canvasHeight + "px";
+    this.backgroundCanvas.style.display = "block";
+    container.appendChild(this.backgroundCanvas);
+    
+    this.backgroundContext = this.backgroundCanvas.getContext("2d");
+    this.backgroundContext.scale(devicePixelRatio, devicePixelRatio);
+    
+    // Create waveform canvas for animated ECG data (overlapping layer)
+    this.waveformCanvas = document.createElement("canvas");
+    this.waveformCanvas.width = canvasWidth * devicePixelRatio;
+    this.waveformCanvas.height = canvasHeight * devicePixelRatio;
+    this.waveformCanvas.style.width = canvasWidth + "px";
+    this.waveformCanvas.style.height = canvasHeight + "px";
+    this.waveformCanvas.style.display = "block";
+    this.waveformCanvas.style.marginTop = `-${canvasHeight}px`; // Overlap the background canvas
+    this.waveformCanvas.style.pointerEvents = "none"; // Allow clicks to pass through
+    container.appendChild(this.waveformCanvas);
+    
+    this.waveformContext = this.waveformCanvas.getContext("2d");
+    this.waveformContext.scale(devicePixelRatio, devicePixelRatio);
+    
+    // Create QRS flash canvas for indicators (overlapping layer)
+    this.qrsFlashCanvas = document.createElement("canvas");
+    this.qrsFlashCanvas.width = canvasWidth * devicePixelRatio;
+    this.qrsFlashCanvas.height = canvasHeight * devicePixelRatio;
+    this.qrsFlashCanvas.style.width = canvasWidth + "px";
+    this.qrsFlashCanvas.style.height = canvasHeight + "px";
+    this.qrsFlashCanvas.style.display = "block";
+    this.qrsFlashCanvas.style.marginTop = `-${canvasHeight}px`; // Overlap the waveform canvas
+    this.qrsFlashCanvas.style.pointerEvents = "none"; // Allow clicks to pass through
+    container.appendChild(this.qrsFlashCanvas);
+    
+    this.qrsFlashContext = this.qrsFlashCanvas.getContext("2d");
+    this.qrsFlashContext.scale(devicePixelRatio, devicePixelRatio);
+    
+    // Create calipers canvas for measurements (top layer)
+    this.calipersCanvas = document.createElement("canvas");
+    this.calipersCanvas.width = canvasWidth * devicePixelRatio;
+    this.calipersCanvas.height = canvasHeight * devicePixelRatio;
+    this.calipersCanvas.style.width = canvasWidth + "px";
+    this.calipersCanvas.style.height = canvasHeight + "px";
+    this.calipersCanvas.style.display = "block";
+    this.calipersCanvas.style.marginTop = `-${canvasHeight}px`; // Overlap the QRS flash canvas
+    this.calipersCanvas.style.pointerEvents = "none"; // Will be updated based on calipers state
+    this.calipersCanvas.style.cursor = "default";
+    container.appendChild(this.calipersCanvas);
+    
+    this.calipersContext = this.calipersCanvas.getContext("2d");
+    this.calipersContext.scale(devicePixelRatio, devicePixelRatio);
+    
+    // Store canvas references in the machine context for easy access
+    this.actor.send({
+      type: 'UPDATE_CANVAS_REFS',
+      canvasRefs: {
+        backgroundCanvas: this.backgroundCanvas,
+        backgroundContext: this.backgroundContext,
+        waveformCanvas: this.waveformCanvas,
+        waveformContext: this.waveformContext,
+        qrsFlashCanvas: this.qrsFlashCanvas,
+        qrsFlashContext: this.qrsFlashContext,
+        calipersCanvas: this.calipersCanvas,
+        calipersContext: this.calipersContext,
+      }
+    });
+    
+    console.log('Canvas layers initialized:', {
+      width: canvasWidth,
+      height: canvasHeight,
+      devicePixelRatio,
+      layers: ['background', 'waveform', 'qrsFlash', 'calipers']
+    });
   },
   
+  calculateCanvasDimensions() {
+    // Get the container for size calculations
+    const container = this.el.querySelector("[data-ecg-chart]");
+    if (!container) {
+      console.error('ECG chart container not found for dimension calculation');
+      return;
+    }
+    
+    // Get current display mode from state machine
+    const currentState = this.actor?.getSnapshot();
+    const displayMode = currentState?.value?.display || 'single';
+    const heightScale = currentState?.context?.display?.heightScale || 1;
+    
+    // Calculate chart width (allow some flexibility based on container)
+    const containerWidth = container.clientWidth || 800; // fallback to 800px
+    this.chartWidth = Math.max(containerWidth - 20, 600); // minimum 600px width
+    
+    // Calculate height based on display mode and medical standards
+    const ROWS_PER_DISPLAY = 3; // for multi-lead display
+    if (displayMode === "multi") {
+      this.canvasHeight = ROWS_PER_DISPLAY * ((CHART_HEIGHT * heightScale) / MULTI_LEAD_HEIGHT_SCALE);
+      this.leadHeight = (CHART_HEIGHT * heightScale) / MULTI_LEAD_HEIGHT_SCALE;
+    } else {
+      this.canvasHeight = CHART_HEIGHT * heightScale;
+      this.leadHeight = CHART_HEIGHT * heightScale;
+    }
+  },
+
   calculateMedicallyAccurateDimensions() {
-    // TODO: Calculate dimensions based on medical standards
-    console.log('Calculating dimensions');
+    // Calculate dimensions based on medical standards (25mm/sec, 10mm/mV)
+    this.calculateCanvasDimensions();
+    
+    // Get current state for scale factors
+    const currentState = this.actor?.getSnapshot();
+    const context = currentState?.context;
+    
+    // Apply scaling factors from state machine context
+    if (context?.display) {
+      const { gridScale, amplitudeScale, heightScale } = context.display;
+      
+      // Medical standard calculations
+      this.pixelsPerMillisecond = (MM_PER_SECOND * PIXELS_PER_MM * gridScale) / 1000;
+      this.pixelsPerMillivolt = MM_PER_MILLIVOLT * PIXELS_PER_MM * amplitudeScale;
+      
+      // Time-based calculations
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS * (2 / gridScale); // Adjust visible timespan
+      this.totalPixelsWidth = this.widthSeconds * MM_PER_SECOND * PIXELS_PER_MM * gridScale;
+      
+      // Update chart dimensions if they need recalculation
+      if (heightScale !== 1) {
+        this.calculateCanvasDimensions();
+      }
+    } else {
+      // Fallback to default medical standards
+      this.pixelsPerMillisecond = (MM_PER_SECOND * PIXELS_PER_MM) / 1000;
+      this.pixelsPerMillivolt = MM_PER_MILLIVOLT * PIXELS_PER_MM;
+      this.widthSeconds = DEFAULT_WIDTH_SECONDS;
+      this.totalPixelsWidth = this.widthSeconds * MM_PER_SECOND * PIXELS_PER_MM;
+    }
+    
+    console.log('Medical dimensions calculated:', {
+      chartWidth: this.chartWidth,
+      canvasHeight: this.canvasHeight,
+      leadHeight: this.leadHeight,
+      pixelsPerMs: this.pixelsPerMillisecond,
+      pixelsPerMv: this.pixelsPerMillivolt,
+      widthSeconds: this.widthSeconds
+    });
+  },
+
+  cleanupCanvases() {
+    // Remove existing canvas elements if they exist
+    const canvases = [
+      'backgroundCanvas', 'waveformCanvas', 'qrsFlashCanvas', 'calipersCanvas'
+    ];
+    
+    canvases.forEach(canvasName => {
+      if (this[canvasName]) {
+        // Remove from DOM
+        if (this[canvasName].parentNode) {
+          this[canvasName].parentNode.removeChild(this[canvasName]);
+        }
+        // Clear reference
+        this[canvasName] = null;
+        // Clear corresponding context
+        const contextName = canvasName.replace('Canvas', 'Context');
+        this[contextName] = null;
+      }
+    });
   },
   
   updateThemeColors() {
-    // TODO: Update theme colors
-    console.log('Updating theme colors');
+    // Detect current theme from document data attribute
+    const theme = document.documentElement.getAttribute("data-theme") || "light";
+    const isDark = theme === "dark";
+
+    // Define theme-specific colors for canvas rendering
+    this.colors = {
+      waveform: isDark ? "#ffffff" : "#000000",
+      gridFine: isDark ? "#660000" : "#ff9999",
+      gridBold: isDark ? "#990000" : "#ff6666",
+      gridDots: isDark ? "#666666" : "#999999",
+      labels: isDark ? "#ffffff" : "#333333",
+      background: isDark ? "#1a1a1a" : "#ffffff",
+      cursor: isDark ? "#ff4444" : "#0066cc",
+      calipers: isDark ? "#00ff00" : "#009900",
+      qrsFlash: isDark ? "#ffff00" : "#ff8800",
+    };
+
+    console.log('Theme colors updated:', {
+      theme,
+      isDark,
+      colors: this.colors
+    });
   },
   
   setupEventListeners() {
@@ -329,6 +540,8 @@ const ECGPlayerV2 = {
     if (this.themeObserver) {
       this.themeObserver.disconnect();
     }
+    // Clean up canvas elements
+    this.cleanupCanvases();
   },
   
   loadInitialData() {

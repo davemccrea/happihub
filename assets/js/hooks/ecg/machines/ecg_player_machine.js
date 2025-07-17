@@ -96,6 +96,7 @@ export const ecgPlayerMachine = setup({
       UPDATE_AMPLITUDE_SCALE: { scale: 1 },
       UPDATE_HEIGHT_SCALE: { scale: 1 },
       TOGGLE_QRS_INDICATOR: {},
+      UPDATE_CANVAS_REFS: { canvasRefs: {} },
       ERROR: { message: "" },
       RETRY: {},
     },
@@ -256,6 +257,17 @@ export const ecgPlayerMachine = setup({
         ...context.display,
         qrsIndicatorEnabled: !context.display.qrsIndicatorEnabled,
       }),
+    }),
+    updateCanvasRefs: assign({
+      rendering: ({ context, event }) => {
+        if (event.type === "UPDATE_CANVAS_REFS") {
+          return {
+            ...context.rendering,
+            ...event.canvasRefs,
+          };
+        }
+        return context.rendering;
+      },
     }),
     setError: assign({
       error: ({ event }) => {
@@ -466,6 +478,9 @@ export const ecgPlayerMachine = setup({
         },
         TOGGLE_QRS_INDICATOR: {
           actions: "toggleQrsIndicator",
+        },
+        UPDATE_CANVAS_REFS: {
+          actions: "updateCanvasRefs",
         },
       },
     },
