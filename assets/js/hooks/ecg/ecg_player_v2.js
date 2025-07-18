@@ -20,6 +20,8 @@ const ECGPlayerV2 = {
         actions: {
           initializeCanvases: this.initializeCanvases.bind(this),
           destroyCanvases: this.destroyCanvases.bind(this),
+          renderGridBackground: this.renderGridBackground.bind(this),
+          initializeThemeColors: this.initializeThemeColors.bind(this),
         },
       }),
       {
@@ -147,7 +149,7 @@ const ECGPlayerV2 = {
    * Creates 4 overlapping canvas layers: background, waveform, QRS flash, and calipers.
    */
   initializeCanvases() {
-    const { context } = this.actos.getSnapshot();
+    const { context } = this.actor.getSnapshot();
 
     // Get display settings from machine state
     const { displayMode, heightScale } = context.display;
@@ -248,6 +250,150 @@ const ECGPlayerV2 = {
       this.calipersCanvas.remove();
       this.calipersCanvas = null;
       this.calipersContext = null;
+    }
+  },
+
+  // =================
+  // GRID RENDERING
+  // =================
+
+  /**
+   * Initializes theme colors for rendering based on current theme
+   */
+  initializeThemeColors() {
+    const theme =
+      document.documentElement.getAttribute("data-theme") || "light";
+    const isDark = theme === "dark";
+
+    this.colors = {
+      waveform: isDark ? "#ffffff" : "#000000",
+      gridFine: isDark ? "#660000" : "#ff9999",
+      gridBold: isDark ? "#990000" : "#ff6666",
+      gridDots: isDark ? "#666666" : "#999999",
+      labels: isDark ? "#ffffff" : "#333333",
+      background: isDark ? "#000000" : "#ffffff",
+    };
+  },
+
+  /**
+   * Renders the grid background to the background canvas
+   */
+  renderGridBackground() {
+    if (!this.backgroundCanvas || !this.backgroundContext) return;
+
+    const { context } = this.actor.getSnapshot();
+    const { displayMode, gridType } = context.display;
+
+    // Ensure colors are initialized
+    if (!this.colors) {
+      this.initializeThemeColors();
+    }
+
+    const canvasHeight =
+      displayMode === "multi"
+        ? ROWS_PER_DISPLAY * this.leadHeight
+        : this.leadHeight;
+
+    this.backgroundContext.clearRect(0, 0, this.chartWidth, canvasHeight);
+
+    const gridBounds = {
+      xOffset: 0,
+      yOffset: 0,
+      width: this.chartWidth,
+      height: canvasHeight,
+    };
+
+    switch (gridType) {
+      case "graph_paper":
+        this.drawGraphPaperGrid({
+          bounds: gridBounds,
+          context: this.backgroundContext,
+        });
+        break;
+      case "telemetry":
+        this.drawTelemetryGrid({
+          bounds: gridBounds,
+          context: this.backgroundContext,
+        });
+      default:
+        this.actor.send({
+          type: "ERROR",
+          message: `Error drawing grid of type ${gridType}`,
+        });
+        break;
+    }
+  },
+
+  /**
+   * Draws medical-grade ECG grid (graph paper style)
+   */
+  drawGraphPaperGrid({ bounds, context }) {
+    const { xOffset, yOffset, width, height } = bounds;
+    const { context: machineContext } = this.actor.getSnapshot();
+    const { gridScale } = machineContext.display;
+
+    const smallSquareSize = PIXELS_PER_MM * gridScale;
+    const largeSquareSize = 5 * PIXELS_PER_MM * gridScale;
+
+    // Draw fine grid lines (1mm squares)
+    context.strokeStyle = this.colors.gridFine;
+    context.lineWidth = 0.5;
+    context.beginPath();
+
+    // Vertical fine lines
+    for (let x = xOffset; x <= xOffset + width; x += smallSquareSize) {
+      context.moveTo(x, yOffset);
+      context.lineTo(x, yOffset + height);
+    }
+
+    // Horizontal fine lines
+    for (let y = yOffset; y <= yOffset + height; y += smallSquareSize) {
+      context.moveTo(xOffset, y);
+      context.lineTo(xOffset + width, y);
+    }
+
+    context.stroke();
+
+    // Draw bold grid lines (5mm squares)
+    context.strokeStyle = this.colors.gridBold;
+    context.lineWidth = 1;
+    context.beginPath();
+
+    // Vertical bold lines
+    for (let x = xOffset; x <= xOffset + width; x += largeSquareSize) {
+      context.moveTo(x, yOffset);
+      context.lineTo(x, yOffset + height);
+    }
+
+    // Horizontal bold lines
+    for (let y = yOffset; y <= yOffset + height; y += largeSquareSize) {
+      context.moveTo(xOffset, y);
+      context.lineTo(xOffset + width, y);
+    }
+
+    context.stroke();
+  },
+
+  /**
+   * Draws simple telemetry-style grid with dots
+   */
+  drawTelemetryGrid({ bounds, context }) {
+    const { xOffset, yOffset, width, height } = bounds;
+    const { context: machineContext } = this.actor.getSnapshot();
+    const { gridScale } = machineContext.display;
+
+    const dotSpacing = 5 * PIXELS_PER_MM * gridScale;
+    const dotRadius = 1.2;
+
+    context.fillStyle = this.colors.gridDots;
+
+    // Draw dots at grid intersections
+    for (let x = xOffset + 5; x < xOffset + width - 5; x += dotSpacing) {
+      for (let y = 5; y < height - 5; y += dotSpacing) {
+        context.beginPath();
+        context.arc(x, yOffset + y, dotRadius, 0, 2 * Math.PI);
+        context.fill();
+      }
     }
   },
 };

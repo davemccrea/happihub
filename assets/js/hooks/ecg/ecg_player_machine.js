@@ -84,6 +84,9 @@ export const ecgPlayerMachine = setup({
         return context.display;
       },
     }),
+    // Grid rendering actions (implemented in hook)
+    renderGridBackground: () => {},
+    initializeThemeColors: () => {},
   },
   actors: {
     animationActor,
@@ -155,7 +158,11 @@ export const ecgPlayerMachine = setup({
           },
         },
         idle: {
-          entry: "initializeCanvases",
+          entry: [
+            "initializeCanvases",
+            "initializeThemeColors",
+            "renderGridBackground",
+          ],
           on: {
             PLAY: "playing",
             STOP: {
