@@ -13,12 +13,13 @@ const MULTI_LEAD_HEIGHT_SCALE = 0.8;
 
 const ECGPlayerV2 = {
   mounted() {
+    this.setupLiveViewListeners();
+
     this.actor = createActor(
       ecgPlayerMachine.provide({
         actions: {
-          setupLiveViewListeners: () => this.setupLiveViewListeners(),
-          initializeCanvases: () => this.initializeCanvases(),
-          destroyCanvases: () => this.destroyCanvases(),
+          initializeCanvases: this.initializeCanvases.bind(this),
+          destroyCanvases: this.destroyCanvases.bind(this),
         },
       }),
       {
@@ -38,14 +39,10 @@ const ECGPlayerV2 = {
     this.calculateDimensions();
   },
 
-  /**
-   * Handles ECG data loading and sends DATA_LOADED event to state machine.
-   */
   setupLiveViewListeners() {
     this.handleEvent("load_ecg_data", (payload) => {
       try {
         const data = payload.data;
-
         if (!data.fs || !data.sig_name || !data.p_signal) {
           return this.actor.send({
             type: "ERROR",
@@ -53,9 +50,10 @@ const ECGPlayerV2 = {
           });
         }
 
-        const processedData = this.processECGData(data);
-
-        this.actor.send({ type: "DATA_LOADED", data: processedData });
+        this.actor.send({
+          type: "DATA_LOADED",
+          data: this.processECGData(data),
+        });
       } catch (error) {
         this.actor.send({ type: "ERROR", message: error.message });
       }
@@ -149,11 +147,11 @@ const ECGPlayerV2 = {
    * Creates 4 overlapping canvas layers: background, waveform, QRS flash, and calipers.
    */
   initializeCanvases() {
+    const { context } = this.actos.getSnapshot();
+
     // Get display settings from machine state
-    const { displayMode, heightScale } =
-      this.actor.getSnapshot().context.display;
-    const { enabled: calipersEnabled } =
-      this.actor.getSnapshot().context.calipers;
+    const { displayMode, heightScale } = context.display;
+    const { enabled: calipersEnabled } = context.calipers;
 
     const canvasHeight =
       displayMode === "multi"

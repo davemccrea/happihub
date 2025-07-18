@@ -43,10 +43,9 @@ export const ecgPlayerMachine = setup({
     RETRY: {},
   },
   actions: {
-    initializeECGData: assign({
+    setEcgData: assign({
       ecgData: ({ event }) => {
         if (event.type === "DATA_LOADED") {
-          console.log(event.data);
           return event.data;
         }
         return null;
@@ -90,7 +89,7 @@ export const ecgPlayerMachine = setup({
     animationActor,
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5RgMZQAoBsCGBPMATgHQAOOuARtigNYDEAKgPIDiLAMgKID67TT6ANoAGALqJQJAPawAlgBdZUgHYSQAD0QB2AIwA2IgA4ArACYAzHuPDjO03q3GANCFyJDWgJxEALOePG-o6epqaeAL7hLqgY5ISk5FS0RJhS2BCyylB0ACIAggx5vEx5OZw5IuJIINJyiipqmgimOlpEwp6Ghp2BxoY+wlYubgg6g23mYT5ak2GOenqR0WhYePFkeEk0KWkZWXScAEqHTIeVarUKSqrVTS1tHV09-v2Dzq6Idj6mRMZaDoYdEFTD5+ktwCs4sQNpRqNtZBBMGA6Oh2HkAJrnaqXeo3UBNTyBIz6Ww6AJaLTCVrDT6mClELT9YyeMZecwmcExVb4aGJOFEBFIugAZWYQjEFxkVwat3cC18zP0WlMhnZnksNNGwlB7VCwhmIUshlMxk5kLWvM2-JhmWyDAAkgBhADSWMkUtxjVpPh8RABnj0IXspMMmqBemERDJ0cJKsmESiENiFoSVuSNv26DyAFVhZw3TUPdcvQhCeZiVYdGS-pTqR9RnpzJGPGMfHodJ5PD7jItE1yoanYenyLaRWKCzji7LSxGiCCyZ59cqydqw-pfeZF399DZzGStGbkzzB1tSNgAK6wSAotGYiXYosy-GIHvloHa8zmAZmFnmMPTQw-QNKxOmVMxDEPbl1j5dMLyvCAxwECdHzxDQX0bKMmz8L8bDCIEw0sYw50MYRhA8Nt-EggcYVPQgCCkAg6EOTgGEOO8qndOop2fZpOgZf5dBmYRQgpP96yrfoiH8dkST+PoVSolMaP5OiGNyAoij4UpymQrinzQhBX0wj8cJ-fDxJabwzD0HwvhZRtzEU48UGwTBZBIQhYCIDJYGwCgkQQ5g2C4bhHTydh7XQI5hV06VULuOwo2VPQuirVt+lMMMWR0IhQMDVpbL8IEnPiFy3I8ggvLAZQ-ICxhWA4HgwoiqLDhi+9OLiksWh+Vp7FSqttQysMTHLf5QX9UwyIsEriDK9zPKIarauvR0uDyQ5QvCyLotiz1pyrLRNXsKajD6P4Ix7YxQR8WaiHmiqqpq-zIAFRFkVFDaGG4HJDjyAB1e0ADkWD27iDLbHKzCpTxdC6ACA2OvRTpMEx-hsKwbruh7FuWl6IG8ghsAAd1HAAxYH7WFAAJH6-sBkGwf0ppId+KaOzh-pGUR+sLHbBkxmZWGOlhzpsdchbKqW56AtTFBr0+w5vt+gHgdBjrCz0+LEFZ6GOZ0eHub0Y7piI1t2xZV4fATZYj3iHyYToR1qbyEGeHWioNcnZntCBOdGU3Wz9H6TpNV6dpCS8SlAmmWy7od8g6GzdB8gYHgWEOe0cm4YVmvzL2UJLFKiM-VpocDa2Qk1b4ctrfoSOu1949kWBHeT1OeDyABZVF7QYbMyhzvOme1hArHLFLQWNSYyK+TUm0Aptua3K6O2b1vE-bgoeGpzh7RYanvtz8L844zWuunBwfkDGYuj+aYmx0LLfV-QlSJ7LQBn+dfHaCxruAAIptW4MDHIToCinBHkXBwvgWifgciRJkmpARs1IlSGwjIwiNh-uQIgcgshCj-iFMBwpUQYm4F3JgZQoEHUJO0MigQ6SGErC0d4IxGQ5R6roDsjwvA2yTFBYgCc8BEAALbnkwIoeqwUeAkLIeiChVDT6Si1iWDsRFSKjSYSwskmplQ-E6LDaYg0Wg+FNH2c0x4ABmEjMCwBQAQMA1UiBSCsVY6R-8ybZnYOwXOzFOBAxoTxVo5YLAUkpKqFK+ijq83VDlWGZhWHPFuhYu2xAbGYDsQ4pxygXHKA8SFLxPi-GcACUEgyIS5zmHCWRI00TjoeDGokj+nRmEcnBMoKQEA4BqH7BaFRF8eIAFo6SaiGURUWhi2yRy-O2O6ylaADP2jxMImoAyRkScJKkMwY6OVSYIk8-JUjpFtEs8GTQKRhhNG0EwCxhIzBaHYCC+zqIwXhO9M5PsECAlCXSMYdIuzfFWRZFKuUdC2Smn4TBB4XlKTeYOU5D5VEHR3FGY01tKwxhiSMcFjJfhmMCIuYSm5nm2wOQs7YJA4KQE+aPIFRg-AhE7D0KwPYww2UAlYfU7ZmH7j2WS15aZtiqQILSks2EFR0m+IyRwJofRXIwl4A27JcLdFMOLcqnkxXThaGGf4BhgzjGEPGcFKSBUphxlLHyK0IDap4sqEa-MgSBHZC6my2oNWSyejau1BlAzHSlXOQWZjCSdD3OY81zkJaPWljat6SJfVNH8DlJ5FhnV9DsAEJGOpAVjE-OqRwnqY141lhAImpMsiJsQClAwCwmysLMEqY2vNG1GFrGSPUbZeyRtKtG3GMtXobHlrapFgyDLwNyp-Y1jYIxUn6MdTctaFjIwktqZkEaBEDmESMTqyyDLApGI2IioIElWGNICcFOCRH4KgAm0de6LnYu0E2KSEZ5wgi-CEK9uAxESMUFWhAE0GQdEIlskwgw9GTCMG+iFfhrbqthdY2x9jHHVQAyCY6jIDVmAJeqYW+o7oZKyah3JrirEAYdbzVKUZQj9BPYuMJhHkPZOcfpb2dLvjtEScq+w1TKQ+AaaqP0IlrDqlMb2SIQA */
+  /** @xstate-layout N4IgpgJg5mDOIC5RgMZQAoBsCGBPMATgHQAOOuARtigNYDEAKgPIDiLAMgKID67TT6ANoAGALqJQJAPawAlgBdZUgHYSQAD0QA2AKwAOIgCYtARgDsAZjPCThkwBYzegDQhciPWZ1FLevfa0zLWEdYQtDAF8I11QMckJScipaIkwpbAhZZSg6ABEAQQZ83iZ83M5ckXEkEGk5RRU1TQQTAE5Woh0LVpCnPWFDPUNhLVd3FuEAoi1WtuMLLXsLBbMomLQsPASyPGSaVPTM7LpOACVTplOqtTqFJVUa5raOrp6dPoGhkbHEWxmjPyGcKOCz2PStLRrcAbeLEHaUaj7WQQTBgOjodj5ACa1xqtwaD1AzXBBhMNjBjlCFn89h+LUMrW8rT0Dj04UmIxMFihsU2+DhSURRGRqLoAGVmEIxDcZHdGo9tBDOtZniMLDpFqM3L8TLqiAF-IZ7MMga1DKtotC4lsBbshfCsjkGABJADCAGlcZJZQSmjqpnYwSY9FphiYtP46bq-EYnOEdPYQg4TDoeTCbYk7SkHcd0PkAKpizhe2o++5+hAkohk1mUsI0qM6BNEYSTQaOELq0Np638zMI7PkR3iyUl-HlhUIHoWfVdSZfNpgqPPTqDcJmtk2Fk9vnbQXZ7AAV1gkHRmJx0rxZflRMQYLMRHC-T0oXsGocrSj9jJsbMZlaSwWFyIw7rC-Z7KQR4nhAI4CGO16Ehod6eI+gzCC+kzvvYn7ai0QEzkMASJt+Ayhq0oEZvCEGEAQUgEHQpycAwpwXtU3r1BOt4IIY7xEIyQEhAmrTdOYUZ2AYfQ8SMTbWECFF9lRQo0XReSFMUfBlBU8EcTeSEIPeqHPq+WE4eMuo9PqwZUsCL5DPJCQoNgmCyCQhCwEQmSwNgFCojBzBsFw3Cuvk7DOugZxitpcqIU8Zp8QyMxrssiyGFGLLCLOlifMsZiJuRlq8mBjnOa5BDuWAyjeb5jCsBwPDBaF4WnJFl7sdFFZzPFEIbssCzGlGXgdIylh2DYOj8Xo9nEMVLluUQFVVaerpcPkpxBSFYURVFvqTrqZh0kaZiGI+4ZaEBhjDCCqYFemfYzaV5WVT5kDCiiaISqtDDcLkpz5AA6s6AByLDbZxenfiY+pBBqR3hiaLi4Ydx1AVoZ22JdljXesvYOU5s1lfNT2+R5BDYAA7sOABiQPOmKAAS32-QDwOg7pzQQ1DuiBHYoafAdPHHW+ZjhtYJGEVNRD3XNC3PRAmYoKeH2nF9P3-UDIOtaWOkxXeeqOFzsO84MB2ggYsxhMMEJ2Dxk03TjxCefCdCunT+TAzwK2VJr45s9ozYhrDdhBMITg6HSGozqHZ1hEGOjmhLjvkHQ+boAUDA8CwpzOrk3Big1xbewhFZo50JIRjYwQWGEdIBA+yw8W0R0x3HCeyLATsp2nPD5AAshizoMPm5S5-nrM6wgwTeECIStiEDLCRYdJWBlngAcIPRml0f72K37dJ53hQ8HTnDOiwdNfXnIUF2xWvtZOoaQyMiw6FyoJV7qB25fqxjmhGwa6kaXeTt-J1W4AARWatwIGuQ3SFEuGPYu4ZpjCz8GCd4Zp7C0lwuYB8rRLAODfEsCM1hIR213A7NuHdU6H3WoDAAavkMU3BGKUxajfH249QyR2NMGPBqN-BHTpCyVcrZ0aJVMIsIB5AiByGyKKEBgUYFigxNibgPcmDlAQbtf8+piFgmGKCEO4Y6ShyMNSP8bINRGkcFIvARAAC2h5MCKBqgFHgSiVFYjURo6+MptYdR0QaXKXxDHCy1OMSw9gfDmPXoyNoIZIhkLAgAMycZgWAKACBgAqkQKQyTkmuNAZTfM7B2B50YpwQGWiuLhgyqEWe5gQ7MgDp-fQPgZiLGEmCF8+VsbkKIKkzA6TMnZOULk5QhTArFNKeUzglTql6VqZ0WeNhrD-j8IET+6EjAdMCF0MkwsLSWmUFICAcA1CFRtH4u+XEAC05o6S3KZP+dory3ntAtH0sCilaDXJ2lxBkdJGQdDmLPP+CZdASx+fsNIGRHR-LBs0P8UZ0KPyWKEJwotdTciSZRfcSI3oIt9hPXiPC-y6lMEQ0yvxrbxRTE4Wwb9SFfLxVmfYOYoBEvHgc7wli3jMlRomVK2DBgdHwY4YSxhgwBChfiyCx5IBcorH1aY4RMWiuWHgqMptqxBAum0cMOVPlWn6dC+aBBaIECVZOKwUTSI2FmKCNGmCxLmkfMLfQ699Co2NZcu6eMHrWoBSYKM3NMpLASWddoiSWX+pKnNTyi0IBBr0oI7BQQtAtkTLoLkvDgwxpNUVAN0siaKqvP4++1LuLhiicNdsOa4621jbjeNBMZbExFGAFNzQgLeCCPxRwbIgjCwOthPtkrzDmlGuGCWUs22lrlhAUmFNsjdu0GEXVEIhgMlBOaMOiNqQGAWJqnp411SzuLfOpN8sy1tX+XpKuM4rGhAAtYPBLrEaDEhi-awbJugwyxoWjMic8Bru4lWxYD4gSeDyoNYIBa-UJBA7gGRjpURgeRbhXKK8LroXVEGEMO9cV9mQw4pxigwPGkzcEYSZo9X0oTCYpYqFhiWII5I4jCRBnDKyRVMDRoDq83aXgl8yYf04ubcQbjGTeNjLyckjDwrxjmgcI+OOHy2SJgWBLaTIycm6Q4cqmM7x+hdPEnDT+SCXzzzjFp0hUQgA */
   id: "ecgPlayer",
   type: "parallel",
   context: ({ input }) => ({
@@ -106,12 +105,12 @@ export const ecgPlayerMachine = setup({
       allLeadsCursorData: null,
     },
     display: {
-      gridType: input?.gridType || "telemetry",
-      displayMode: input?.displayMode || "single",
-      currentLead: input?.currentLead || 0,
-      gridScale: input?.gridScale || 1,
+      gridType: input.gridType,
+      displayMode: input.displayMode,
+      currentLead: input.currentLead,
+      gridScale: input.gridScale,
       amplitudeScale: 1,
-      heightScale: input?.heightScale || 1,
+      heightScale: input.heightScale,
       qrsIndicatorEnabled: true,
       cursorWidth: 20,
       leadHeight: 150,
@@ -144,11 +143,10 @@ export const ecgPlayerMachine = setup({
       initial: "loading",
       states: {
         loading: {
-          entry: ["setupLiveViewListeners"],
           on: {
             DATA_LOADED: {
               target: "idle",
-              actions: "initializeECGData",
+              actions: "setEcgData",
             },
             ERROR: {
               target: "error",
@@ -202,7 +200,7 @@ export const ecgPlayerMachine = setup({
             RETRY: "loading",
             DATA_LOADED: {
               target: "idle",
-              actions: ["clearError", "initializeECGData"],
+              actions: ["clearError", "setEcgData"],
             },
           },
         },
