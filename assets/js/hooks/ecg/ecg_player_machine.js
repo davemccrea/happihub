@@ -44,45 +44,155 @@ export const ecgPlayerMachine = setup({
   },
   actions: {
     setEcgData: assign({
-      ecgData: ({ event }) => {
-        if (event.type === "DATA_LOADED") {
-          return event.data;
-        }
-        return null;
-      },
+      ecgData: ({ event }) => event.data,
     }),
     setError: assign({
-      error: ({ event }) => {
-        if (event.type === "ERROR") {
-          return event.message;
-        }
-        return null;
-      },
+      error: ({ event }) => event.message,
     }),
     clearError: assign({
       error: () => null,
     }),
     updateGridType: assign({
-      display: ({ context, event }) => {
-        if (event.type === "UPDATE_GRID_TYPE") {
-          return {
-            ...context.display,
-            gridType: event.gridType,
-          };
-        }
-        return context.display;
-      },
+      display: ({ context, event }) => ({
+        ...context.display,
+        gridType: event.gridType,
+      }),
     }),
     updateDisplayMode: assign({
-      display: ({ context, event }) => {
-        if (event.type === "UPDATE_DISPLAY_MODE") {
-          return {
-            ...context.display,
-            displayMode: event.mode,
-          };
-        }
-        return context.display;
+      display: ({ context, event }) => ({
+        ...context.display,
+        displayMode: event.mode,
+      }),
+    }),
+    // Playback actions
+    updateElapsedTime: assign({
+      playback: ({ context, event }) => {
+        if (!context.playback.startTime) return context.playback;
+
+        const now = event.timestamp;
+        const elapsedTime =
+          (now - context.playback.startTime + context.playback.pausedTime) /
+          1000;
+        const cursorPosition = context.ecgData
+          ? elapsedTime / context.ecgData.totalDuration
+          : 0;
+
+        return {
+          ...context.playback,
+          elapsedTime,
+          cursorPosition,
+          animationCycle: context.playback.animationCycle + 1,
+        };
       },
+    }),
+    pausePlayback: assign({
+      playback: ({ context }) => ({
+        ...context.playback,
+        pausedTime: context.playback.elapsedTime * 1000,
+        startTime: null,
+      }),
+    }),
+    resetPlayback: assign({
+      playback: ({ context }) => ({
+        ...context.playback,
+        startTime: null,
+        pausedTime: 0,
+        elapsedTime: 0,
+        cursorPosition: 0,
+        animationCycle: 0,
+        activeCursorData: null,
+        allLeadsCursorData: null,
+      }),
+    }),
+    setStartTime: assign({
+      playback: ({ context }) => ({
+        ...context.playback,
+        startTime: performance.now() - context.playback.pausedTime,
+      }),
+    }),
+    toggleLoop: assign({
+      playback: ({ context }) => ({
+        ...context.playback,
+        loopEnabled: !context.playback.loopEnabled,
+      }),
+    }),
+    // Display actions
+    changeLead: assign({
+      display: ({ context, event }) => ({
+        ...context.display,
+        currentLead: event.lead,
+      }),
+    }),
+    updateGridScale: assign({
+      display: ({ context, event }) => ({
+        ...context.display,
+        gridScale: event.scale,
+      }),
+    }),
+    updateAmplitudeScale: assign({
+      display: ({ context, event }) => ({
+        ...context.display,
+        amplitudeScale: event.scale,
+      }),
+    }),
+    updateHeightScale: assign({
+      display: ({ context, event }) => ({
+        ...context.display,
+        heightScale: event.scale,
+      }),
+    }),
+    toggleQrsIndicator: assign({
+      display: ({ context }) => ({
+        ...context.display,
+        qrsIndicatorEnabled: !context.display.qrsIndicatorEnabled,
+      }),
+    }),
+    updateCanvasRefs: assign({
+      rendering: ({ context, event }) => ({
+        ...context.rendering,
+        ...event.canvasRefs,
+      }),
+    }),
+    // Calipers actions
+    startDrawing: assign({
+      calipers: ({ context, event }) => ({
+        ...context.calipers,
+        isDragging: true,
+        dragStartPoint: event.point,
+        activeCaliper: {
+          startPoint: event.point,
+          endPoint: event.point,
+          type: context.calipers.calipersType,
+        },
+      }),
+    }),
+    finishDrawing: assign({
+      calipers: ({ context, event }) => {
+        if (!context.calipers.activeCaliper) return context.calipers;
+
+        const newCaliper = {
+          ...context.calipers.activeCaliper,
+          endPoint: event.point,
+          id: `caliper_${Date.now()}`,
+        };
+
+        return {
+          ...context.calipers,
+          isDragging: false,
+          dragStartPoint: null,
+          activeCaliper: null,
+          measurements: [...context.calipers.measurements, newCaliper],
+        };
+      },
+    }),
+    clearCalipers: assign({
+      calipers: ({ context }) => ({
+        ...context.calipers,
+        measurements: [],
+        activeCaliper: null,
+        isDragging: false,
+        dragStartPoint: null,
+      }),
     }),
     // Grid rendering actions (implemented in hook)
     renderGridBackground: () => {},
@@ -156,13 +266,13 @@ export const ecgPlayerMachine = setup({
               actions: "setError",
             },
           },
-        },
-        idle: {
-          entry: [
+          exit: [
             "initializeCanvases",
             "initializeThemeColors",
             "renderGridBackground",
           ],
+        },
+        idle: {
           on: {
             PLAY: "playing",
             STOP: {
