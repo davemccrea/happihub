@@ -28,7 +28,9 @@ import ECGPlayer from "./hooks/ecg/ecg_player";
 import ECGPlayerV2 from "./hooks/ecg/ecg_player_v2";
 import ClearFlash from "./hooks/clear_flash";
 
-const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content");
+const csrfToken = document
+  .querySelector("meta[name='csrf-token']")
+  .getAttribute("content");
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: { _csrf_token: csrfToken },
@@ -60,34 +62,37 @@ window.liveSocket = liveSocket;
 //     2. click on elements to jump to their definitions in your code editor
 //
 if (process.env.NODE_ENV === "development") {
-  window.addEventListener("phx:live_reload:attached", ({ detail: reloader }) => {
-    // Enable server log streaming to client.
-    // Disable with reloader.disableServerLogs()
-    reloader.enableServerLogs();
+  window.addEventListener(
+    "phx:live_reload:attached",
+    ({ detail: reloader }) => {
+      // Enable server log streaming to client.
+      // Disable with reloader.disableServerLogs()
+      reloader.enableServerLogs();
 
-    // Open configured PLUG_EDITOR at file:line of the clicked element's HEEx component
-    //
-    //   * click with "c" key pressed to open at caller location
-    //   * click with "d" key pressed to open at function component definition location
-    let keyDown;
-    window.addEventListener("keydown", (e) => (keyDown = e.key));
-    window.addEventListener("keyup", (e) => (keyDown = null));
-    window.addEventListener(
-      "click",
-      (e) => {
-        if (keyDown === "c") {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          reloader.openEditorAtCaller(e.target);
-        } else if (keyDown === "d") {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          reloader.openEditorAtDef(e.target);
-        }
-      },
-      true
-    );
+      // Open configured PLUG_EDITOR at file:line of the clicked element's HEEx component
+      //
+      //   * click with "c" key pressed to open at caller location
+      //   * click with "d" key pressed to open at function component definition location
+      let keyDown;
+      window.addEventListener("keydown", (e) => (keyDown = e.key));
+      window.addEventListener("keyup", (e) => (keyDown = null));
+      window.addEventListener(
+        "click",
+        (e) => {
+          if (keyDown === "c") {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            reloader.openEditorAtCaller(e.target);
+          } else if (keyDown === "d") {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            reloader.openEditorAtDef(e.target);
+          }
+        },
+        true
+      );
 
-    window.liveReloader = reloader;
-  });
+      window.liveReloader = reloader;
+    }
+  );
 }
