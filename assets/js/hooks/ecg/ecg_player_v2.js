@@ -13,12 +13,12 @@ const MULTI_LEAD_HEIGHT_SCALE = 0.8;
 
 const ECGPlayerV2 = {
   mounted() {
-    this.setupLiveViewListeners();
-    this.setupEventListeners();
-
     this.actor = createActor(
       ecgPlayerMachine.provide({
         actions: {
+          setupLiveViewListeners: this.setupLiveViewListeners.bind(this),
+          setupEventListeners: this.setupEventListeners(this),
+          calculateDimensions: this.calculateDimensions.bind(this),
           initializeCanvases: this.initializeCanvases.bind(this),
           destroyCanvases: this.destroyCanvases.bind(this),
           renderGridBackground: this.renderGridBackground.bind(this),
@@ -39,8 +39,6 @@ const ECGPlayerV2 = {
     );
 
     this.actor.start();
-
-    this.calculateDimensions();
   },
 
   setupLiveViewListeners() {

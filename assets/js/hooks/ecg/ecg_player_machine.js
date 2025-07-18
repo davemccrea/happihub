@@ -1,6 +1,18 @@
 import { setup, assign, fromCallback } from "xstate";
 
 export const ecgPlayerMachine = setup({
+  guards: {
+    canGoToPrevLead: ({ context }) => {
+      return context.display.currentLead > 0;
+    },
+    canGoToNextLead: ({ context }) => {
+      return (
+        context.ecgData &&
+        context.ecgData.leadNames &&
+        context.display.currentLead < context.ecgData.leadNames.length - 1
+      );
+    },
+  },
   actions: {
     setEcgData: assign({ ecgData: ({ event }) => event.data }),
     setError: assign({ error: ({ event }) => event.message }),
@@ -12,29 +24,16 @@ export const ecgPlayerMachine = setup({
       }),
     }),
     setPrevLead: assign({
-      display: ({ context }) => {
-        if (context.display.currentLead <= 0) {
-          return context.display;
-        }
-        return {
-          ...context.display,
-          currentLead: context.display.currentLead - 1,
-        };
-      },
+      display: ({ context }) => ({
+        ...context.display,
+        currentLead: context.display.currentLead - 1,
+      }),
     }),
     setNextLead: assign({
-      display: ({ context }) => {
-        if (
-          context.display.currentLead >=
-          context.ecgData.leadNames.length - 1
-        ) {
-          return context.display;
-        }
-        return {
-          ...context.display,
-          currentLead: context.display.currentLead + 1,
-        };
-      },
+      display: ({ context }) => ({
+        ...context.display,
+        currentLead: context.display.currentLead + 1,
+      }),
     }),
   },
 }).createMachine({
@@ -92,6 +91,7 @@ export const ecgPlayerMachine = setup({
       initial: "loading",
       states: {
         loading: {
+          entry: ["setupLiveViewListeners", "setupEventListeners"],
           on: {
             DATA_LOADED: {
               target: "idle",
@@ -103,6 +103,7 @@ export const ecgPlayerMachine = setup({
             },
           },
           exit: [
+            "calculateDimensions",
             "initializeCanvases",
             "initializeThemeColors",
             "renderGridBackground",
@@ -226,9 +227,11 @@ export const ecgPlayerMachine = setup({
       },
       on: {
         PREV_LEAD: {
+          guard: "canGoToPrevLead",
           actions: ["setPrevLead", "onLeadChanged"],
         },
         NEXT_LEAD: {
+          guard: "canGoToNextLead",
           actions: ["setNextLead", "onLeadChanged"],
         },
         CHANGE_LEAD: {
