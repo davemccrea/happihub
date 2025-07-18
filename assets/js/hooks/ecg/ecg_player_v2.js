@@ -14,6 +14,7 @@ const MULTI_LEAD_HEIGHT_SCALE = 0.8;
 const ECGPlayerV2 = {
   mounted() {
     this.setupLiveViewListeners();
+    this.setupEventListeners();
 
     this.actor = createActor(
       ecgPlayerMachine.provide({
@@ -22,6 +23,7 @@ const ECGPlayerV2 = {
           destroyCanvases: this.destroyCanvases.bind(this),
           renderGridBackground: this.renderGridBackground.bind(this),
           initializeThemeColors: this.initializeThemeColors.bind(this),
+          onLeadChanged: this.onLeadChanged.bind(this),
         },
       }),
       {
@@ -60,6 +62,45 @@ const ECGPlayerV2 = {
         this.actor.send({ type: "ERROR", message: error.message });
       }
     });
+  },
+
+  setupEventListeners() {
+    // Listen for lead selection changes from form
+    const leadSelect = this.el.querySelector('[name="current_lead"]');
+    if (leadSelect) {
+      leadSelect.addEventListener("change", (event) => {
+        const leadIndex = parseInt(event.target.value);
+        this.actor.send({ type: "CHANGE_LEAD", leadIndex });
+      });
+    }
+
+    // Listen for keyboard shortcuts (j/k for next/previous lead)
+    document.addEventListener("keydown", this.handleKeydown.bind(this));
+  },
+
+  handleKeydown(event) {
+    // Only handle shortcuts when the ECG player is focused or no input is focused
+    const activeElement = document.activeElement;
+    const isInputFocused =
+      activeElement?.tagName === "INPUT" ||
+      activeElement?.tagName === "TEXTAREA" ||
+      activeElement?.tagName === "SELECT";
+
+    if (isInputFocused) return;
+
+    const { context } = this.actor.getSnapshot();
+    if (!context.ecgData?.leadNames) return;
+
+    switch (event.key) {
+      case "j":
+        event.preventDefault();
+        this.actor.send({ type: "NEXT_LEAD" });
+        break;
+      case "k":
+        event.preventDefault();
+        this.actor.send({ type: "PREV_LEAD" });
+        break;
+    }
   },
 
   processECGData(data) {
@@ -138,6 +179,39 @@ const ECGPlayerV2 = {
     if (this.actor) {
       this.actor.stop();
     }
+
+    // Clean up event listeners
+    document.removeEventListener("keydown", this.handleKeydown.bind(this));
+  },
+
+  // =================
+  // LEAD NAVIGATION
+  // =================
+
+  getNextLeadIndex() {
+    const { context } = this.actor.getSnapshot();
+    if (!context.ecgData?.leadNames) return 0;
+    return (context.display.currentLead + 1) % context.ecgData.leadNames.length;
+  },
+
+  getPreviousLeadIndex() {
+    const { context } = this.actor.getSnapshot();
+    if (!context.ecgData?.leadNames) return 0;
+    return context.display.currentLead === 0
+      ? context.ecgData.leadNames.length - 1
+      : context.display.currentLead - 1;
+  },
+
+  onLeadChanged({ event }) {
+    const { leadIndex } = event;
+
+    // Handle side effects (DOM updates)
+    const leadSelect = this.el.querySelector('[name="current_lead"]');
+    if (leadSelect) {
+      leadSelect.value = leadIndex.toString();
+    }
+
+    // TODO: implement rendering
   },
 
   // =================
