@@ -3,18 +3,12 @@
 import { createActor } from "xstate";
 import { ecgPlayerMachine } from "./ecg_player_machine";
 import {
-  amplitudeScaleListener,
-  calipersListener,
-  currentLeadListener,
-  displayModeListener,
-  gridScaleListener,
-  gridTypeListener,
-  heightScaleListener,
-  keydownListener,
-  loopListener,
-  playPauseListener,
-  qrsIndicatorListener,
-} from "./listeners";
+  setupEventListeners,
+  setupLiveViewEventHandlers,
+} from "./event_manager";
+
+import { readFormValue, readFormCheckbox } from "./utils";
+import { setButtonToPlay, setButtonToPause } from "./ui_state_manager";
 
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
@@ -33,30 +27,30 @@ const ECGPlayerV2 = {
     this.actor = createActor(
       ecgPlayerMachine.provide({
         actions: {
-          setupLiveViewEventHandlers:
-            this.setupLiveViewEventHandlers.bind(this),
-          setupEventListeners: this.setupEventListeners.bind(this),
+          // @ts-ignore
+          setupLiveViewEventHandlers: setupLiveViewEventHandlers.bind(this),
+          setupEventListeners: setupEventListeners.bind(this),
           calculateDimensions: this.calculateDimensions.bind(this),
           initializeCanvases: this.initializeCanvases.bind(this),
           destroyCanvases: this.destroyCanvases.bind(this),
           renderGridBackground: this.renderGridBackground.bind(this),
           initializeThemeColors: this.initializeThemeColors.bind(this),
           onLeadChanged: this.onLeadChanged.bind(this),
-          setButtonToPlay: this.setButtonToPlay.bind(this),
-          setButtonToPause: this.setButtonToPause.bind(this),
+          setButtonToPlay: setButtonToPlay.bind(this),
+          setButtonToPause: setButtonToPause.bind(this),
         },
       }),
       {
         input: {
-          gridType: this.readFormValue("grid-type-selector"),
-          displayMode: this.readFormValue("display-mode-selector"),
-          currentLead: parseInt(this.readFormValue("lead-selector")),
-          heightScale: parseFloat(this.readFormValue("height-scale-slider")),
-          gridScale: parseFloat(this.readFormValue("grid-scale-slider")),
-          amplitudeScale: parseFloat(this.readFormValue("amplitude-scale-slider")),
-          loopEnabled: this.readFormCheckbox("loop-checkbox"),
-          qrsIndicatorEnabled: this.readFormCheckbox("qrs-indicator-checkbox"),
-          calipersEnabled: false, // Calipers start disabled, controlled by button not form
+          gridType: readFormValue("grid-type-selector"),
+          displayMode: readFormValue("display-mode-selector"),
+          currentLead: parseInt(readFormValue("lead-selector")),
+          heightScale: parseFloat(readFormValue("height-scale-slider")),
+          gridScale: parseFloat(readFormValue("grid-scale-slider")),
+          amplitudeScale: parseFloat(readFormValue("amplitude-scale-slider")),
+          loopEnabled: readFormCheckbox("loop-checkbox"),
+          qrsIndicatorEnabled: readFormCheckbox("qrs-indicator-checkbox"),
+          calipersEnabled: false,
         },
       }
     );
@@ -85,59 +79,6 @@ const ECGPlayerV2 = {
     this.listeners.forEach((cleanup) => cleanup());
     this.listeners.clear();
     this.actor.stop();
-  },
-
-  setupLiveViewEventHandlers() {
-    this.handleEvent("load_ecg_data", (payload) => {
-      try {
-        const data = payload.data;
-        if (!data.fs || !data.sig_name || !data.p_signal) {
-          return this.actor.send({
-            type: "ERROR",
-            message: "Invalid ECG data format",
-          });
-        }
-
-        this.actor.send({
-          type: "DATA_LOADED",
-          data: this.processECGData(data),
-        });
-      } catch (error) {
-        this.actor.send({ type: "ERROR", message: error.message });
-      }
-    });
-  },
-
-  setButtonToPlay() {
-    const button = document.getElementById("play-pause-button");
-    if (button) {
-      const iconHtml = `<svg class="w-4 h-4 hero-play" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" /></svg>`;
-      const textHtml = `<span class="ml-1">Play</span>`;
-      button.innerHTML = iconHtml + textHtml;
-    }
-  },
-
-  setButtonToPause() {
-    const button = document.getElementById("play-pause-button");
-    if (button) {
-      const iconHtml = `<svg class="w-4 h-4 hero-pause" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" /></svg>`;
-      const textHtml = `<span class="ml-1">Pause</span>`;
-      button.innerHTML = iconHtml + textHtml;
-    }
-  },
-
-  setupEventListeners() {
-    this.addListener(keydownListener.bind(this));
-    this.addListener(playPauseListener.bind(this));
-    this.addListener(calipersListener.bind(this));
-    this.addListener(currentLeadListener.bind(this));
-    this.addListener(displayModeListener.bind(this));
-    this.addListener(gridTypeListener.bind(this));
-    this.addListener(loopListener.bind(this));
-    this.addListener(qrsIndicatorListener.bind(this));
-    this.addListener(gridScaleListener.bind(this));
-    this.addListener(amplitudeScaleListener.bind(this));
-    this.addListener(heightScaleListener.bind(this));
   },
 
   processECGData(data) {
@@ -184,24 +125,6 @@ const ECGPlayerV2 = {
       yMin: -HEIGHT_MILLIVOLTS / 2,
       yMax: HEIGHT_MILLIVOLTS / 2,
     };
-  },
-
-  readFormValue(id) {
-    const element = document.getElementById(id);
-    if (!element) {
-      console.error(`Form element #${id} not found`);
-      return null;
-    }
-    return element.value;
-  },
-
-  readFormCheckbox(id) {
-    const element = document.getElementById(id);
-    if (!element) {
-      console.error(`Form checkbox #${id} not found`);
-      return false;
-    }
-    return element.checked;
   },
 
   calculateDimensions() {
@@ -506,16 +429,6 @@ const ECGPlayerV2 = {
         context.fill();
       }
     }
-  },
-
-  // =============
-  // Utilities
-  // =============
-
-  addListener(setupMethod) {
-    const cleanup = setupMethod.call(this);
-    this.listeners.add(cleanup);
-    return cleanup;
   },
 };
 
