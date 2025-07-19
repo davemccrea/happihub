@@ -1,5 +1,17 @@
+// @ts-check
+
 import { createActor } from "xstate";
 import { ecgPlayerMachine } from "./ecg_player_machine";
+import {
+  calipersListener,
+  currentLeadListener,
+  displayModeListener,
+  gridTypeListener,
+  keydownListener,
+  loopListener,
+  playPauseButtonListener,
+  qrsIndicatorListener,
+} from "./listeners";
 
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
@@ -18,8 +30,9 @@ const ECGPlayerV2 = {
     this.actor = createActor(
       ecgPlayerMachine.provide({
         actions: {
-          setupLiveViewEventHandler: this.setupLiveViewEventHandler(this),
-          setupEventListeners: this.setupEventListeners(this),
+          setupLiveViewEventHandlers:
+            this.setupLiveViewEventHandlers.bind(this),
+          setupEventListeners: this.setupEventListeners.bind(this),
           calculateDimensions: this.calculateDimensions.bind(this),
           initializeCanvases: this.initializeCanvases.bind(this),
           destroyCanvases: this.destroyCanvases.bind(this),
@@ -32,12 +45,15 @@ const ECGPlayerV2 = {
       }),
       {
         input: {
-          gridType: this.readFormValue("grid_type") || "telemetry",
-          displayMode: this.readFormValue("display_mode") || "single",
-          currentLead: parseInt(this.readFormValue("current_lead") || "0"),
-          heightScale: parseFloat(this.readFormValue("height_scale") || "1"),
-          gridScale: parseFloat(this.readFormValue("grid_scale") || "1"),
-          calipersEnabled: this.readFormCheckbox("calipers_mode"),
+          gridType: this.readFormValue("grid-type-selector"),
+          displayMode: this.readFormValue("display-mode-selector"),
+          currentLead: parseInt(this.readFormValue("lead-selector")),
+          heightScale: parseFloat(this.readFormValue("height-scale-slider")),
+          gridScale: parseFloat(this.readFormValue("grid-scale-slider")),
+          amplitudeScale: parseFloat(this.readFormValue("amplitude-scale-slider")),
+          loopPlayback: this.readFormCheckbox("loop-checkbox"),
+          qrsIndicator: this.readFormCheckbox("qrs-indicator-checkbox"),
+          calipersEnabled: false, // Calipers start disabled, controlled by button not form
         },
       }
     );
@@ -68,7 +84,7 @@ const ECGPlayerV2 = {
     this.actor.stop();
   },
 
-  setupLiveViewEventHandler() {
+  setupLiveViewEventHandlers() {
     this.handleEvent("load_ecg_data", (payload) => {
       try {
         const data = payload.data;
@@ -87,21 +103,6 @@ const ECGPlayerV2 = {
         this.actor.send({ type: "ERROR", message: error.message });
       }
     });
-  },
-
-  setupPlayPauseButton() {
-    const button = document.getElementById("play-pause-button");
-
-    if (button) {
-      const handler = () => {
-        this.actor.send({ type: "TOGGLE_PLAY_PAUSE" });
-      };
-
-      button.addEventListener("click", handler);
-      return () => button.removeEventListener("click", handler);
-    }
-
-    return () => {};
   },
 
   setButtonToPlay() {
@@ -123,141 +124,14 @@ const ECGPlayerV2 = {
   },
 
   setupEventListeners() {
-    // Keys
-    this.addListener(this.setupKeydownListener);
-    // Buttons
-    this.addListener(this.setupPlayPauseButton);
-    // Forms
-    this.addListener(this.setupCurrentLeadListener);
-    this.addListener(this.setupDisplayModeListener);
-    this.addListener(this.setupGridTypeListener);
-    // Checkboxes
-    this.addListener(this.setupLoopCheckboxListener);
-    this.addListener(this.setupQrsIndicatorListener);
-    this.addListener(this.setupCalipersListener);
-  },
-
-  setupCurrentLeadListener() {
-    const leadSelect = this.el.querySelector('[name="current_lead"]');
-
-    if (leadSelect) {
-      const handler = (event) => {
-        const leadIndex = parseInt(event.target.value);
-        this.actor.send({ type: "CHANGE_LEAD", leadIndex });
-      };
-
-      leadSelect.addEventListener("change", handler);
-      return () => leadSelect.removeEventListener("change", handler);
-    }
-
-    return () => {};
-  },
-
-  setupDisplayModeListener() {
-    const displayModeSelect = this.el.querySelector('[name="display_mode"]');
-
-    if (displayModeSelect) {
-      const handler = (event) => {
-        const displayMode = event.target.value;
-        this.actor.send({ type: "CHANGE_DISPLAY_MODE", displayMode });
-      };
-
-      displayModeSelect.addEventListener("change", handler);
-      return () => displayModeSelect.removeEventListener("change", handler);
-    }
-
-    return () => {};
-  },
-
-  setupGridTypeListener() {
-    const gridTypeSelect = this.el.querySelector('[name="grid_type"]');
-
-    if (gridTypeSelect) {
-      const handler = (event) => {
-        const gridType = event.target.value;
-        this.actor.send({ type: "CHANGE_GRID_TYPE", gridType });
-      };
-
-      gridTypeSelect.addEventListener("change", handler);
-      return () => gridTypeSelect.removeEventListener("change", handler);
-    }
-
-    return () => {};
-  },
-
-  setupLoopCheckboxListener() {
-    const loopCheckbox = this.el.querySelector('[name="loop_enabled"]');
-
-    if (loopCheckbox) {
-      const handler = () => {
-        this.actor.send({ type: "TOGGLE_LOOP" });
-      };
-
-      loopCheckbox.addEventListener("change", handler);
-      return () => loopCheckbox.removeEventListener("change", handler);
-    }
-
-    return () => {};
-  },
-
-  setupQrsIndicatorListener() {
-    const qrsCheckbox = this.el.querySelector('[name="qrs_indicator_enabled"]');
-
-    if (qrsCheckbox) {
-      const handler = () => {
-        this.actor.send({ type: "TOGGLE_QRS_INDICATOR" });
-      };
-
-      qrsCheckbox.addEventListener("change", handler);
-      return () => qrsCheckbox.removeEventListener("change", handler);
-    }
-
-    return () => {};
-  },
-
-  setupCalipersListener() {
-    const calipersCheckbox = this.el.querySelector('[name="calipers_mode"]');
-
-    if (calipersCheckbox) {
-      const handler = () => {
-        this.actor.send({ type: "TOGGLE_CALIPERS" });
-      };
-
-      calipersCheckbox.addEventListener("change", handler);
-      return () => calipersCheckbox.removeEventListener("change", handler);
-    }
-
-    return () => {};
-  },
-
-  setupKeydownListener() {
-    const handler = (event) => {
-      // Only handle shortcuts when the ECG player is focused or no input is focused
-      const activeElement = document.activeElement;
-      const isInputFocused =
-        activeElement?.tagName === "INPUT" ||
-        activeElement?.tagName === "TEXTAREA" ||
-        activeElement?.tagName === "SELECT";
-
-      if (isInputFocused) return;
-
-      const { context } = this.actor.getSnapshot();
-      if (!context.ecgData?.leadNames) return;
-
-      switch (event.key) {
-        case "j":
-          event.preventDefault();
-          this.actor.send({ type: "NEXT_LEAD" });
-          break;
-        case "k":
-          event.preventDefault();
-          this.actor.send({ type: "PREV_LEAD" });
-          break;
-      }
-    };
-
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    this.addListener(keydownListener.bind(this));
+    this.addListener(playPauseButtonListener.bind(this));
+    this.addListener(calipersListener.bind(this));
+    this.addListener(currentLeadListener.bind(this));
+    this.addListener(displayModeListener.bind(this));
+    this.addListener(gridTypeListener.bind(this));
+    this.addListener(loopListener.bind(this));
+    this.addListener(qrsIndicatorListener.bind(this));
   },
 
   processECGData(data) {
@@ -306,14 +180,22 @@ const ECGPlayerV2 = {
     };
   },
 
-  readFormValue(name) {
-    const element = this.el.querySelector(`[name="${name}"]`);
-    return element ? element.value : null;
+  readFormValue(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+      console.error(`Form element #${id} not found`);
+      return null;
+    }
+    return element.value;
   },
 
-  readFormCheckbox(name) {
-    const element = this.el.querySelector(`[name="${name}"]`);
-    return element ? element.checked : false;
+  readFormCheckbox(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+      console.error(`Form checkbox #${id} not found`);
+      return false;
+    }
+    return element.checked;
   },
 
   calculateDimensions() {
@@ -330,12 +212,6 @@ const ECGPlayerV2 = {
       this.widthSeconds = containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
       this.chartWidth = this.widthSeconds * MM_PER_SECOND * scaledPixelsPerMm;
     }
-  },
-
-  destroyed() {
-    this.listeners.forEach((fn) => fn());
-    this.listeners.clear();
-    this.actor.stop();
   },
 
   // =================
