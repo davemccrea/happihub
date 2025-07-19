@@ -14,7 +14,9 @@ export const ecgPlayerMachine = setup({
     },
   },
   actions: {
-    setEcgData: assign({ ecgData: ({ event }) => event.data }),
+    setEcgData: assign({
+      ecgData: ({ event }) => event.data,
+    }),
     setError: assign({ error: ({ event }) => event.message }),
     clearError: assign({ error: () => null }),
     setCurrentLead: assign({
@@ -90,12 +92,11 @@ export const ecgPlayerMachine = setup({
     playback: {
       initial: "loading",
       states: {
-        stop: {},
         loading: {
           entry: ["setupLiveViewListeners", "setupEventListeners"],
           on: {
             DATA_LOADED: {
-              target: "idle",
+              target: "paused",
               actions: "setEcgData",
             },
             ERROR: {
@@ -110,43 +111,32 @@ export const ecgPlayerMachine = setup({
             "renderGridBackground",
           ],
         },
-        idle: {
-          on: {
-            PLAY: "playing",
-            STOP: {
-              target: "idle",
-              actions: "resetPlayback",
-            },
-          },
-        },
         playing: {
+          entry: ["setButtonToPause"],
           invoke: {
             src: "animationActor",
             id: "animationActor",
           },
           on: {
             TICK: {
-              actions: ["updateElapsedTime"],
+              actions: [],
             },
-            PAUSE: {
+            TOGGLE_PLAY_PAUSE: {
               target: "paused",
-              actions: "pausePlayback",
             },
             STOP: {
-              target: "idle",
-              actions: "resetPlayback",
+              target: "paused",
             },
           },
         },
         paused: {
+          entry: ["setButtonToPlay"],
           on: {
-            PLAY: {
+            TOGGLE_PLAY_PAUSE: {
               target: "playing",
-              actions: "setStartTime",
             },
             STOP: {
-              target: "idle",
-              actions: "resetPlayback",
+              target: "paused",
             },
           },
         },
@@ -154,16 +144,14 @@ export const ecgPlayerMachine = setup({
           on: {
             RETRY: "loading",
             DATA_LOADED: {
-              target: "idle",
-              actions: ["clearError", "setEcgData"],
+              target: "paused",
+              actions: ["clearError"],
             },
           },
         },
       },
       on: {
-        TOGGLE_LOOP: {
-          actions: "toggleLoop",
-        },
+        TOGGLE_LOOP: {},
       },
     },
     calipers: {

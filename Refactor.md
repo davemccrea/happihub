@@ -51,5 +51,3 @@ guards: {
   canGoToNextLead: ({ context }) => /* bounds check */
 }
 ```
-
-## Next

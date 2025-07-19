@@ -26,6 +26,8 @@ const ECGPlayerV2 = {
           renderGridBackground: this.renderGridBackground.bind(this),
           initializeThemeColors: this.initializeThemeColors.bind(this),
           onLeadChanged: this.onLeadChanged.bind(this),
+          setButtonToPlay: this.setButtonToPlay.bind(this),
+          setButtonToPause: this.setButtonToPause.bind(this),
         },
       }),
       {
@@ -41,9 +43,25 @@ const ECGPlayerV2 = {
     );
 
     this.actor.start();
+
+    // Debug subscription - remove in production
+    this.debugSubscription = this.actor.subscribe((snapshot) => {
+      console.log("🎛️ ECG Player State Change:", {
+        state: snapshot.value,
+        isPlaying: snapshot.matches({ playback: "playing" }),
+        context: snapshot.context,
+        event: snapshot.event?.type,
+        timestamp: new Date().toISOString(),
+      });
+    });
   },
 
   destroyed() {
+    // Clean up debug subscription
+    if (this.debugSubscription) {
+      this.debugSubscription.unsubscribe();
+    }
+
     // Clean up all tracked listeners
     this.listeners.forEach((cleanup) => cleanup());
     this.listeners.clear();
@@ -75,8 +93,8 @@ const ECGPlayerV2 = {
     const button = document.getElementById("play-pause-button");
 
     if (button) {
-      const handler = (event) => {
-        this.actor.send({ type: "PLAY_PAUSE_TOGGLED" });
+      const handler = () => {
+        this.actor.send({ type: "TOGGLE_PLAY_PAUSE" });
       };
 
       button.addEventListener("click", handler);
@@ -86,24 +104,20 @@ const ECGPlayerV2 = {
     return () => {};
   },
 
-  updatePlayPauseButton() {
+  setButtonToPlay() {
     const button = document.getElementById("play-pause-button");
     if (button) {
-      // Update icon
-      const iconClass = this.isPlaying ? "hero-pause" : "hero-play";
-      const iconHtml = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24">
-        ${
-          this.isPlaying
-            ? '<path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />'
-            : '<path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />'
-        }
-      </svg>`;
+      const iconHtml = `<svg class="w-4 h-4 hero-play" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" /></svg>`;
+      const textHtml = `<span class="ml-1">Play</span>`;
+      button.innerHTML = iconHtml + textHtml;
+    }
+  },
 
-      // Update text
-      const buttonText = this.isPlaying ? "Pause" : "Play";
-      const textHtml = `<span class="ml-1">${buttonText}</span>`;
-
-      // Replace button content with icon + text
+  setButtonToPause() {
+    const button = document.getElementById("play-pause-button");
+    if (button) {
+      const iconHtml = `<svg class="w-4 h-4 hero-pause" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" /></svg>`;
+      const textHtml = `<span class="ml-1">Pause</span>`;
       button.innerHTML = iconHtml + textHtml;
     }
   },
@@ -127,7 +141,6 @@ const ECGPlayerV2 = {
       };
 
       leadSelect.addEventListener("change", handler);
-
       return () => leadSelect.removeEventListener("change", handler);
     }
 
@@ -161,7 +174,6 @@ const ECGPlayerV2 = {
     };
 
     document.addEventListener("keydown", handler);
-
     return () => document.removeEventListener("keydown", handler);
   },
 
@@ -448,6 +460,7 @@ const ECGPlayerV2 = {
           bounds: gridBounds,
           context: this.backgroundContext,
         });
+        break;
       default:
         this.actor.send({
           type: "ERROR",
