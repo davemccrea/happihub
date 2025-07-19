@@ -87,46 +87,19 @@ export const ecgPlayerMachine = setup({
   context: ({ input }) => ({
     ecgData: null,
     playback: {
-      startTime: null,
-      pausedTime: 0,
-      loopEnabled: input.loopPlayback || false,
-      elapsedTime: 0,
-      animationCycle: 0,
-      cursorPosition: 0,
-      activeCursorData: null,
-      allLeadsCursorData: null,
+      loopEnabled: input.loopEnabled,
     },
     display: {
       gridType: input.gridType,
       displayMode: input.displayMode,
       currentLead: input.currentLead,
       gridScale: input.gridScale,
-      amplitudeScale: input.amplitudeScale || 1.0,
+      amplitudeScale: input.amplitudeScale,
       heightScale: input.heightScale,
-      qrsIndicatorEnabled: input.qrsIndicator !== undefined ? input.qrsIndicator : true,
-      cursorWidth: 20,
-      leadHeight: 150,
-      qrsFlashActive: false,
-      qrsFlashTimeout: null,
-      qrsFlashDuration: 100,
+      qrsIndicatorEnabled: input.qrsIndicatorEnabled,
     },
     calipers: {
-      enabled: input?.calipersEnabled || false,
-      measurements: [],
-      activeCaliper: null,
-      calipersType: "time",
-      isDragging: false,
-      dragStartPoint: null,
-    },
-    rendering: {
-      backgroundCanvas: null,
-      backgroundContext: null,
-      waveformCanvas: null,
-      waveformContext: null,
-      qrsFlashCanvas: null,
-      qrsFlashContext: null,
-      calipersCanvas: null,
-      calipersContext: null,
+      enabled: input.calipersEnabled,
     },
     error: null,
   }),
@@ -207,39 +180,8 @@ export const ecgPlayerMachine = setup({
           },
         },
         enabled: {
-          initial: "idle",
-          states: {
-            idle: {
-              on: {
-                START_DRAWING: {
-                  target: "drawing",
-                  actions: "startDrawing",
-                },
-              },
-            },
-            drawing: {
-              on: {
-                FINISH_DRAWING: {
-                  target: "placed",
-                  actions: "finishDrawing",
-                },
-              },
-            },
-            placed: {
-              on: {
-                START_DRAWING: {
-                  target: "drawing",
-                  actions: ["clearCalipers", "startDrawing"],
-                },
-              },
-            },
-          },
           on: {
             TOGGLE_CALIPERS: "disabled",
-            CLEAR_CALIPERS: {
-              target: ".idle",
-              actions: "clearCalipers",
-            },
           },
         },
       },
@@ -279,9 +221,6 @@ export const ecgPlayerMachine = setup({
         },
         TOGGLE_QRS_INDICATOR: {
           actions: "toggleQrsIndicator",
-        },
-        UPDATE_CANVAS_REFS: {
-          actions: "updateCanvasRefs",
         },
       },
     },

@@ -51,8 +51,8 @@ const ECGPlayerV2 = {
           heightScale: parseFloat(this.readFormValue("height-scale-slider")),
           gridScale: parseFloat(this.readFormValue("grid-scale-slider")),
           amplitudeScale: parseFloat(this.readFormValue("amplitude-scale-slider")),
-          loopPlayback: this.readFormCheckbox("loop-checkbox"),
-          qrsIndicator: this.readFormCheckbox("qrs-indicator-checkbox"),
+          loopEnabled: this.readFormCheckbox("loop-checkbox"),
+          qrsIndicatorEnabled: this.readFormCheckbox("qrs-indicator-checkbox"),
           calipersEnabled: false, // Calipers start disabled, controlled by button not form
         },
       }
