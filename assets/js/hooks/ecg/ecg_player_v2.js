@@ -129,6 +129,12 @@ const ECGPlayerV2 = {
     this.addListener(this.setupPlayPauseButton);
     // Forms
     this.addListener(this.setupCurrentLeadListener);
+    this.addListener(this.setupDisplayModeListener);
+    this.addListener(this.setupGridTypeListener);
+    // Checkboxes
+    this.addListener(this.setupLoopCheckboxListener);
+    this.addListener(this.setupQrsIndicatorListener);
+    this.addListener(this.setupCalipersListener);
   },
 
   setupCurrentLeadListener() {
@@ -142,6 +148,83 @@ const ECGPlayerV2 = {
 
       leadSelect.addEventListener("change", handler);
       return () => leadSelect.removeEventListener("change", handler);
+    }
+
+    return () => {};
+  },
+
+  setupDisplayModeListener() {
+    const displayModeSelect = this.el.querySelector('[name="display_mode"]');
+
+    if (displayModeSelect) {
+      const handler = (event) => {
+        const displayMode = event.target.value;
+        this.actor.send({ type: "CHANGE_DISPLAY_MODE", displayMode });
+      };
+
+      displayModeSelect.addEventListener("change", handler);
+      return () => displayModeSelect.removeEventListener("change", handler);
+    }
+
+    return () => {};
+  },
+
+  setupGridTypeListener() {
+    const gridTypeSelect = this.el.querySelector('[name="grid_type"]');
+
+    if (gridTypeSelect) {
+      const handler = (event) => {
+        const gridType = event.target.value;
+        this.actor.send({ type: "CHANGE_GRID_TYPE", gridType });
+      };
+
+      gridTypeSelect.addEventListener("change", handler);
+      return () => gridTypeSelect.removeEventListener("change", handler);
+    }
+
+    return () => {};
+  },
+
+  setupLoopCheckboxListener() {
+    const loopCheckbox = this.el.querySelector('[name="loop_enabled"]');
+
+    if (loopCheckbox) {
+      const handler = () => {
+        this.actor.send({ type: "TOGGLE_LOOP" });
+      };
+
+      loopCheckbox.addEventListener("change", handler);
+      return () => loopCheckbox.removeEventListener("change", handler);
+    }
+
+    return () => {};
+  },
+
+  setupQrsIndicatorListener() {
+    const qrsCheckbox = this.el.querySelector('[name="qrs_indicator_enabled"]');
+
+    if (qrsCheckbox) {
+      const handler = () => {
+        this.actor.send({ type: "TOGGLE_QRS_INDICATOR" });
+      };
+
+      qrsCheckbox.addEventListener("change", handler);
+      return () => qrsCheckbox.removeEventListener("change", handler);
+    }
+
+    return () => {};
+  },
+
+  setupCalipersListener() {
+    const calipersCheckbox = this.el.querySelector('[name="calipers_mode"]');
+
+    if (calipersCheckbox) {
+      const handler = () => {
+        this.actor.send({ type: "TOGGLE_CALIPERS" });
+      };
+
+      calipersCheckbox.addEventListener("change", handler);
+      return () => calipersCheckbox.removeEventListener("change", handler);
     }
 
     return () => {};
