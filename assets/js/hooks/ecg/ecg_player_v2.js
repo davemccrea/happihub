@@ -20,22 +20,28 @@ import {
 } from "./event_manager";
 
 import { readFormValue, readFormCheckbox } from "./utils";
-import { 
-  setButtonToPlay, 
+import {
+  setButtonToPlay,
   setButtonToPause,
-  setCalipersButtonToDisabled,
-  setCalipersButtonToEnabled
-} from "./ui_state_manager";
+  setupPlayPauseEventListener
+} from "./play_pause_manager";
+import {
+  setupFormEventListeners
+} from "./form_manager";
 import {
   renderCalipers,
   setupCalipersEventListeners,
-  clearCalipersCanvas
+  clearCalipersCanvas,
+  setCalipersButtonToDisabled,
+  setCalipersButtonToEnabled
 } from "./calipers_manager";
 
 const ECGPlayerV2 = {
   mounted() {
     this.listeners = new Set();
     this.calipersCleanup = null;
+    this.playPauseCleanup = null;
+    this.formCleanup = null;
 
     this.actor = createActor(
       ecgPlayerMachine.provide({
@@ -51,6 +57,8 @@ const ECGPlayerV2 = {
           onLeadChanged: this.onLeadChanged.bind(this),
           setButtonToPlay: setButtonToPlay.bind(this),
           setButtonToPause: setButtonToPause.bind(this),
+          setupPlayPauseEventListener: this.setupPlayPauseEventListener.bind(this),
+          setupFormEventListeners: this.setupFormEventListeners.bind(this),
           setCalipersButtonToDisabled: setCalipersButtonToDisabled.bind(this),
           setCalipersButtonToEnabled: setCalipersButtonToEnabled.bind(this),
           setupCalipersEventListeners: this.setupCalipersEventListeners.bind(this),
@@ -91,6 +99,18 @@ const ECGPlayerV2 = {
     // Clean up debug subscription
     if (this.debugSubscription) {
       this.debugSubscription.unsubscribe();
+    }
+
+    // Clean up play/pause listeners specifically
+    if (this.playPauseCleanup) {
+      this.playPauseCleanup();
+      this.playPauseCleanup = null;
+    }
+
+    // Clean up form listeners specifically
+    if (this.formCleanup) {
+      this.formCleanup();
+      this.formCleanup = null;
     }
 
     // Clean up calipers listeners specifically
@@ -453,6 +473,26 @@ const ECGPlayerV2 = {
         context.fill();
       }
     }
+  },
+
+  // ===================
+  // PLAY/PAUSE ACTIONS
+  // ===================
+
+  setupPlayPauseEventListener() {
+    // Store the cleanup function so we can call it later
+    this.playPauseCleanup = setupPlayPauseEventListener(
+      (/** @type {any} */ event) => this.actor.send(event),
+      this.listeners
+    );
+  },
+
+  setupFormEventListeners() {
+    // Store the cleanup function so we can call it later
+    this.formCleanup = setupFormEventListeners(
+      (/** @type {any} */ event) => this.actor.send(event),
+      this.listeners
+    );
   },
 
   // =================
