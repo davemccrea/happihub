@@ -3,13 +3,16 @@
 import { createActor } from "xstate";
 import { ecgPlayerMachine } from "./ecg_player_machine";
 import {
+  amplitudeScaleListener,
   calipersListener,
   currentLeadListener,
   displayModeListener,
+  gridScaleListener,
   gridTypeListener,
+  heightScaleListener,
   keydownListener,
   loopListener,
-  playPauseButtonListener,
+  playPauseListener,
   qrsIndicatorListener,
 } from "./listeners";
 
@@ -125,13 +128,16 @@ const ECGPlayerV2 = {
 
   setupEventListeners() {
     this.addListener(keydownListener.bind(this));
-    this.addListener(playPauseButtonListener.bind(this));
+    this.addListener(playPauseListener.bind(this));
     this.addListener(calipersListener.bind(this));
     this.addListener(currentLeadListener.bind(this));
     this.addListener(displayModeListener.bind(this));
     this.addListener(gridTypeListener.bind(this));
     this.addListener(loopListener.bind(this));
     this.addListener(qrsIndicatorListener.bind(this));
+    this.addListener(gridScaleListener.bind(this));
+    this.addListener(amplitudeScaleListener.bind(this));
+    this.addListener(heightScaleListener.bind(this));
   },
 
   processECGData(data) {

@@ -1,5 +1,7 @@
 // @ts-check
 
+// Keys
+
 export function keydownListener() {
   const handler = (event) => {
     // Only handle shortcuts when the ECG player is focused or no input is focused
@@ -29,17 +31,19 @@ export function keydownListener() {
   return () => document.removeEventListener("keydown", handler);
 }
 
-export function playPauseButtonListener() {
-  const button = document.getElementById("play-pause-button");
+// Buttons
 
-  if (!button) {
+export function playPauseListener() {
+  const playPauseButton = document.getElementById("play-pause-button");
+
+  if (!playPauseButton) {
     console.error("Element #play-pause-button not found");
     return () => {};
   }
 
   const handler = () => this.actor.send({ type: "TOGGLE_PLAY_PAUSE" });
-  button.addEventListener("click", handler);
-  return () => button.removeEventListener("click", handler);
+  playPauseButton.addEventListener("click", handler);
+  return () => playPauseButton.removeEventListener("click", handler);
 }
 
 export function calipersListener() {
@@ -58,11 +62,11 @@ export function calipersListener() {
   return () => calipersButton.removeEventListener("click", handler);
 }
 
-// Forms
+// Selects
 
 export function currentLeadListener() {
-  const leadSelect = document.getElementById("lead-selector");
-  if (!leadSelect) {
+  const currentLeadSelect = document.getElementById("lead-selector");
+  if (!currentLeadSelect) {
     console.error("Element #lead-selector not found");
     return () => {};
   }
@@ -70,8 +74,8 @@ export function currentLeadListener() {
     const leadIndex = parseInt(event.target.value);
     this.actor.send({ type: "CHANGE_LEAD", leadIndex });
   };
-  leadSelect.addEventListener("change", handler);
-  return () => leadSelect.removeEventListener("change", handler);
+  currentLeadSelect.addEventListener("change", handler);
+  return () => currentLeadSelect.removeEventListener("change", handler);
 }
 
 export function displayModeListener() {
@@ -127,9 +131,9 @@ export function loopListener() {
 }
 
 export function qrsIndicatorListener() {
-  const qrsCheckbox = document.getElementById("qrs-indicator-checkbox");
+  const qrsIndicatorCheckbox = document.getElementById("qrs-indicator-checkbox");
 
-  if (!qrsCheckbox) {
+  if (!qrsIndicatorCheckbox) {
     console.error("Element #qrs-indicator-checkbox not found");
     return () => {};
   }
@@ -138,6 +142,61 @@ export function qrsIndicatorListener() {
     this.actor.send({ type: "TOGGLE_QRS_INDICATOR" });
   };
 
-  qrsCheckbox.addEventListener("change", handler);
-  return () => qrsCheckbox.removeEventListener("change", handler);
+  qrsIndicatorCheckbox.addEventListener("change", handler);
+  return () => qrsIndicatorCheckbox.removeEventListener("change", handler);
+}
+
+// Scale Sliders
+
+export function gridScaleListener() {
+  const gridScaleSlider = document.getElementById("grid-scale-slider");
+
+  if (!gridScaleSlider) {
+    console.error("Element #grid-scale-slider not found");
+    return () => {};
+  }
+
+  const handler = (event) => {
+    const gridScale = parseFloat(event.target.value);
+    this.actor.send({ type: "CHANGE_GRID_SCALE", gridScale });
+  };
+
+  gridScaleSlider.addEventListener("input", handler);
+  return () => gridScaleSlider.removeEventListener("input", handler);
+}
+
+export function amplitudeScaleListener() {
+  const amplitudeScaleSlider = document.getElementById(
+    "amplitude-scale-slider"
+  );
+
+  if (!amplitudeScaleSlider) {
+    console.error("Element #amplitude-scale-slider not found");
+    return () => {};
+  }
+
+  const handler = (event) => {
+    const amplitudeScale = parseFloat(event.target.value);
+    this.actor.send({ type: "CHANGE_AMPLITUDE_SCALE", amplitudeScale });
+  };
+
+  amplitudeScaleSlider.addEventListener("input", handler);
+  return () => amplitudeScaleSlider.removeEventListener("input", handler);
+}
+
+export function heightScaleListener() {
+  const heightScaleSlider = document.getElementById("height-scale-slider");
+
+  if (!heightScaleSlider) {
+    console.error("Element #height-scale-slider not found");
+    return () => {};
+  }
+
+  const handler = (event) => {
+    const heightScale = parseFloat(event.target.value);
+    this.actor.send({ type: "CHANGE_HEIGHT_SCALE", heightScale });
+  };
+
+  heightScaleSlider.addEventListener("input", handler);
+  return () => heightScaleSlider.removeEventListener("input", handler);
 }
