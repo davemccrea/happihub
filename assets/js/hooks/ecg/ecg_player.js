@@ -35,7 +35,7 @@ const ECGPlayer = {
   // INITIALIZATION & LIFECYCLE
   // ==========================
 
-  mounted() {
+  mounted() { // ✅
     this.initializeState();
     this.calculateMedicallyAccurateDimensions();
     this.updateThemeColors();
@@ -46,7 +46,7 @@ const ECGPlayer = {
     this.targetComponent = this.el.getAttribute("phx-target");
   },
 
-  setupEventListeners() {
+  setupEventListeners() { // ✅
     this.setupResizeListener();
     this.setupThemeListener();
     this.setupKeyboardListeners();
@@ -153,7 +153,7 @@ const ECGPlayer = {
    * Sets up LiveView event listeners for ECG data loading.
    * @returns {void}
    */
-  setupLiveViewListeners() {
+  setupLiveViewListeners() { // ✅
     this.handleEvent("load_ecg_data", (payload) => {
       this.handleECGDataLoaded(payload);
     });
@@ -163,7 +163,7 @@ const ECGPlayer = {
    * Phoenix LiveView hook lifecycle method called when the component is destroyed.
    * @returns {void}
    */
-  destroyed() {
+  destroyed() { // ✅
     this.cleanup();
   },
 
@@ -304,7 +304,7 @@ const ECGPlayer = {
    * @param {object} payload - The ECG data payload from the server.
    * @returns {void}
    */
-  handleECGDataLoaded(payload) {
+  handleECGDataLoaded(payload) { // ✅
     try {
       const data = payload.data;
 
@@ -728,7 +728,7 @@ const ECGPlayer = {
    * for the grid, waveform, and labels.
    * @returns {void}
    */
-  updateThemeColors() {
+  updateThemeColors() { // ✅
     const theme =
       document.documentElement.getAttribute("data-theme") || "light";
     const isDark = theme === "dark";
@@ -1328,7 +1328,7 @@ const ECGPlayer = {
    * This ensures the visualization is medically accurate and scales correctly with the container.
    * @returns {void}
    */
-  calculateMedicallyAccurateDimensions() {
+  calculateMedicallyAccurateDimensions() { // ✅
     const container = this.el.querySelector("[data-ecg-chart]");
     if (!container) {
       this.chartWidth =
@@ -1356,7 +1356,7 @@ const ECGPlayer = {
    * is used for the animated waveform to optimize performance.
    * @returns {void}
    */
-  recreateCanvas() {
+  recreateCanvas() { // ✅
     this.cleanupCanvases();
 
     const canvasHeight =
@@ -1439,7 +1439,7 @@ const ECGPlayer = {
    * Removes the canvas elements from the DOM to prevent memory leaks.
    * @returns {void}
    */
-  cleanupCanvases() {
+  cleanupCanvases() { // ✅
     if (this.backgroundCanvas) {
       if (this.canvasClickHandler) {
         this.backgroundCanvas.removeEventListener(
@@ -2008,7 +2008,7 @@ const ECGPlayer = {
    * Updates the play/pause button icon and text based on current playback state.
    * @returns {void}
    */
-  updatePlayPauseButton() {
+  updatePlayPauseButton() { // ✅
     const button = document.getElementById("play-pause-button");
     if (button) {
       // Update icon
@@ -2034,7 +2034,7 @@ const ECGPlayer = {
    * Sets up the play/pause button click handler.
    * @returns {void}
    */
-  setupPlayPauseButton() {
+  setupPlayPauseButton() { // ✅
     const button = document.getElementById("play-pause-button");
     if (button && !button.dataset.listenerAdded) {
       button.addEventListener("click", () => {
@@ -2064,7 +2064,7 @@ const ECGPlayer = {
     }
   },
 
-  setupBasicSelectors() {
+  setupBasicSelectors() { // ✅
     this.setupElementListener("lead-selector", "change", (e) => {
       const leadIndex = parseInt(
         /** @type {HTMLSelectElement} */ (e.target).value
@@ -2699,7 +2699,7 @@ const ECGPlayer = {
    * optimization as the grid does not need to be redrawn on every animation frame.
    * @returns {void}
    */
-  renderGridBackground() {
+  renderGridBackground() { // ✅
     if (!this.backgroundCanvas || !this.backgroundContext) return;
 
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -2820,7 +2820,7 @@ const ECGPlayer = {
    * @param {string} fieldName - The name of the form field to read
    * @returns {string|null} The field value or null if not found
    */
-  readFormValue(fieldName) {
+  readFormValue(fieldName) { // ✅
     const input = /** @type {HTMLInputElement | HTMLSelectElement | null} */ (
       document.querySelector(
         `input[name="settings[${fieldName}]"], select[name="settings[${fieldName}]"]`
@@ -2834,7 +2834,7 @@ const ECGPlayer = {
    * @param {string} fieldName - The name of the checkbox field to read
    * @returns {boolean} The checkbox state
    */
-  readFormCheckbox(fieldName) {
+  readFormCheckbox(fieldName) { // ✅
     const input = /** @type {HTMLInputElement | null} */ (
       document.querySelector(
         `input[name="settings[${fieldName}]"][type="checkbox"]`

@@ -1,6 +1,18 @@
 // @ts-check
 
 import { createActor } from "xstate";
+
+import {
+  CHART_HEIGHT,
+  CONTAINER_PADDING,
+  DEFAULT_WIDTH_SECONDS,
+  HEIGHT_MILLIVOLTS,
+  MM_PER_SECOND,
+  MULTI_LEAD_HEIGHT_SCALE,
+  PIXELS_PER_MM,
+  ROWS_PER_DISPLAY,
+} from "./constants";
+
 import { ecgPlayerMachine } from "./ecg_player_machine";
 import {
   setupEventListeners,
@@ -9,16 +21,6 @@ import {
 
 import { readFormValue, readFormCheckbox } from "./utils";
 import { setButtonToPlay, setButtonToPause } from "./ui_state_manager";
-
-const MM_PER_SECOND = 25;
-const MM_PER_MILLIVOLT = 10;
-const PIXELS_PER_MM = 6;
-const HEIGHT_MILLIVOLTS = 2.5;
-const CHART_HEIGHT = HEIGHT_MILLIVOLTS * MM_PER_MILLIVOLT * PIXELS_PER_MM;
-const DEFAULT_WIDTH_SECONDS = 2.5;
-const CONTAINER_PADDING = 0;
-const ROWS_PER_DISPLAY = 3;
-const MULTI_LEAD_HEIGHT_SCALE = 0.8;
 
 const ECGPlayerV2 = {
   mounted() {
