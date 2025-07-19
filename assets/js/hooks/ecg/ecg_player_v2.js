@@ -20,11 +20,22 @@ import {
 } from "./event_manager";
 
 import { readFormValue, readFormCheckbox } from "./utils";
-import { setButtonToPlay, setButtonToPause } from "./ui_state_manager";
+import { 
+  setButtonToPlay, 
+  setButtonToPause,
+  setCalipersButtonToDisabled,
+  setCalipersButtonToEnabled
+} from "./ui_state_manager";
+import {
+  renderCalipers,
+  setupCalipersEventListeners,
+  clearCalipersCanvas
+} from "./calipers_manager";
 
 const ECGPlayerV2 = {
   mounted() {
     this.listeners = new Set();
+    this.calipersCleanup = null;
 
     this.actor = createActor(
       ecgPlayerMachine.provide({
@@ -40,6 +51,12 @@ const ECGPlayerV2 = {
           onLeadChanged: this.onLeadChanged.bind(this),
           setButtonToPlay: setButtonToPlay.bind(this),
           setButtonToPause: setButtonToPause.bind(this),
+          setCalipersButtonToDisabled: setCalipersButtonToDisabled.bind(this),
+          setCalipersButtonToEnabled: setCalipersButtonToEnabled.bind(this),
+          setupCalipersEventListeners: this.setupCalipersEventListeners.bind(this),
+          removeCalipersEventListeners: this.removeCalipersEventListeners.bind(this),
+          renderCalipers: this.renderCalipers.bind(this),
+          clearCalipersCanvas: this.clearCalipersCanvas.bind(this),
         },
       }),
       {
@@ -52,7 +69,6 @@ const ECGPlayerV2 = {
           amplitudeScale: parseFloat(readFormValue("amplitude-scale-slider")),
           loopEnabled: readFormCheckbox("loop-checkbox"),
           qrsIndicatorEnabled: readFormCheckbox("qrs-indicator-checkbox"),
-          calipersEnabled: false,
         },
       }
     );
@@ -75,6 +91,12 @@ const ECGPlayerV2 = {
     // Clean up debug subscription
     if (this.debugSubscription) {
       this.debugSubscription.unsubscribe();
+    }
+
+    // Clean up calipers listeners specifically
+    if (this.calipersCleanup) {
+      this.calipersCleanup();
+      this.calipersCleanup = null;
     }
 
     // Clean up all tracked listeners
@@ -431,6 +453,47 @@ const ECGPlayerV2 = {
         context.fill();
       }
     }
+  },
+
+  // =================
+  // CALIPERS ACTIONS
+  // =================
+
+  setupCalipersEventListeners() {
+    if (!this.calipersCanvas) return;
+    
+    // Store the cleanup function so we can call it later
+    this.calipersCleanup = setupCalipersEventListeners(
+      this.calipersCanvas,
+      (/** @type {any} */ event) => this.actor.send(event),
+      this.listeners
+    );
+  },
+
+  removeCalipersEventListeners() {
+    // Call the stored cleanup function to remove calipers event listeners
+    if (this.calipersCleanup) {
+      this.calipersCleanup();
+      this.calipersCleanup = null;
+    }
+  },
+
+  renderCalipers() {
+    const { context } = this.actor.getSnapshot();
+    renderCalipers(
+      this.calipersContext,
+      context.calipers.list,
+      this.chartWidth,
+      this.leadHeight * (context.display.displayMode === "multi" ? ROWS_PER_DISPLAY : 1),
+      this.widthSeconds
+    );
+  },
+
+  clearCalipersCanvas() {
+    const canvasHeight = this.leadHeight * (
+      this.actor.getSnapshot().context.display.displayMode === "multi" ? ROWS_PER_DISPLAY : 1
+    );
+    clearCalipersCanvas(this.calipersContext, this.chartWidth, canvasHeight);
   },
 };
 

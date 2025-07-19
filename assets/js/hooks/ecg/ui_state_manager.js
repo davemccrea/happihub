@@ -17,3 +17,33 @@ export function setButtonToPause() {
     button.innerHTML = iconHtml + textHtml;
   }
 }
+
+export function setCalipersButtonToDisabled() {
+  const button = document.getElementById("calipers-button");
+  if (button && button.classList) {
+    button.classList.remove("btn-active");
+    button.title = "Enable Time Calipers (c)";
+  }
+
+  // Handle canvas interaction as part of the button state (same pattern as play/pause)
+  const calipersCanvas = document.querySelector("[data-ecg-chart] canvas:last-child");
+  if (calipersCanvas) {
+    calipersCanvas.style.pointerEvents = "none";
+    calipersCanvas.style.cursor = "default";
+  }
+}
+
+export function setCalipersButtonToEnabled() {
+  const button = document.getElementById("calipers-button");
+  if (button && button.classList) {
+    button.classList.add("btn-active");
+    button.title = "Disable Time Calipers (c)";
+  }
+
+  // Handle canvas interaction as part of the button state (same pattern as play/pause)
+  const calipersCanvas = document.querySelector("[data-ecg-chart] canvas:last-child");
+  if (calipersCanvas) {
+    calipersCanvas.style.pointerEvents = "auto";
+    calipersCanvas.style.cursor = "crosshair";
+  }
+}
