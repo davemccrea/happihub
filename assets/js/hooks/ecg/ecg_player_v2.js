@@ -13,10 +13,12 @@ const MULTI_LEAD_HEIGHT_SCALE = 0.8;
 
 const ECGPlayerV2 = {
   mounted() {
+    this.listeners = new Set();
+
     this.actor = createActor(
       ecgPlayerMachine.provide({
         actions: {
-          setupLiveViewListeners: this.setupLiveViewListeners.bind(this),
+          setupLiveViewEventHandler: this.setupLiveViewEventHandler(this),
           setupEventListeners: this.setupEventListeners(this),
           calculateDimensions: this.calculateDimensions.bind(this),
           initializeCanvases: this.initializeCanvases.bind(this),
@@ -41,7 +43,14 @@ const ECGPlayerV2 = {
     this.actor.start();
   },
 
-  setupLiveViewListeners() {
+  destroyed() {
+    // Clean up all tracked listeners
+    this.listeners.forEach((cleanup) => cleanup());
+    this.listeners.clear();
+    this.actor.stop();
+  },
+
+  setupLiveViewEventHandler() {
     this.handleEvent("load_ecg_data", (payload) => {
       try {
         const data = payload.data;
@@ -62,43 +71,98 @@ const ECGPlayerV2 = {
     });
   },
 
-  setupEventListeners() {
-    // Listen for lead selection changes from form
-    const leadSelect = this.el.querySelector('[name="current_lead"]');
-    if (leadSelect) {
-      leadSelect.addEventListener("change", (event) => {
-        const leadIndex = parseInt(event.target.value);
-        this.actor.send({ type: "CHANGE_LEAD", leadIndex });
-      });
+  setupPlayPauseButton() {
+    const button = document.getElementById("play-pause-button");
+
+    if (button) {
+      const handler = (event) => {
+        this.actor.send({ type: "PLAY_PAUSE_TOGGLED" });
+      };
+
+      button.addEventListener("click", handler);
+      return () => button.removeEventListener("click", handler);
     }
 
-    // Listen for keyboard shortcuts (j/k for next/previous lead)
-    document.addEventListener("keydown", this.handleKeydown.bind(this));
+    return () => {};
   },
 
-  handleKeydown(event) {
-    // Only handle shortcuts when the ECG player is focused or no input is focused
-    const activeElement = document.activeElement;
-    const isInputFocused =
-      activeElement?.tagName === "INPUT" ||
-      activeElement?.tagName === "TEXTAREA" ||
-      activeElement?.tagName === "SELECT";
+  updatePlayPauseButton() {
+    const button = document.getElementById("play-pause-button");
+    if (button) {
+      // Update icon
+      const iconClass = this.isPlaying ? "hero-pause" : "hero-play";
+      const iconHtml = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24">
+        ${
+          this.isPlaying
+            ? '<path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />'
+            : '<path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />'
+        }
+      </svg>`;
 
-    if (isInputFocused) return;
+      // Update text
+      const buttonText = this.isPlaying ? "Pause" : "Play";
+      const textHtml = `<span class="ml-1">${buttonText}</span>`;
 
-    const { context } = this.actor.getSnapshot();
-    if (!context.ecgData?.leadNames) return;
-
-    switch (event.key) {
-      case "j":
-        event.preventDefault();
-        this.actor.send({ type: "NEXT_LEAD" });
-        break;
-      case "k":
-        event.preventDefault();
-        this.actor.send({ type: "PREV_LEAD" });
-        break;
+      // Replace button content with icon + text
+      button.innerHTML = iconHtml + textHtml;
     }
+  },
+
+  setupEventListeners() {
+    // Keys
+    this.addListener(this.setupKeydownListener);
+    // Buttons
+    this.addListener(this.setupPlayPauseButton);
+    // Forms
+    this.addListener(this.setupCurrentLeadListener);
+  },
+
+  setupCurrentLeadListener() {
+    const leadSelect = this.el.querySelector('[name="current_lead"]');
+
+    if (leadSelect) {
+      const handler = (event) => {
+        const leadIndex = parseInt(event.target.value);
+        this.actor.send({ type: "CHANGE_LEAD", leadIndex });
+      };
+
+      leadSelect.addEventListener("change", handler);
+
+      return () => leadSelect.removeEventListener("change", handler);
+    }
+
+    return () => {};
+  },
+
+  setupKeydownListener() {
+    const handler = (event) => {
+      // Only handle shortcuts when the ECG player is focused or no input is focused
+      const activeElement = document.activeElement;
+      const isInputFocused =
+        activeElement?.tagName === "INPUT" ||
+        activeElement?.tagName === "TEXTAREA" ||
+        activeElement?.tagName === "SELECT";
+
+      if (isInputFocused) return;
+
+      const { context } = this.actor.getSnapshot();
+      if (!context.ecgData?.leadNames) return;
+
+      switch (event.key) {
+        case "j":
+          event.preventDefault();
+          this.actor.send({ type: "NEXT_LEAD" });
+          break;
+        case "k":
+          event.preventDefault();
+          this.actor.send({ type: "PREV_LEAD" });
+          break;
+      }
+    };
+
+    document.addEventListener("keydown", handler);
+
+    return () => document.removeEventListener("keydown", handler);
   },
 
   processECGData(data) {
@@ -174,12 +238,9 @@ const ECGPlayerV2 = {
   },
 
   destroyed() {
-    if (this.actor) {
-      this.actor.stop();
-    }
-
-    // Clean up event listeners
-    document.removeEventListener("keydown", this.handleKeydown.bind(this));
+    this.listeners.forEach((fn) => fn());
+    this.listeners.clear();
+    this.actor.stop();
   },
 
   // =================
@@ -467,6 +528,16 @@ const ECGPlayerV2 = {
         context.fill();
       }
     }
+  },
+
+  // =============
+  // Utilities
+  // =============
+
+  addListener(setupMethod) {
+    const cleanup = setupMethod.call(this);
+    this.listeners.add(cleanup);
+    return cleanup;
   },
 };
 

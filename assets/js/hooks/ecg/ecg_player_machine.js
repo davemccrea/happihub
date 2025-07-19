@@ -90,6 +90,7 @@ export const ecgPlayerMachine = setup({
     playback: {
       initial: "loading",
       states: {
+        stop: {},
         loading: {
           entry: ["setupLiveViewListeners", "setupEventListeners"],
           on: {

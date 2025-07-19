@@ -53,12 +53,3 @@ guards: {
 ```
 
 ## Next
-
-1. Add coordinate transformation utilities - Convert ECG data (time/amplitude) to canvas pixels
-2. Implement basic waveform rendering - Draw ECG signal lines on canvas for single lead
-3. Add waveform clearing functionality - Clear canvas between renders
-4. Implement cursor rendering - Show playback position indicator
-5. Add basic animation loop - Real-time ECG playback with proper medical timing
-6. Integrate rendering actions into state machine - Connect rendering to XState actions
-7. Add play/pause functionality - Implement playback controls via state machine events
-8. Test waveform rendering - Validate with sample ECG data
