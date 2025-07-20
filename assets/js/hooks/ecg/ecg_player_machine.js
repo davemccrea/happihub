@@ -37,12 +37,6 @@ export const ecgPlayerMachine = setup({
         currentLead: context.display.currentLead + 1,
       }),
     }),
-    setDisplayMode: assign({
-      display: ({ context, event }) => ({
-        ...context.display,
-        displayMode: event.displayMode,
-      }),
-    }),
     setGridType: assign({
       display: ({ context, event }) => ({
         ...context.display,
@@ -132,12 +126,12 @@ export const ecgPlayerMachine = setup({
   type: "parallel",
   context: ({ input }) => ({
     ecgData: null,
+    initialDisplayMode: input.displayMode,
     playback: {
       loopEnabled: input.loopEnabled,
     },
     display: {
       gridType: input.gridType,
-      displayMode: input.displayMode,
       currentLead: input.currentLead,
       gridScale: input.gridScale,
       amplitudeScale: input.amplitudeScale,
@@ -276,10 +270,35 @@ export const ecgPlayerMachine = setup({
       },
     },
     display: {
-      initial: "single",
+      initial: "checkInitialMode",
       states: {
-        single: {},
-        multi: {},
+        checkInitialMode: {
+          always: [
+            {
+              target: "multi",
+              guard: ({ context }) => context.initialDisplayMode === "multi"
+            },
+            {
+              target: "single"
+            }
+          ]
+        },
+        single: {
+          on: {
+            CHANGE_DISPLAY_MODE: {
+              target: "multi",
+              guard: ({ event }) => event.displayMode === "multi"
+            }
+          }
+        },
+        multi: {
+          on: {
+            CHANGE_DISPLAY_MODE: {
+              target: "single", 
+              guard: ({ event }) => event.displayMode === "single"
+            }
+          }
+        },
       },
       on: {
         PREV_LEAD: {
@@ -292,9 +311,6 @@ export const ecgPlayerMachine = setup({
         },
         CHANGE_LEAD: {
           actions: ["setCurrentLead", "onLeadChanged"],
-        },
-        CHANGE_DISPLAY_MODE: {
-          actions: "setDisplayMode",
         },
         CHANGE_GRID_TYPE: {
           actions: "setGridType",

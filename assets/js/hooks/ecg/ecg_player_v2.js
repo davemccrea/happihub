@@ -198,7 +198,8 @@ const ECGPlayerV2 = {
     const { context } = this.actor.getSnapshot();
     const snapshot = this.actor.getSnapshot();
 
-    const { displayMode, heightScale } = context.display;
+    const { heightScale } = context.display;
+    const displayMode = snapshot.value.display;
     const calipersEnabled = snapshot.matches({ calipers: "enabled" });
 
     const canvasHeight =
@@ -325,7 +326,9 @@ const ECGPlayerV2 = {
     if (!this.backgroundCanvas || !this.backgroundContext) return;
 
     const { context } = this.actor.getSnapshot();
-    const { displayMode, gridType } = context.display;
+    const snapshot = this.actor.getSnapshot();
+    const { gridType } = context.display;
+    const displayMode = snapshot.value.display;
 
     if (!this.colors) {
       this.initializeThemeColors();
@@ -472,14 +475,14 @@ const ECGPlayerV2 = {
       this.calipersContext,
       calipersArray,
       this.chartWidth,
-      this.leadHeight * (context.display.displayMode === "multi" ? ROWS_PER_DISPLAY : 1),
+      this.leadHeight * (this.actor.getSnapshot().value.display === "multi" ? ROWS_PER_DISPLAY : 1),
       this.widthSeconds
     );
   },
 
   clearCalipersCanvas() {
     const canvasHeight = this.leadHeight * (
-      this.actor.getSnapshot().context.display.displayMode === "multi" ? ROWS_PER_DISPLAY : 1
+      this.actor.getSnapshot().value.display === "multi" ? ROWS_PER_DISPLAY : 1
     );
     clearCalipersCanvas(this.calipersContext, this.chartWidth, canvasHeight);
   },
