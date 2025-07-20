@@ -58,7 +58,6 @@ const ECGPlayerV2 = {
           setCalipersButtonToDisabled,
           setCalipersButtonToEnabled,
           setupCalipersEventListeners: this.setupCalipersEventListeners.bind(this),
-          removeCalipersEventListeners: this.removeCalipersEventListeners.bind(this),
           renderCalipers: ({ context }) => this.renderCalipersWithContext(context),
           clearCalipersCanvas: this.clearCalipersCanvas.bind(this),
         },
@@ -454,8 +453,6 @@ const ECGPlayerV2 = {
     );
   },
 
-  removeCalipersEventListeners() {
-  },
 
   renderCalipers() {
     const { context } = this.actor.getSnapshot();
