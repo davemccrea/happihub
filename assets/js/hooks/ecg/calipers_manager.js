@@ -323,39 +323,23 @@ export function createCalipersEventHandlers(canvas, sendEvent) {
 
 /**
  * Sets up caliper event listeners on canvas and document
- * Following the listener tracking pattern from ecg_player_v2.js
  * 
  * @param {HTMLCanvasElement} canvas - The calipers canvas
  * @param {Function} sendEvent - Function to send events to state machine
- * @param {Set} listeners - Set to track cleanup functions
- * @returns {Function} Cleanup function to remove calipers event listeners
+ * @param {AbortSignal} signal - AbortSignal for automatic cleanup
  */
-export function setupCalipersEventListeners(canvas, sendEvent, listeners) {
-  if (!canvas) return () => {};
+export function setupCalipersEventListeners(canvas, sendEvent, signal) {
+  if (!canvas) return;
 
   const handlers = createCalipersEventHandlers(canvas, sendEvent);
 
-  // Add canvas listeners
-  canvas.addEventListener("mousedown", handlers.handleMouseDown);
-  canvas.addEventListener("mousemove", handlers.handleMouseMove);
+  // Add canvas listeners with AbortController
+  canvas.addEventListener("mousedown", handlers.handleMouseDown, { signal });
+  canvas.addEventListener("mousemove", handlers.handleMouseMove, { signal });
 
   // Add document listeners for drag outside canvas
-  document.addEventListener("mousemove", handlers.handleMouseMove);
-  document.addEventListener("mouseup", handlers.handleMouseUp);
-
-  // Create cleanup function
-  const cleanup = () => {
-    canvas.removeEventListener("mousedown", handlers.handleMouseDown);
-    canvas.removeEventListener("mousemove", handlers.handleMouseMove);
-    document.removeEventListener("mousemove", handlers.handleMouseMove);
-    document.removeEventListener("mouseup", handlers.handleMouseUp);
-  };
-
-  // Track cleanup function in the global listeners set
-  listeners.add(cleanup);
-  
-  // Return cleanup function so it can be called specifically for calipers
-  return cleanup;
+  document.addEventListener("mousemove", handlers.handleMouseMove, { signal });
+  document.addEventListener("mouseup", handlers.handleMouseUp, { signal });
 }
 
 /**

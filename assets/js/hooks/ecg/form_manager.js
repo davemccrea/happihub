@@ -16,36 +16,22 @@ import { DOM_SELECTORS } from "./constants";
 /**
  * Sets up form control event listeners
  * @param {Function} sendEvent - Function to send events to state machine
- * @param {Set} listeners - Set to track cleanup functions
- * @returns {Function} Cleanup function to remove all form event listeners
+ * @param {AbortSignal} signal - AbortSignal for automatic cleanup
  */
-export function setupFormEventListeners(sendEvent, listeners) {
-  const cleanupFunctions = [];
-
+export function setupFormEventListeners(sendEvent, signal) {
   // Selects
-  cleanupFunctions.push(setupCurrentLeadListener(sendEvent));
-  cleanupFunctions.push(setupDisplayModeListener(sendEvent));
-  cleanupFunctions.push(setupGridTypeListener(sendEvent));
+  setupCurrentLeadListener(sendEvent, signal);
+  setupDisplayModeListener(sendEvent, signal);
+  setupGridTypeListener(sendEvent, signal);
 
   // Checkboxes  
-  cleanupFunctions.push(setupLoopListener(sendEvent));
-  cleanupFunctions.push(setupQrsIndicatorListener(sendEvent));
+  setupLoopListener(sendEvent, signal);
+  setupQrsIndicatorListener(sendEvent, signal);
 
   // Sliders
-  cleanupFunctions.push(setupGridScaleListener(sendEvent));
-  cleanupFunctions.push(setupAmplitudeScaleListener(sendEvent));
-  cleanupFunctions.push(setupHeightScaleListener(sendEvent));
-
-  // Create combined cleanup function
-  const cleanup = () => {
-    cleanupFunctions.forEach(fn => fn());
-  };
-
-  // Track cleanup function in the global listeners set
-  listeners.add(cleanup);
-  
-  // Return cleanup function so it can be called specifically for forms
-  return cleanup;
+  setupGridScaleListener(sendEvent, signal);
+  setupAmplitudeScaleListener(sendEvent, signal);
+  setupHeightScaleListener(sendEvent, signal);
 }
 
 // =================
@@ -57,11 +43,11 @@ export function setupFormEventListeners(sendEvent, listeners) {
  * @param {Function} sendEvent - Function to send events to state machine
  * @returns {Function} Cleanup function
  */
-function setupCurrentLeadListener(sendEvent) {
+function setupCurrentLeadListener(sendEvent, signal) {
   const currentLeadSelect = document.getElementById(DOM_SELECTORS.LEAD_SELECTOR);
   if (!currentLeadSelect) {
     console.error("Element #lead-selector not found");
-    return () => {};
+    return;
   }
   
   const handler = (/** @type {Event} */ event) => {
@@ -70,9 +56,8 @@ function setupCurrentLeadListener(sendEvent) {
     sendEvent({ type: "CHANGE_LEAD", leadIndex });
   };
   
-  currentLeadSelect.addEventListener("change", handler);
-  return () => currentLeadSelect.removeEventListener("change", handler);
-}
+  currentLeadSelect.addEventListener("change", handler, { signal });
+  }
 
 /**
  * Sets up display mode selector listener
@@ -84,7 +69,7 @@ function setupDisplayModeListener(sendEvent) {
 
   if (!displayModeSelect) {
     console.error("Element #display-mode-selector not found");
-    return () => {};
+    return;
   }
 
   const handler = (/** @type {Event} */ event) => {
@@ -93,9 +78,8 @@ function setupDisplayModeListener(sendEvent) {
     sendEvent({ type: "CHANGE_DISPLAY_MODE", displayMode });
   };
 
-  displayModeSelect.addEventListener("change", handler);
-  return () => displayModeSelect.removeEventListener("change", handler);
-}
+  displayModeSelect.addEventListener("change", handler, { signal });
+  }
 
 /**
  * Sets up grid type selector listener
@@ -107,7 +91,7 @@ function setupGridTypeListener(sendEvent) {
 
   if (!gridTypeSelect) {
     console.error("Element #grid-type-selector not found");
-    return () => {};
+    return;
   }
 
   const handler = (/** @type {Event} */ event) => {
@@ -116,9 +100,8 @@ function setupGridTypeListener(sendEvent) {
     sendEvent({ type: "CHANGE_GRID_TYPE", gridType });
   };
 
-  gridTypeSelect.addEventListener("change", handler);
-  return () => gridTypeSelect.removeEventListener("change", handler);
-}
+  gridTypeSelect.addEventListener("change", handler, { signal });
+  }
 
 // ===================
 // CHECKBOX LISTENERS
@@ -134,16 +117,15 @@ function setupLoopListener(sendEvent) {
 
   if (!loopCheckbox) {
     console.error("Element #loop-checkbox not found");
-    return () => {};
+    return;
   }
 
   const handler = () => {
     sendEvent({ type: "TOGGLE_LOOP" });
   };
 
-  loopCheckbox.addEventListener("change", handler);
-  return () => loopCheckbox.removeEventListener("change", handler);
-}
+  loopCheckbox.addEventListener("change", handler, { signal });
+  }
 
 /**
  * Sets up QRS indicator checkbox listener
@@ -155,16 +137,15 @@ function setupQrsIndicatorListener(sendEvent) {
 
   if (!qrsIndicatorCheckbox) {
     console.error("Element #qrs-indicator-checkbox not found");
-    return () => {};
+    return;
   }
 
   const handler = () => {
     sendEvent({ type: "TOGGLE_QRS_INDICATOR" });
   };
 
-  qrsIndicatorCheckbox.addEventListener("change", handler);
-  return () => qrsIndicatorCheckbox.removeEventListener("change", handler);
-}
+  qrsIndicatorCheckbox.addEventListener("change", handler, { signal });
+  }
 
 // ==================
 // SLIDER LISTENERS
@@ -180,7 +161,7 @@ function setupGridScaleListener(sendEvent) {
 
   if (!gridScaleSlider) {
     console.error("Element #grid-scale-slider not found");
-    return () => {};
+    return;
   }
 
   const handler = (/** @type {Event} */ event) => {
@@ -189,9 +170,8 @@ function setupGridScaleListener(sendEvent) {
     sendEvent({ type: "UPDATE_GRID_SCALE", value: gridScale });
   };
 
-  gridScaleSlider.addEventListener("input", handler);
-  return () => gridScaleSlider.removeEventListener("input", handler);
-}
+  gridScaleSlider.addEventListener("input", handler, { signal });
+  }
 
 /**
  * Sets up amplitude scale slider listener
@@ -203,7 +183,7 @@ function setupAmplitudeScaleListener(sendEvent) {
 
   if (!amplitudeScaleSlider) {
     console.error("Element #amplitude-scale-slider not found");
-    return () => {};
+    return;
   }
 
   const handler = (/** @type {Event} */ event) => {
@@ -212,9 +192,8 @@ function setupAmplitudeScaleListener(sendEvent) {
     sendEvent({ type: "UPDATE_AMPLITUDE_SCALE", value: amplitudeScale });
   };
 
-  amplitudeScaleSlider.addEventListener("input", handler);
-  return () => amplitudeScaleSlider.removeEventListener("input", handler);
-}
+  amplitudeScaleSlider.addEventListener("input", handler, { signal });
+  }
 
 /**
  * Sets up height scale slider listener
@@ -226,7 +205,7 @@ function setupHeightScaleListener(sendEvent) {
 
   if (!heightScaleSlider) {
     console.error("Element #height-scale-slider not found");
-    return () => {};
+    return;
   }
 
   const handler = (/** @type {Event} */ event) => {
@@ -235,6 +214,5 @@ function setupHeightScaleListener(sendEvent) {
     sendEvent({ type: "UPDATE_HEIGHT_SCALE", value: heightScale });
   };
 
-  heightScaleSlider.addEventListener("input", handler);
-  return () => heightScaleSlider.removeEventListener("input", handler);
-}
+  heightScaleSlider.addEventListener("input", handler, { signal });
+  }

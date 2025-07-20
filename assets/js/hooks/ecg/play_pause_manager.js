@@ -15,30 +15,20 @@ import { DOM_SELECTORS } from "./constants";
 /**
  * Sets up play/pause button event listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @param {Set} listeners - Set to track cleanup functions
- * @returns {Function} Cleanup function to remove play/pause event listener
+ * @param {AbortSignal} signal - AbortSignal for automatic cleanup
  */
-export function setupPlayPauseEventListener(sendEvent, listeners) {
+export function setupPlayPauseEventListener(sendEvent, signal) {
   const playPauseButton = document.getElementById(DOM_SELECTORS.PLAY_PAUSE_BUTTON);
 
   if (!playPauseButton) {
     console.error("Element #play-pause-button not found");
-    return () => {};
+    return;
   }
 
   const handler = () => sendEvent({ type: "TOGGLE_PLAY_PAUSE" });
-  playPauseButton.addEventListener("click", handler);
-
-  // Create cleanup function
-  const cleanup = () => {
-    playPauseButton.removeEventListener("click", handler);
-  };
-
-  // Track cleanup function in the global listeners set
-  listeners.add(cleanup);
   
-  // Return cleanup function so it can be called specifically for play/pause
-  return cleanup;
+  // AbortController automatically handles cleanup
+  playPauseButton.addEventListener("click", handler, { signal });
 }
 
 /**

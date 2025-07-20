@@ -38,10 +38,8 @@ import {
 
 const ECGPlayerV2 = {
   mounted() {
-    this.listeners = new Set();
-    this.calipersCleanup = null;
-    this.playPauseCleanup = null;
-    this.formCleanup = null;
+    // Simple AbortController for all DOM listeners
+    this.controller = new AbortController();
 
     this.actor = createActor(
       ecgPlayerMachine.provide({
@@ -96,32 +94,15 @@ const ECGPlayerV2 = {
   },
 
   destroyed() {
+    // Simple: Kill all DOM listeners with one call
+    this.controller.abort();
+    
     // Clean up debug subscription
     if (this.debugSubscription) {
       this.debugSubscription.unsubscribe();
     }
-
-    // Clean up play/pause listeners specifically
-    if (this.playPauseCleanup) {
-      this.playPauseCleanup();
-      this.playPauseCleanup = null;
-    }
-
-    // Clean up form listeners specifically
-    if (this.formCleanup) {
-      this.formCleanup();
-      this.formCleanup = null;
-    }
-
-    // Clean up calipers listeners specifically
-    if (this.calipersCleanup) {
-      this.calipersCleanup();
-      this.calipersCleanup = null;
-    }
-
-    // Clean up all tracked listeners
-    this.listeners.forEach((cleanup) => cleanup());
-    this.listeners.clear();
+    
+    // State machine handles its own cleanup
     this.actor.stop();
   },
 
@@ -485,18 +466,16 @@ const ECGPlayerV2 = {
   // ===================
 
   setupPlayPauseEventListener() {
-    // Store the cleanup function so we can call it later
-    this.playPauseCleanup = setupPlayPauseEventListener(
+    setupPlayPauseEventListener(
       (/** @type {any} */ event) => this.actor.send(event),
-      this.listeners
+      this.controller.signal
     );
   },
 
   setupFormEventListeners() {
-    // Store the cleanup function so we can call it later
-    this.formCleanup = setupFormEventListeners(
+    setupFormEventListeners(
       (/** @type {any} */ event) => this.actor.send(event),
-      this.listeners
+      this.controller.signal
     );
   },
 
@@ -507,20 +486,16 @@ const ECGPlayerV2 = {
   setupCalipersEventListeners() {
     if (!this.calipersCanvas) return;
     
-    // Store the cleanup function so we can call it later
-    this.calipersCleanup = setupCalipersEventListeners(
+    setupCalipersEventListeners(
       this.calipersCanvas,
       (/** @type {any} */ event) => this.actor.send(event),
-      this.listeners
+      this.controller.signal
     );
   },
 
   removeCalipersEventListeners() {
-    // Call the stored cleanup function to remove calipers event listeners
-    if (this.calipersCleanup) {
-      this.calipersCleanup();
-      this.calipersCleanup = null;
-    }
+    // AbortController will handle cleanup automatically
+    // This method kept for state machine compatibility
   },
 
   renderCalipers() {

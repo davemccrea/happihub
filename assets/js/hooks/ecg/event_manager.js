@@ -2,17 +2,13 @@
 
 import { DOM_SELECTORS } from "./constants";
 
-function addListener(setupMethod) {
-  const cleanup = setupMethod.call(this);
-  this.listeners.add(cleanup);
-  return cleanup;
-}
-
 export function setupEventListeners() {
-  addListener.call(this, keydownListener.bind(this));
+  const { signal } = this.controller;
+  
+  keydownListener.call(this, signal);
   this.setupPlayPauseEventListener();
   this.setupFormEventListeners();
-  addListener.call(this, calipersListener.bind(this));
+  calipersListener.call(this, signal);
 }
 
 export function setupLiveViewEventHandlers() {
@@ -38,7 +34,7 @@ export function setupLiveViewEventHandlers() {
 
 // Keys
 
-export function keydownListener() {
+export function keydownListener(signal) {
   const handler = (event) => {
     // Only handle shortcuts when the ECG player is focused or no input is focused
     const activeElement = document.activeElement;
@@ -63,25 +59,23 @@ export function keydownListener() {
         break;
     }
   };
-  document.addEventListener("keydown", handler);
-  return () => document.removeEventListener("keydown", handler);
+  document.addEventListener("keydown", handler, { signal });
 }
 
 // Buttons
 
-export function calipersListener() {
+export function calipersListener(signal) {
   const calipersButton = document.getElementById(DOM_SELECTORS.CALIPERS_BUTTON);
 
   if (!calipersButton) {
     console.error("Element #calipers-button not found");
-    return () => {};
+    return;
   }
 
   const handler = () => {
     this.actor.send({ type: "TOGGLE_CALIPERS" });
   };
 
-  calipersButton.addEventListener("click", handler);
-  return () => calipersButton.removeEventListener("click", handler);
+  calipersButton.addEventListener("click", handler, { signal });
 }
 
