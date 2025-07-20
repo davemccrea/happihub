@@ -14,6 +14,11 @@ export const ecgPlayerMachine = setup({
     },
   },
   actions: {
+    setInitialDisplayMode: ({ self, context }) => {
+      if (context._initialDisplayMode === "multi") {
+        self.send({ type: "CHANGE_DISPLAY_MODE", displayMode: "multi" });
+      }
+    },
     setEcgData: assign({
       ecgData: ({ event }) => event.data,
     }),
@@ -124,9 +129,10 @@ export const ecgPlayerMachine = setup({
   /** @xstate-layout N4IgpgJg5mDOIC5RgMZQAoBsCGBPMATgHQAOOuARtigNYDEAKgPIDiLAMgKID67TT6ANoAGALqJQJAPawAlgBdZUgHYSQAD0QA2AKwAOIgCYtARgDsAZjPCThkwBYzegDQhciPWZ1FLevfa0zLWEdYQtDAF8I11QMckJScipaIkwpbAhZZSg6ABEAQQZ83iZ83M5ckXEkEGk5RRU1TQQTAE5Woh0LVpCnPWFDPUNhLVd3FuEAoi1WtuMLLXsLBbMomLQsPASyPGSaVPTM7LpOACVTplOqtTqFJVUa5raOrp6dPoGhkbHEWxmjPyGcKOCz2PStLRrcAbeLEHaUaj7WQQTBgOjodj5ACa1xqtwaD1AzXBBhMNjBjlCFn89h+LUMrW8rT0Dj04UmIxMFihsU2+DhSURRGRqLoAGVmEIxDcZHdGo9tBDOtZniMLDpFqM3L8TLqiAF-IZ7MMga1DKtotC4lsBbshfCsjkGABJADCAGlcZJZQSmjqpnYwSY9FphiYtP46bq-EYnOEdPYQg4TDoeTCbYk7SkHcd0PkAKpizhe2o++5+hAkohk1mUsI0qM6BNEYSTQaOELq0Np638zMI7PkR3iyUl-HlhUIHoWfVdSZfNpgqPPTqDcJmtk2Fk9vnbQXZ7AAV1gkHRmJx0rxZflRMQYLMRHC-T0oXsGocrSj9jJsbMZlaSwWFyIw7rC-Z7KQR4nhAI4CGO16Ehod6eI+gzCC+kzvvYn7ai0QEzkMASJt+Ayhq0oEZvCEGEAQUgEHQpycAwpwXtU3r1BOt4IIY7xEIyQEhAmrTdOYUZ2AYfQ8SMTbWECFF9lRQo0XReSFMUfBlBU8EcTeSEIPeqHPq+WE4eMuo9PqwZUsCL5DPJCQoNgmCyCQhCwEQmSwNgFCojBzBsFw3Cuvk7DOugZxitpcqIU8Zp8QyMxrssiyGFGLLCLOlifMsZiJuRlq8mBjnOa5BDuWAyjeb5jCsBwPDBaF4WnJFl7sdFFZzPFEIbssCzGlGXgdIylh2DYOj8Xo9nEMVLluUQFVVaerpcPkpxBSFYURVFvqTrqZh0kaZiGI+4ZaEBhjDCCqYFemfYzaV5WVT5kDCiiaISqtDDcLkpz5AA6s6AByLDbZxenfiY+pBBqR3hiaLi4Ydx1AVoZ22JdljXesvYOU5s1lfNT2+R5BDYAA7sOABiQPOmKAAS32-QDwOg7pzQQ1DuiBHYoafAdPHHW+ZjhtYJGEVNRD3XNC3PRAmYoKeH2nF9P3-UDIOtaWOkxXeeqOFzsO84MB2ggYsxhMMEJ2Dxk03TjxCefCdCunT+TAzwK2VJr45s9ozYhrDdhBMITg6HSGozqHZ1hEGOjmhLjvkHQ+boAUDA8CwpzOrk3Big1xbewhFZo50JIRjYwQWGEdIBA+yw8W0R0x3HCeyLATsp2nPD5AAshizoMPm5S5-nrM6wgwTeECIStiEDLCRYdJWBlngAcIPRml0f72K37dJ53hQ8HTnDOiwdNfXnIUF2xWvtZOoaQyMiw6FyoJV7qB25fqxjmhGwa6kaXeTt-J1W4AARWatwIGuQ3SFEuGPYu4ZpjCz8GCd4Zp7C0lwuYB8rRLAODfEsCM1hIR213A7NuHdU6H3WoDAAavkMU3BGKUxajfH249QyR2NMGPBqN-BHTpCyVcrZ0aJVMIsIB5AiByGyKKEBgUYFigxNibgPcmDlAQbtf8+piFgmGKCEO4Y6ShyMNSP8bINRGkcFIvARAAC2h5MCKBqgFHgSiVFYjURo6+MptYdR0QaXKXxDHCy1OMSw9gfDmPXoyNoIZIhkLAgAMycZgWAKACBgAqkQKQyTkmuNAZTfM7B2B50YpwQGWiuLhgyqEWe5gQ7MgDp-fQPgZiLGEmCF8+VsbkKIKkzA6TMnZOULk5QhTArFNKeUzglTql6VqZ0WeNhrD-j8IET+6EjAdMCF0MkwsLSWmUFICAcA1CFRtH4u+XEAC05o6S3KZP+dory3ntAtH0sCilaDXJ2lxBkdJGQdDmLPP+CZdASx+fsNIGRHR-LBs0P8UZ0KPyWKEJwotdTciSZRfcSI3oIt9hPXiPC-y6lMEQ0yvxrbxRTE4Wwb9SFfLxVmfYOYoBEvHgc7wli3jMlRomVK2DBgdHwY4YSxhgwBChfiyCx5IBcorH1aY4RMWiuWHgqMptqxBAum0cMOVPlWn6dC+aBBaIECVZOKwUTSI2FmKCNGmCxLmkfMLfQ699Co2NZcu6eMHrWoBSYKM3NMpLASWddoiSWX+pKnNTyi0IBBr0oI7BQQtAtkTLoLkvDgwxpNUVAN0siaKqvP4++1LuLhiicNdsOa4621jbjeNBMZbExFGAFNzQgLeCCPxRwbIgjCwOthPtkrzDmlGuGCWUs22lrlhAUmFNsjdu0GEXVEIhgMlBOaMOiNqQGAWJqnp411SzuLfOpN8sy1tX+XpKuM4rGhAAtYPBLrEaDEhi-awbJugwyxoWjMic8Bru4lWxYD4gSeDyoNYIBa-UJBA7gGRjpURgeRbhXKK8LroXVEGEMO9cV9mQw4pxigwPGkzcEYSZo9X0oTCYpYqFhiWII5I4jCRBnDKyRVMDRoDq83aXgl8yYf04ubcQbjGTeNjLyckjDwrxjmgcI+OOHy2SJgWBLaTIycm6Q4cqmM7x+hdPEnDT+SCXzzzjFp0hUQgA */
   id: "ecgPlayer",
   type: "parallel",
+  entry: ["setInitialDisplayMode"],
   context: ({ input }) => ({
     ecgData: null,
-    initialDisplayMode: input.displayMode,
+    _initialDisplayMode: input.displayMode,
     playback: {
       loopEnabled: input.loopEnabled,
     },
@@ -270,37 +276,22 @@ export const ecgPlayerMachine = setup({
       },
     },
     display: {
-      initial: "checkInitialMode",
+      initial: "single",
       states: {
-        checkInitialMode: {
-          always: [
-            {
-              target: "multi",
-              guard: ({ context }) => context.initialDisplayMode === "multi"
-            },
-            {
-              target: "single"
-            }
-          ]
-        },
-        single: {
-          on: {
-            CHANGE_DISPLAY_MODE: {
-              target: "multi",
-              guard: ({ event }) => event.displayMode === "multi"
-            }
-          }
-        },
-        multi: {
-          on: {
-            CHANGE_DISPLAY_MODE: {
-              target: "single", 
-              guard: ({ event }) => event.displayMode === "single"
-            }
-          }
-        },
+        single: {},
+        multi: {},
       },
       on: {
+        CHANGE_DISPLAY_MODE: [
+          {
+            target: ".multi",
+            guard: ({ event }) => event.displayMode === "multi"
+          },
+          {
+            target: ".single",
+            guard: ({ event }) => event.displayMode === "single"
+          }
+        ],
         PREV_LEAD: {
           guard: "canGoToPrevLead",
           actions: ["setPrevLead", "onLeadChanged"],
