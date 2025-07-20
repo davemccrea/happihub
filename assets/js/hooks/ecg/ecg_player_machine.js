@@ -231,7 +231,7 @@ export const ecgPlayerMachine = setup({
         },
         enabled: {
           entry: ["setCalipersButtonToEnabled", "setupCalipersEventListeners"],
-          exit: [],
+          exit: ["removeCalipersEventListeners"],
           initial: "idle",
           states: {
             idle: {

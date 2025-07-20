@@ -39,6 +39,7 @@ import {
 const ECGPlayerV2 = {
   mounted() {
     this.controller = new AbortController();
+    this.calipersController = new AbortController();
 
     this.actor = createActor(
       ecgPlayerMachine.provide({
@@ -58,6 +59,7 @@ const ECGPlayerV2 = {
           setCalipersButtonToDisabled,
           setCalipersButtonToEnabled,
           setupCalipersEventListeners: this.setupCalipersEventListeners.bind(this),
+          removeCalipersEventListeners: this.removeCalipersEventListeners.bind(this),
           renderCalipers: ({ context }) => this.renderCalipersWithContext(context),
           clearCalipersCanvas: this.clearCalipersCanvas.bind(this),
         },
@@ -91,6 +93,7 @@ const ECGPlayerV2 = {
 
   destroyed() {
     this.controller.abort();
+    this.calipersController.abort();
     
     if (this.debugSubscription) {
       this.debugSubscription.unsubscribe();
@@ -453,6 +456,10 @@ const ECGPlayerV2 = {
     );
   },
 
+  removeCalipersEventListeners() {
+    this.calipersController.abort();
+    this.calipersController = new AbortController();
+  },
 
   renderCalipers() {
     const { context } = this.actor.getSnapshot();

@@ -305,11 +305,11 @@ export function setupCalipersEventListeners(canvas, sendEvent) {
 
   const handlers = createCalipersEventHandlers(canvas, sendEvent);
 
-  canvas.addEventListener("mousedown", handlers.handleMouseDown, { signal: this.controller.signal });
-  canvas.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.controller.signal });
+  canvas.addEventListener("mousedown", handlers.handleMouseDown, { signal: this.calipersController.signal });
+  canvas.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.calipersController.signal });
 
-  document.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.controller.signal });
-  document.addEventListener("mouseup", handlers.handleMouseUp, { signal: this.controller.signal });
+  document.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.calipersController.signal });
+  document.addEventListener("mouseup", handlers.handleMouseUp, { signal: this.calipersController.signal });
 }
 
 /**
