@@ -9,7 +9,7 @@ import { DOM_SELECTORS } from "./constants";
  * - Play/pause button event listeners
  * - Button state management (play/pause visual states)
  * 
- * Following the modular pattern established with calipers_manager.js
+ * Uses simplified AbortController pattern for automatic cleanup
  */
 
 /**
@@ -26,7 +26,6 @@ export function setupPlayPauseEventListener(sendEvent) {
 
   const handler = () => sendEvent({ type: "TOGGLE_PLAY_PAUSE" });
   
-  // AbortController automatically handles cleanup
   playPauseButton.addEventListener("click", handler, { signal: this.controller.signal });
 }
 

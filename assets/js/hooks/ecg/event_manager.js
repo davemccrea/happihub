@@ -30,11 +30,9 @@ export function setupLiveViewEventHandlers() {
   });
 }
 
-// Keys
 
 export function keydownListener() {
   const handler = (event) => {
-    // Only handle shortcuts when the ECG player is focused or no input is focused
     const activeElement = document.activeElement;
     const isInputFocused =
       activeElement?.tagName === "INPUT" ||
@@ -60,7 +58,6 @@ export function keydownListener() {
   document.addEventListener("keydown", handler, { signal: this.controller.signal });
 }
 
-// Buttons
 
 export function calipersListener() {
   const calipersButton = document.getElementById(DOM_SELECTORS.CALIPERS_BUTTON);

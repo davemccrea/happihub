@@ -10,7 +10,7 @@ import { DOM_SELECTORS } from "./constants";
  * - Checkbox event listeners (loop, QRS indicator)  
  * - Slider event listeners (grid scale, amplitude scale, height scale)
  * 
- * Following the modular pattern established with other managers
+ * Uses simplified event listener management with AbortController cleanup
  */
 
 /**
@@ -33,14 +33,11 @@ export function setupFormEventListeners(sendEvent) {
   setupHeightScaleListener.call(this, sendEvent);
 }
 
-// =================
-// SELECT LISTENERS
-// =================
 
 /**
  * Sets up current lead selector listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupCurrentLeadListener(sendEvent) {
   const currentLeadSelect = document.getElementById(DOM_SELECTORS.LEAD_SELECTOR);
@@ -61,7 +58,7 @@ function setupCurrentLeadListener(sendEvent) {
 /**
  * Sets up display mode selector listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupDisplayModeListener(sendEvent) {
   const displayModeSelect = document.getElementById(DOM_SELECTORS.DISPLAY_MODE_SELECTOR);
@@ -83,7 +80,7 @@ function setupDisplayModeListener(sendEvent) {
 /**
  * Sets up grid type selector listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupGridTypeListener(sendEvent) {
   const gridTypeSelect = document.getElementById(DOM_SELECTORS.GRID_TYPE_SELECTOR);
@@ -102,14 +99,11 @@ function setupGridTypeListener(sendEvent) {
   gridTypeSelect.addEventListener("change", handler, { signal: this.controller.signal });
   }
 
-// ===================
-// CHECKBOX LISTENERS
-// ===================
 
 /**
  * Sets up loop checkbox listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupLoopListener(sendEvent) {
   const loopCheckbox = document.getElementById(DOM_SELECTORS.LOOP_CHECKBOX);
@@ -129,7 +123,7 @@ function setupLoopListener(sendEvent) {
 /**
  * Sets up QRS indicator checkbox listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupQrsIndicatorListener(sendEvent) {
   const qrsIndicatorCheckbox = document.getElementById(DOM_SELECTORS.QRS_INDICATOR_CHECKBOX);
@@ -146,14 +140,11 @@ function setupQrsIndicatorListener(sendEvent) {
   qrsIndicatorCheckbox.addEventListener("change", handler, { signal: this.controller.signal });
   }
 
-// ==================
-// SLIDER LISTENERS
-// ==================
 
 /**
  * Sets up grid scale slider listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupGridScaleListener(sendEvent) {
   const gridScaleSlider = document.getElementById(DOM_SELECTORS.GRID_SCALE_SLIDER);
@@ -175,7 +166,7 @@ function setupGridScaleListener(sendEvent) {
 /**
  * Sets up amplitude scale slider listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupAmplitudeScaleListener(sendEvent) {
   const amplitudeScaleSlider = document.getElementById(DOM_SELECTORS.AMPLITUDE_SCALE_SLIDER);
@@ -197,7 +188,7 @@ function setupAmplitudeScaleListener(sendEvent) {
 /**
  * Sets up height scale slider listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @returns {Function} Cleanup function
+ * @returns {void} Cleanup handled automatically by AbortController
  */
 function setupHeightScaleListener(sendEvent) {
   const heightScaleSlider = document.getElementById(DOM_SELECTORS.HEIGHT_SCALE_SLIDER);

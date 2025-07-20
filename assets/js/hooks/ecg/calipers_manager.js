@@ -15,9 +15,6 @@ import {
   DOM_SELECTORS
 } from "./constants";
 
-/**
- * DOM utility functions for robust element selection
- */
 
 /**
  * Gets the calipers button element with error handling
@@ -33,12 +30,10 @@ export function getCalipersButton() {
 
 /**
  * Gets the calipers canvas element using data attribute
- * @param {HTMLElement|null} [ecgPlayerElement] - The ECG player element for scoped selection
  * @returns {HTMLCanvasElement|null} The calipers canvas element
  */
-export function getCalipersCanvas(ecgPlayerElement = null) {
-  const scope = ecgPlayerElement || document;
-  const canvas = scope.querySelector("[data-canvas-type='calipers']");
+export function getCalipersCanvas() {
+  const canvas = document.querySelector("[data-canvas-type='calipers']");
   
   if (canvas) {
     return /** @type {HTMLCanvasElement} */ (canvas);
@@ -57,7 +52,7 @@ export function getCalipersCanvas(ecgPlayerElement = null) {
  * - Time interval calculations
  * - Event handler creation
  * 
- * State is managed by the parent state machine, following the patterns
+ * State is managed entirely by the parent state machine, following simplified patterns
  * established in ecg_player_v2.js with functional composition.
  */
 
@@ -111,7 +106,6 @@ export function renderSingleCaliper(context, caliper, chartWidth, widthSeconds) 
   
   const { startX, startY, endX, endY, complete } = caliper;
   
-  // Modern medical equipment colors: blue for active, green for complete
   const color = complete ? CALIPER_COLORS.COMPLETE : CALIPER_COLORS.ACTIVE;
   
   context.strokeStyle = color;
@@ -119,10 +113,8 @@ export function renderSingleCaliper(context, caliper, chartWidth, widthSeconds) 
   context.lineWidth = CALIPER_HEAVY_LINE_WIDTH;
   context.lineCap = "round";
   
-  // Draw professional caliper arms with perpendicular markers
   drawProfessionalCaliper(context, startX, startY, endX, endY, color);
   
-  // Draw measurement text if complete
   if (complete) {
     drawMeasurementText(context, caliper, chartWidth, widthSeconds);
   }
@@ -142,17 +134,14 @@ function drawProfessionalCaliper(context, startX, startY, endX, endY, color) {
   context.fillStyle = color;
   context.lineWidth = CALIPER_LINE_WIDTH;
   
-  // Main measurement line
   context.beginPath();
   context.moveTo(startX, startY);
   context.lineTo(endX, endY);
   context.stroke();
   
-  // Draw perpendicular markers at both ends
-  drawPerpendicularMarker(context, startX, startY, endX, endY, true);  // Start marker
-  drawPerpendicularMarker(context, endX, endY, startX, startY, false); // End marker
+  drawPerpendicularMarker(context, startX, startY, endX, endY, true);
+  drawPerpendicularMarker(context, endX, endY, startX, startY, false);
   
-  // Draw measurement indicators (small triangles)
   drawMeasurementIndicator(context, startX, startY, color);
   drawMeasurementIndicator(context, endX, endY, color);
 }
@@ -169,23 +158,19 @@ function drawProfessionalCaliper(context, startX, startY, endX, endY, color) {
 function drawPerpendicularMarker(context, x, y, refX, refY, _isStart) {
   const markerLength = CALIPER_MARKER_LENGTH;
   
-  // Calculate perpendicular direction
   const dx = refX - x;
   const dy = refY - y;
   const length = Math.sqrt(dx * dx + dy * dy);
   
   if (length > 0) {
-    // Normalize and rotate 90 degrees
     const perpX = -dy / length;
     const perpY = dx / length;
     
-    // Draw perpendicular line
     context.beginPath();
     context.moveTo(x + perpX * markerLength/2, y + perpY * markerLength/2);
     context.lineTo(x - perpX * markerLength/2, y - perpY * markerLength/2);
     context.stroke();
   } else {
-    // Fallback for zero-length line
     context.beginPath();
     context.moveTo(x, y - markerLength/2);
     context.lineTo(x, y + markerLength/2);
@@ -223,32 +208,24 @@ function drawMeasurementText(context, caliper, chartWidth, widthSeconds) {
   const midX = (caliper.startX + caliper.endX) / 2;
   const midY = (caliper.startY + caliper.endY) / 2;
   
-  // Modern medical monitor style text
-  context.font = `bold ${CALIPER_FONT_SIZE}px monospace`; // Monospace font for medical precision
+  context.font = `bold ${CALIPER_FONT_SIZE}px monospace`;
   context.textAlign = "center";
   
-  // Create measurement box background
   const timeText = `${measurement.milliseconds.toFixed(0)}ms`;
   const bpmText = measurement.heartRate > 0 ? `${measurement.heartRate.toFixed(0)} BPM` : "";
   
-  // Calculate text dimensions for background box
   const textMetrics = context.measureText(timeText);
   const boxWidth = Math.max(textMetrics.width, context.measureText(bpmText).width) + CALIPER_TEXT_PADDING;
   const boxHeight = bpmText ? CALIPER_TEXT_HEIGHT_DOUBLE : CALIPER_TEXT_HEIGHT;
   
-  // Position text above the caliper line
   const textY = midY - CALIPER_TEXT_OFFSET;
   
-  // Draw modern semi-transparent background box
   context.fillStyle = CALIPER_COLORS.TEXT_BG;
   context.fillRect(midX - boxWidth/2, textY - 14, boxWidth, boxHeight);
   
-  // Draw subtle border around text box
   context.strokeStyle = CALIPER_COLORS.TEXT_BORDER;
   context.lineWidth = 1;
   context.strokeRect(midX - boxWidth/2, textY - 14, boxWidth, boxHeight);
-  
-  // Draw the measurement text in modern dark color
   context.fillStyle = CALIPER_COLORS.TEXT;
   context.strokeStyle = CALIPER_COLORS.TEXT_STROKE;
   context.lineWidth = 2;
@@ -265,7 +242,7 @@ function drawMeasurementText(context, caliper, chartWidth, widthSeconds) {
 /**
  * Creates mouse event handlers for caliper interaction
  * Returns bound functions that can be added/removed from canvas
- * Following the pattern from event_manager.js
+ * Using simplified AbortController pattern for automatic cleanup
  * 
  * @param {HTMLCanvasElement} canvas - The calipers canvas
  * @param {Function} sendEvent - Function to send events to state machine
@@ -303,7 +280,6 @@ export function createCalipersEventHandlers(canvas, sendEvent) {
   const handleMouseUp = (/** @type {MouseEvent} */ _event) => {
     const now = Date.now();
     
-    // Prevent duplicate CALIPER_END events within threshold
     if (now - lastCalipersEndTime < CALIPER_DUPLICATE_EVENT_THRESHOLD) {
       return;
     }
@@ -332,11 +308,9 @@ export function setupCalipersEventListeners(canvas, sendEvent) {
 
   const handlers = createCalipersEventHandlers(canvas, sendEvent);
 
-  // Add canvas listeners with AbortController
   canvas.addEventListener("mousedown", handlers.handleMouseDown, { signal: this.controller.signal });
   canvas.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.controller.signal });
 
-  // Add document listeners for drag outside canvas
   document.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.controller.signal });
   document.addEventListener("mouseup", handlers.handleMouseUp, { signal: this.controller.signal });
 }
@@ -362,7 +336,6 @@ export function setCalipersButtonToDisabled() {
     button.title = "Enable Time Calipers (c)";
   }
 
-  // Handle canvas interaction as part of the button state (same pattern as play/pause)
   const calipersCanvas = getCalipersCanvas();
   if (calipersCanvas) {
     calipersCanvas.style.pointerEvents = "none";
@@ -380,7 +353,6 @@ export function setCalipersButtonToEnabled() {
     button.title = "Disable Time Calipers (c)";
   }
 
-  // Handle canvas interaction as part of the button state (same pattern as play/pause)
   const calipersCanvas = getCalipersCanvas();
   if (calipersCanvas) {
     calipersCanvas.style.pointerEvents = "auto";

@@ -38,13 +38,11 @@ import {
 
 const ECGPlayerV2 = {
   mounted() {
-    // Simple AbortController for all DOM listeners
     this.controller = new AbortController();
 
     this.actor = createActor(
       ecgPlayerMachine.provide({
         actions: {
-          // @ts-ignore
           setupLiveViewEventHandlers: setupLiveViewEventHandlers.bind(this),
           setupEventListeners: setupEventListeners.bind(this),
           calculateDimensions: this.calculateDimensions.bind(this),
@@ -81,7 +79,6 @@ const ECGPlayerV2 = {
 
     this.actor.start();
 
-    // Debug subscription - remove in production
     this.debugSubscription = this.actor.subscribe((snapshot) => {
       console.log("🎛️ ECG Player State Change:", {
         state: snapshot.value,
@@ -94,15 +91,12 @@ const ECGPlayerV2 = {
   },
 
   destroyed() {
-    // Simple: Kill all DOM listeners with one call
     this.controller.abort();
     
-    // Clean up debug subscription
     if (this.debugSubscription) {
       this.debugSubscription.unsubscribe();
     }
     
-    // State machine handles its own cleanup
     this.actor.stop();
   },
 
@@ -168,9 +162,6 @@ const ECGPlayerV2 = {
     }
   },
 
-  // =================
-  // LEAD NAVIGATION
-  // =================
 
   getNextLeadIndex() {
     const { context } = this.actor.getSnapshot();
@@ -189,28 +180,22 @@ const ECGPlayerV2 = {
   onLeadChanged({ event }) {
     const { leadIndex } = event;
 
-    // Handle side effects (DOM updates)
     const leadSelect = this.el.querySelector('[name="current_lead"]');
     if (leadSelect) {
       leadSelect.value = leadIndex.toString();
     }
 
-    // TODO: implement rendering
   },
 
-  // =================
-  // CANVAS MANAGEMENT
-  // =================
 
   /**
    * Initializes the canvas system for ECG rendering.
-   * Creates 4 overlapping canvas layers: background, waveform, QRS flash, and calipers.
+   * Creates 4 overlapping canvas layers with simplified interaction management.
    */
   initializeCanvases() {
     const { context } = this.actor.getSnapshot();
     const snapshot = this.actor.getSnapshot();
 
-    // Get display settings from machine state
     const { displayMode, heightScale } = context.display;
     const calipersEnabled = snapshot.matches({ calipers: "enabled" });
 
@@ -228,7 +213,6 @@ const ECGPlayerV2 = {
     const container = this.el.querySelector("[data-ecg-chart]");
     const devicePixelRatio = window.devicePixelRatio || 1;
 
-    // Create background canvas for static grid
     this.backgroundCanvas = document.createElement("canvas");
     this.backgroundCanvas.setAttribute("data-canvas-type", "background");
     this.backgroundCanvas.width = this.chartWidth * devicePixelRatio;
@@ -241,7 +225,6 @@ const ECGPlayerV2 = {
     this.backgroundContext = this.backgroundCanvas.getContext("2d");
     this.backgroundContext.scale(devicePixelRatio, devicePixelRatio);
 
-    // Create waveform canvas (overlapping)
     this.waveformCanvas = document.createElement("canvas");
     this.waveformCanvas.setAttribute("data-canvas-type", "waveform");
     this.waveformCanvas.width = this.chartWidth * devicePixelRatio;
@@ -256,7 +239,6 @@ const ECGPlayerV2 = {
     this.waveformContext = this.waveformCanvas.getContext("2d");
     this.waveformContext.scale(devicePixelRatio, devicePixelRatio);
 
-    // Create QRS flash canvas
     this.qrsFlashCanvas = document.createElement("canvas");
     this.qrsFlashCanvas.setAttribute("data-canvas-type", "qrs-flash");
     this.qrsFlashCanvas.width = this.chartWidth * devicePixelRatio;
@@ -271,9 +253,8 @@ const ECGPlayerV2 = {
     this.qrsFlashContext = this.qrsFlashCanvas.getContext("2d");
     this.qrsFlashContext.scale(devicePixelRatio, devicePixelRatio);
 
-    // Create calipers canvas
     this.calipersCanvas = document.createElement("canvas");
-    this.calipersCanvas.setAttribute("data-canvas-type", "calipers"); // Add data attribute for robust selection
+    this.calipersCanvas.setAttribute("data-canvas-type", "calipers");
     this.calipersCanvas.width = this.chartWidth * devicePixelRatio;
     this.calipersCanvas.height = canvasHeight * devicePixelRatio;
     this.calipersCanvas.style.width = this.chartWidth + "px";
@@ -316,9 +297,6 @@ const ECGPlayerV2 = {
     }
   },
 
-  // =================
-  // GRID RENDERING
-  // =================
 
   /**
    * Initializes theme colors for rendering based on current theme
@@ -347,7 +325,6 @@ const ECGPlayerV2 = {
     const { context } = this.actor.getSnapshot();
     const { displayMode, gridType } = context.display;
 
-    // Ensure colors are initialized
     if (!this.colors) {
       this.initializeThemeColors();
     }
@@ -399,18 +376,15 @@ const ECGPlayerV2 = {
     const smallSquareSize = PIXELS_PER_MM * gridScale;
     const largeSquareSize = 5 * PIXELS_PER_MM * gridScale;
 
-    // Draw fine grid lines (1mm squares)
     context.strokeStyle = this.colors.gridFine;
     context.lineWidth = 0.5;
     context.beginPath();
 
-    // Vertical fine lines
     for (let x = xOffset; x <= xOffset + width; x += smallSquareSize) {
       context.moveTo(x, yOffset);
       context.lineTo(x, yOffset + height);
     }
 
-    // Horizontal fine lines
     for (let y = yOffset; y <= yOffset + height; y += smallSquareSize) {
       context.moveTo(xOffset, y);
       context.lineTo(xOffset + width, y);
@@ -418,18 +392,15 @@ const ECGPlayerV2 = {
 
     context.stroke();
 
-    // Draw bold grid lines (5mm squares)
     context.strokeStyle = this.colors.gridBold;
     context.lineWidth = 1;
     context.beginPath();
 
-    // Vertical bold lines
     for (let x = xOffset; x <= xOffset + width; x += largeSquareSize) {
       context.moveTo(x, yOffset);
       context.lineTo(x, yOffset + height);
     }
 
-    // Horizontal bold lines
     for (let y = yOffset; y <= yOffset + height; y += largeSquareSize) {
       context.moveTo(xOffset, y);
       context.lineTo(xOffset + width, y);
@@ -451,7 +422,6 @@ const ECGPlayerV2 = {
 
     context.fillStyle = this.colors.gridDots;
 
-    // Draw dots at grid intersections
     for (let x = xOffset + 5; x < xOffset + width - 5; x += dotSpacing) {
       for (let y = 5; y < height - 5; y += dotSpacing) {
         context.beginPath();
@@ -461,9 +431,6 @@ const ECGPlayerV2 = {
     }
   },
 
-  // ===================
-  // PLAY/PAUSE ACTIONS
-  // ===================
 
   setupPlayPauseEventListener() {
     setupPlayPauseEventListener.call(this, 
@@ -477,9 +444,6 @@ const ECGPlayerV2 = {
     );
   },
 
-  // =================
-  // CALIPERS ACTIONS
-  // =================
 
   setupCalipersEventListeners() {
     if (!this.calipersCanvas) return;
@@ -491,8 +455,6 @@ const ECGPlayerV2 = {
   },
 
   removeCalipersEventListeners() {
-    // AbortController will handle cleanup automatically
-    // This method kept for state machine compatibility
   },
 
   renderCalipers() {
