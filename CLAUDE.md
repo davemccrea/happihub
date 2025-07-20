@@ -16,6 +16,14 @@ HappiHub is an interactive learning platform for arterial blood gas (ABG) interp
 - **ECG integration** for comprehensive patient assessment
 - **Multi-language support** (English, Finnish, Swedish)
 
+## TODO.md
+
+The TODO.md will be used frequently. After completing a task, check the TODO.md file and move TODO to completed section.
+
+## Git
+
+You should write one line commits.
+
 ## Development Methodology
 
 You should always being by checking reviewing CONVENTIONS.md and ROADMAP.md.
