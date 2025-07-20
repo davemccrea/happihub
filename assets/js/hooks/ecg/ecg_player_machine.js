@@ -119,7 +119,7 @@ export const ecgPlayerMachine = setup({
         };
       },
     }),
-    clearCalipers: assign({
+    resetCalipersState: assign({
       calipers: () => ({
         caliper: null,
       }),
@@ -222,7 +222,7 @@ export const ecgPlayerMachine = setup({
       initial: "disabled",
       states: {
         disabled: {
-          entry: ["setCalipersButtonToDisabled", "clearCalipers"],
+          entry: ["setCalipersButtonToDisabled", "resetCalipersState", "clearCalipersCanvas"],
           on: {
             TOGGLE_CALIPERS: {
               target: "enabled",

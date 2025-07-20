@@ -2,9 +2,6 @@
 
 ## Next
 
-- [ ] Should event listener be removed when caliper mode is disabled?
-- [ ] Fix bug where the drawn calipers are not cleared after the caliper toggle button is pressed
-
 ## Later
 
 - [ ] When in multi mode, it shouldn't be possible to switch leads with the keyboard #bug
@@ -20,6 +17,11 @@
 - [ ] Add comprehensive application monitoring and diagnostics #improvement
 
 ## Done
+
+### 2025/07/20
+
+- [x] **Caliper Canvas Clearing Bug Fix** - Fixed bug where drawn calipers were not cleared after the caliper toggle button is pressed by adding clearCalipersCanvas action and renaming clearCalipers to resetCalipersState for clarity ✅ 2025/07/20
+- [x] **Caliper Event Listener Investigation** - Investigated whether event listeners should be removed when caliper mode is disabled ✅ 2025/07/20
 
 ### 2025/07/17
 
