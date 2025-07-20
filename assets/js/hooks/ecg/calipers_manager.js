@@ -354,9 +354,8 @@ export function clearCalipersCanvas(context, chartWidth, canvasHeight) {
 
 /**
  * Sets calipers button to disabled state
- * @param {HTMLElement|null} [ecgPlayerElement] - The ECG player element for scoped canvas selection
  */
-export function setCalipersButtonToDisabled(ecgPlayerElement = null) {
+export function setCalipersButtonToDisabled() {
   const button = getCalipersButton();
   if (button && button.classList) {
     button.classList.remove("btn-active");
@@ -364,7 +363,7 @@ export function setCalipersButtonToDisabled(ecgPlayerElement = null) {
   }
 
   // Handle canvas interaction as part of the button state (same pattern as play/pause)
-  const calipersCanvas = getCalipersCanvas(ecgPlayerElement);
+  const calipersCanvas = getCalipersCanvas();
   if (calipersCanvas) {
     calipersCanvas.style.pointerEvents = "none";
     calipersCanvas.style.cursor = "default";
@@ -373,9 +372,8 @@ export function setCalipersButtonToDisabled(ecgPlayerElement = null) {
 
 /**
  * Sets calipers button to enabled state
- * @param {HTMLElement|null} [ecgPlayerElement] - The ECG player element for scoped canvas selection
  */
-export function setCalipersButtonToEnabled(ecgPlayerElement = null) {
+export function setCalipersButtonToEnabled() {
   const button = getCalipersButton();
   if (button && button.classList) {
     button.classList.add("btn-active");
@@ -383,7 +381,7 @@ export function setCalipersButtonToEnabled(ecgPlayerElement = null) {
   }
 
   // Handle canvas interaction as part of the button state (same pattern as play/pause)
-  const calipersCanvas = getCalipersCanvas(ecgPlayerElement);
+  const calipersCanvas = getCalipersCanvas();
   if (calipersCanvas) {
     calipersCanvas.style.pointerEvents = "auto";
     calipersCanvas.style.cursor = "crosshair";
