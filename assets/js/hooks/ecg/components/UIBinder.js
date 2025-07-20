@@ -17,6 +17,7 @@ class UIBinder {
     this.setupBasicSelectors();
     this.setupCheckboxes();
     this.setupScaleSliders();
+    this.setupActionButtons();
     this.syncFormElementsWithState();
   }
 
@@ -88,6 +89,30 @@ class UIBinder {
     this.eventListeners.push({ target: document, type: "webkitfullscreenchange", handler });
     this.eventListeners.push({ target: document, type: "mozfullscreenchange", handler });
     this.eventListeners.push({ target: document, type: "MSFullscreenChange", handler });
+  }
+
+  updatePlayPauseButton() {
+    const button = document.getElementById("play-pause-button");
+    if (button) {
+      const iconClass = this.store.isPlaying ? "hero-pause" : "hero-play";
+      const buttonText = this.store.isPlaying ? "Pause" : "Play";
+      button.innerHTML = `<svg class="w-4 h-4 ${iconClass}" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="${this.store.isPlaying ? "M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" : "M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"} " clip-rule="evenodd" /></svg><span class="ml-1">${buttonText}</span>`;
+    }
+  }
+
+  setupActionButtons() {
+    this.setupElementListener("play-pause-button", "click", () => {
+      this.store.togglePlayback();
+      this.updatePlayPauseButton();
+    });
+
+    this.setupElementListener("calipers-button", "click", () => {
+      this.store.toggleCalipers();
+    });
+
+    this.setupElementListener("fullscreen-button", "click", () => {
+      this.toggleFullscreen();
+    });
   }
 
   handleFullscreenChange() {
