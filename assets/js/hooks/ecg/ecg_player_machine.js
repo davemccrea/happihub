@@ -125,9 +125,6 @@ export const ecgPlayerMachine = setup({
       }),
     }),
     renderCalipers: ({ context: _context }) => {
-      // This action is bound to the actual render function in the ECG player
-      // The actual implementation is provided when the machine is created
-      // Context is passed directly to avoid stale state issues
     },
   },
 }).createMachine({
@@ -149,7 +146,7 @@ export const ecgPlayerMachine = setup({
       qrsIndicatorEnabled: input.qrsIndicatorEnabled,
     },
     calipers: {
-      caliper: null, // Single caliper: null | { startX, startY, endX, endY, complete }
+      caliper: null,
     },
     error: null,
   }),

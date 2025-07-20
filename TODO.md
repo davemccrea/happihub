@@ -1,6 +1,11 @@
-# HappiHub Roadmap
+# HappiHub TODO
 
 ## Next
+
+- [ ] Should event listener be removed when caliper mode is disabled?
+- [ ] Fix bug where the drawn calipers are not cleared after the caliper toggle button is pressed
+
+## Later
 
 - [ ] When in multi mode, it shouldn't be possible to switch leads with the keyboard #bug
 - [ ] Fix error: TypeError: this.updateFullscreenStyles is not a function. (In 'this.updateFullscreenStyles(this.isFullscreen)', 'this.updateFullscreenStyles' is undefined) #bug
@@ -13,10 +18,6 @@
 - [ ] Improve error handling throughout the ECG viewer #improvement
 - [ ] PDF/PNG export of ECG views #feature
 - [ ] Add comprehensive application monitoring and diagnostics #improvement
-
-## Current
-
-- [ ] Check that the tests for the new caliper tool are accurate and comprehensive
 
 ## Done
 

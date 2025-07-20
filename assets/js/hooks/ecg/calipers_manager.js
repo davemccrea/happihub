@@ -15,7 +15,6 @@ import {
   DOM_SELECTORS
 } from "./constants";
 
-
 /**
  * Gets the calipers button element with error handling
  * @returns {HTMLElement|null} The calipers button element
@@ -85,10 +84,8 @@ export function calculateTimeInterval(startX, endX, chartWidth, widthSeconds) {
 export function renderCalipers(context, calipers, chartWidth, canvasHeight, widthSeconds) {
   if (!context) return;
   
-  // Clear the canvas
   context.clearRect(0, 0, chartWidth, canvasHeight);
   
-  // Render each caliper
   calipers.forEach(caliper => {
     renderSingleCaliper(context, caliper, chartWidth, widthSeconds);
   });

@@ -18,16 +18,13 @@ import { DOM_SELECTORS } from "./constants";
  * @param {Function} sendEvent - Function to send events to state machine
  */
 export function setupFormEventListeners(sendEvent) {
-  // Selects
   setupCurrentLeadListener.call(this, sendEvent);
   setupDisplayModeListener.call(this, sendEvent);
   setupGridTypeListener.call(this, sendEvent);
 
-  // Checkboxes  
   setupLoopListener.call(this, sendEvent);
   setupQrsIndicatorListener.call(this, sendEvent);
 
-  // Sliders
   setupGridScaleListener.call(this, sendEvent);
   setupAmplitudeScaleListener.call(this, sendEvent);
   setupHeightScaleListener.call(this, sendEvent);
