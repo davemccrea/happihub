@@ -7,47 +7,45 @@ import { reaction } from "mobx";
 
 const ECGPlayer = {
   mounted() {
-    // 1. Initialize State Management
     this.store = new ECGStore();
-
-    // 2. Initialize Data Processor
     this.dataProcessor = new DataProcessor(this.store);
-
-    // 3. Initialize Renderer
     this.renderer = new Renderer(this.el, this.store);
 
-    // 4. Initialize UI/Event handlers
     this.ui = new UIBinder(this.el, this.store, this.targetComponent);
     this.ui.setupAllListeners();
 
-    // 5. Initialize Caliper Controller
-    this.caliperController = new CaliperController(this.el, this.store, this.renderer.calipersCanvas);
+    this.caliperController = new CaliperController(
+      this.el,
+      this.store,
+      this.renderer.calipersCanvas
+    );
 
-    // Listen for data
     this.handleEvent("load_ecg_data", (payload) => {
       this.dataProcessor.process(payload.data);
     });
 
-    // The animation loop is now driven by state changes
     this.setupReactions();
   },
 
   setupReactions() {
-    // REACTION 1: Redraw the grid when scale or type changes.
+    // Redraw the grid when scale or type changes
     reaction(
-      () => ({
-        gridScale: this.store.gridScale,
-        gridType: this.store.gridType,
-        displayMode: this.store.displayMode,
-        heightScale: this.store.heightScale,
-      }),
+      () => {
+        console.log("reaction triggered");
+        return {
+          gridScale: this.store.gridScale,
+          gridType: this.store.gridType,
+          displayMode: this.store.displayMode,
+          heightScale: this.store.heightScale,
+        };
+      },
       () => {
         this.renderer.recreateCanvas();
         this.renderer.renderGridBackground();
       }
     );
 
-    // REACTION 2: The main animation loop.
+    // The main animation loop
     reaction(
       () => this.store.isPlaying,
       (isPlaying) => {
@@ -70,7 +68,8 @@ const ECGPlayer = {
       }
 
       const elapsedTime = (now - this.store.startTime) / 1000;
-      const cursorProgress = (elapsedTime % this.store.widthSeconds) / this.store.widthSeconds;
+      const cursorProgress =
+        (elapsedTime % this.store.widthSeconds) / this.store.widthSeconds;
       const animationCycle = Math.floor(elapsedTime / this.store.widthSeconds);
 
       this.renderer.processAnimationFrame(cursorProgress, animationCycle);
