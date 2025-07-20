@@ -226,6 +226,8 @@ function drawMeasurementText(context, caliper, chartWidth, widthSeconds) {
  * @returns {object} Object containing event handler functions
  */
 export function createCalipersEventHandlers(canvas, sendEvent) {
+  let lastCalipersEndTime = 0;
+  
   const getCanvasCoordinates = (/** @type {MouseEvent} */ event) => {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -252,7 +254,15 @@ export function createCalipersEventHandlers(canvas, sendEvent) {
     });
   };
 
-  const handleMouseUp = (/** @type {MouseEvent} */ _event) => {
+  const handleMouseUp = (/** @type {MouseEvent} */ event) => {
+    const now = Date.now();
+    
+    // Prevent duplicate CALIPER_END events within 100ms
+    if (now - lastCalipersEndTime < 100) {
+      return;
+    }
+    
+    lastCalipersEndTime = now;
     sendEvent({
       type: "CALIPER_END"
     });
@@ -282,7 +292,6 @@ export function setupCalipersEventListeners(canvas, sendEvent, listeners) {
   // Add canvas listeners
   canvas.addEventListener("mousedown", handlers.handleMouseDown);
   canvas.addEventListener("mousemove", handlers.handleMouseMove);
-  canvas.addEventListener("mouseup", handlers.handleMouseUp);
 
   // Add document listeners for drag outside canvas
   document.addEventListener("mousemove", handlers.handleMouseMove);
@@ -292,7 +301,6 @@ export function setupCalipersEventListeners(canvas, sendEvent, listeners) {
   const cleanup = () => {
     canvas.removeEventListener("mousedown", handlers.handleMouseDown);
     canvas.removeEventListener("mousemove", handlers.handleMouseMove);
-    canvas.removeEventListener("mouseup", handlers.handleMouseUp);
     document.removeEventListener("mousemove", handlers.handleMouseMove);
     document.removeEventListener("mouseup", handlers.handleMouseUp);
   };
