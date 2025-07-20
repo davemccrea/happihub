@@ -9,6 +9,12 @@ class DataProcessor {
     this.store = store;
   }
 
+  // Method to be called after data is processed to set up UI
+  setupUIAfterDataLoad() {
+    // This can be extended to trigger UI updates after data loading
+    console.log("Data processing complete - UI can be updated");
+  }
+
   process(data) {
     try {
       if (!data.fs || !data.sig_name || !data.p_signal) {
@@ -70,6 +76,9 @@ class DataProcessor {
           leadCount: this.store.ecgLeadDatasets.length,
           qrsCount: this.store.qrsIndexes.length,
         });
+
+        // Trigger UI setup after data is loaded
+        this.setupUIAfterDataLoad();
       })();
     } catch (error) {
       console.error("Error processing ECG data:", error);

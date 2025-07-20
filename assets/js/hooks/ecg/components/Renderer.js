@@ -328,17 +328,26 @@ class Renderer {
       }
     }
 
-    if (!this.store.qrsFlashActive || !this.qrsFlashContext) return;
+    // Handle QRS flash indicator
+    if (this.qrsFlashContext) {
+      // Clear the QRS flash canvas first
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const canvasHeight = this.qrsFlashCanvas.height / devicePixelRatio;
+      this.qrsFlashContext.clearRect(0, 0, this.store.chartWidth, canvasHeight);
 
-    const dotRadius = 5;
-    const margin = 15;
-    const dotX = this.store.chartWidth - margin;
-    const dotY = margin;
+      // Draw QRS indicator if active
+      if (this.store.qrsFlashActive) {
+        const dotRadius = 5;
+        const margin = 15;
+        const dotX = this.store.chartWidth - margin;
+        const dotY = margin;
 
-    this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
-    this.qrsFlashContext.beginPath();
-    this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
-    this.qrsFlashContext.fill();
+        this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
+        this.qrsFlashContext.beginPath();
+        this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
+        this.qrsFlashContext.fill();
+      }
+    }
   }
 
   calculateCursorPosition(elapsedTime) {
@@ -581,6 +590,14 @@ class Renderer {
       { column: 3, row: 0 }, { column: 3, row: 1 }, { column: 3, row: 2 },
     ];
     return leadPositions[leadIndex] || { column: 0, row: 0 };
+  }
+
+  clearQrsFlashArea() {
+    if (this.qrsFlashContext) {
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const canvasHeight = this.qrsFlashCanvas.height / devicePixelRatio;
+      this.qrsFlashContext.clearRect(0, 0, this.store.chartWidth, canvasHeight);
+    }
   }
 
   cleanup() {

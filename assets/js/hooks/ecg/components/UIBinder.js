@@ -2,10 +2,11 @@
 import { action } from "mobx";
 
 class UIBinder {
-  constructor(el, store, targetComponent) {
+  constructor(el, store, targetComponent, renderer) {
     this.el = el;
     this.store = store;
     this.targetComponent = targetComponent;
+    this.renderer = renderer;
     this.eventListeners = [];
   }
 
@@ -23,8 +24,9 @@ class UIBinder {
 
   setupResizeListener() {
     const handler = () => {
-      this.store.calculateMedicallyAccurateDimensions();
-      this.store.recreateCanvasAndRestart();
+      this.renderer.calculateMedicallyAccurateDimensions();
+      this.renderer.recreateCanvas();
+      this.renderer.renderGridBackground();
     };
     window.addEventListener("resize", handler);
     this.eventListeners.push({ target: window, type: "resize", handler });
@@ -123,7 +125,8 @@ class UIBinder {
       })();
       this.updateFullscreenStyles(this.store.isFullscreen);
       this.updateFullscreenButton();
-      this.store.recreateCanvasAndRestart();
+      this.renderer.recreateCanvas();
+      this.renderer.renderGridBackground();
     }
   }
 
@@ -187,6 +190,7 @@ class UIBinder {
     this.setupElementListener("display-mode-selector", "change", (e) => {
       const value = e.target.value;
       this.store.setDisplayMode(value);
+      this.updateLeadSelectorVisibility(value);
     });
 
     this.setupElementListener("grid-type-selector", "change", (e) => {
@@ -250,6 +254,17 @@ class UIBinder {
     this.updateGridScaleDisplay();
     this.updateAmplitudeScaleDisplay();
     this.updateHeightScaleDisplay();
+  }
+
+  updateLeadSelectorVisibility(displayMode) {
+    const leadSelectorContainer = document.getElementById("lead-selector-container");
+    if (leadSelectorContainer) {
+      if (displayMode === "multi") {
+        leadSelectorContainer.style.display = "none";
+      } else {
+        leadSelectorContainer.style.display = "block";
+      }
+    }
   }
 
   updateGridScaleDisplay() {

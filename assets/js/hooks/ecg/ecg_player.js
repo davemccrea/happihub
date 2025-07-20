@@ -7,11 +7,21 @@ import { reaction } from "mobx";
 
 const ECGPlayer = {
   mounted() {
+    // Get the target for push events (component ID)
+    this.targetComponent = this.el.getAttribute("phx-target");
+
     this.store = new ECGStore();
+    
+    // Initialize form values before setting up other components
+    this.store.initializeFormValues();
+
     this.dataProcessor = new DataProcessor(this.store);
     this.renderer = new Renderer(this.el, this.store);
+    
+    // Set renderer reference in store for cleanup operations
+    this.store.setRenderer(this.renderer);
 
-    this.ui = new UIBinder(this.el, this.store, this.targetComponent);
+    this.ui = new UIBinder(this.el, this.store, this.targetComponent, this.renderer);
     this.ui.setupAllListeners();
 
     this.caliperController = new CaliperController(
@@ -22,6 +32,8 @@ const ECGPlayer = {
 
     this.handleEvent("load_ecg_data", (payload) => {
       this.dataProcessor.process(payload.data);
+      // Set up UI controls after data is loaded
+      this.ui.updatePlayPauseButton();
     });
 
     this.setupReactions();

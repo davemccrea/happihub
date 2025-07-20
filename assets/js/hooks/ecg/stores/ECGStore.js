@@ -6,12 +6,17 @@ const DEFAULT_WIDTH_SECONDS = 2.5;
 const QRS_FLASH_DURATION_MS = 100;
 
 class ECGStore {
+  // Renderer reference for cleanup operations
+  renderer = null;
+
   // State properties
   isPlaying = false;
   displayMode = "single";
+  gridType = "telemetry";
   gridScale = 1.0;
   amplitudeScale = 1.0;
   heightScale = 1.2;
+  isFullscreen = false;
   ecgData = null;
   startTime = null;
   pausedTime = 0;
@@ -44,7 +49,8 @@ class ECGStore {
   allLeadsCursorData = null;
   activeSegments = [];
 
-  constructor() {
+  constructor(renderer = null) {
+    this.renderer = renderer;
     makeAutoObservable(this, {
       // Mark methods that modify state as actions
       setGridScale: action,
@@ -67,6 +73,9 @@ class ECGStore {
       checkQrsOccurrences: action,
       triggerQrsFlash: action,
       clearQrsFlashArea: action,
+      initializeFormValues: action,
+      readFormValue: action,
+      readFormCheckbox: action,
     });
   }
 
@@ -210,7 +219,48 @@ class ECGStore {
   }
 
   clearQrsFlashArea() {
-    // This will be handled by the Renderer
+    // This method is called by the QRS flash timeout
+    // Call the renderer's clearQrsFlashArea method if available
+    if (this.renderer && this.renderer.clearQrsFlashArea) {
+      this.renderer.clearQrsFlashArea();
+    }
+  }
+
+  setRenderer(renderer) {
+    this.renderer = renderer;
+  }
+
+  // Form reading methods
+  readFormValue(fieldName) {
+    const input = document.querySelector(
+      `input[name="settings[${fieldName}]"], select[name="settings[${fieldName}]"]`
+    );
+    return input ? input.value : null;
+  }
+
+  readFormCheckbox(fieldName) {
+    const input = document.querySelector(
+      `input[name="settings[${fieldName}]"][type="checkbox"]`
+    );
+    return input ? input.checked : false;
+  }
+
+  initializeFormValues() {
+    // Display and playback settings
+    this.gridType = this.readFormValue("grid_type") || "telemetry";
+    this.displayMode = this.readFormValue("display_mode") || "single";
+    this.currentLead = parseInt(this.readFormValue("current_lead") || "0");
+
+    // Playback options
+    this.loopEnabled = this.readFormCheckbox("loop_playback");
+    this.qrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
+
+    // Scale settings
+    this.gridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
+    this.amplitudeScale = parseFloat(
+      this.readFormValue("amplitude_scale") || "1.0"
+    );
+    this.heightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
   }
 }
 
