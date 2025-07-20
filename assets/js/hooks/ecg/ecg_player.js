@@ -43,7 +43,6 @@ const ECGPlayer = {
     // Redraw the grid when scale or type changes
     reaction(
       () => {
-        console.log("reaction triggered");
         return {
           gridScale: this.store.gridScale,
           gridType: this.store.gridType,
@@ -57,6 +56,14 @@ const ECGPlayer = {
       }
     );
 
+    // Re-render grid background when current lead changes (for label update)
+    reaction(
+      () => this.store.currentLead,
+      () => {
+        this.renderer.renderGridBackground();
+      }
+    );
+
     // The main animation loop
     reaction(
       () => this.store.isPlaying,
@@ -66,6 +73,25 @@ const ECGPlayer = {
         } else {
           this.stopAnimation();
         }
+      }
+    );
+
+    // Re-render current frame when paused and lead switches
+    reaction(
+      () => ({ currentLead: this.store.currentLead, isPlaying: this.store.isPlaying }),
+      ({ isPlaying }) => {
+        if (!isPlaying && this.store.startTime && this.store.pausedTime) {
+          // Re-render the current frame for the new lead when paused
+          this.store.renderCurrentFrame();
+        }
+      }
+    );
+
+    // Update play/pause button when playing state changes
+    reaction(
+      () => this.store.isPlaying,
+      () => {
+        this.ui.updatePlayPauseButton();
       }
     );
   },

@@ -592,6 +592,14 @@ class Renderer {
     return leadPositions[leadIndex] || { column: 0, row: 0 };
   }
 
+  clearWaveform() {
+    if (this.waveformContext) {
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
+      this.waveformContext.clearRect(0, 0, this.store.chartWidth, canvasHeight);
+    }
+  }
+
   clearQrsFlashArea() {
     if (this.qrsFlashContext) {
       const devicePixelRatio = window.devicePixelRatio || 1;

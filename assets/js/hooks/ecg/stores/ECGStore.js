@@ -76,6 +76,8 @@ class ECGStore {
       initializeFormValues: action,
       readFormValue: action,
       readFormCheckbox: action,
+      setRenderer: action,
+      renderCurrentFrame: action,
     });
   }
 
@@ -117,7 +119,24 @@ class ECGStore {
   }
 
   togglePlayback() {
-    this.isPlaying = !this.isPlaying;
+    const newPlayingState = !this.isPlaying;
+    this.isPlaying = newPlayingState;
+    
+    if (!newPlayingState) {
+      // Pausing - record the pause time
+      this.pausedTime = Date.now();
+    } else {
+      // Resuming - adjust start time to account for pause duration
+      if (this.pausedTime && this.startTime) {
+        const pauseDuration = Date.now() - this.pausedTime;
+        this.startTime += pauseDuration;
+        this.pausedTime = 0;
+      } else if (!this.startTime) {
+        // Starting for the first time
+        this.startTime = Date.now();
+        this.pausedTime = 0;
+      }
+    }
   }
 
   resetPlayback() {
@@ -143,10 +162,28 @@ class ECGStore {
       console.warn(`Invalid lead index: ${leadIndex}`);
       return;
     }
+    
+    const wasPlaying = this.isPlaying;
+    if (wasPlaying) {
+      this.isPlaying = false; // Temporarily stop animation
+    }
+    
     this.currentLead = leadIndex;
     this.currentLeadData = this.ecgLeadDatasets[leadIndex];
     this.calipers = [];
     this.activeCaliper = null;
+    
+    // Clear the waveform canvas when switching leads
+    if (this.renderer && this.renderer.clearWaveform) {
+      this.renderer.clearWaveform();
+    }
+    
+    if (wasPlaying) {
+      this.isPlaying = true; // Resume animation
+    } else if (this.startTime && this.pausedTime) {
+      // Re-render current frame for paused state
+      this.renderCurrentFrame();
+    }
   }
 
   switchToNextLead() {
@@ -228,6 +265,16 @@ class ECGStore {
 
   setRenderer(renderer) {
     this.renderer = renderer;
+  }
+  
+  renderCurrentFrame() {
+    // Render the current frame when paused
+    if (this.renderer && this.startTime && this.pausedTime) {
+      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
+      this.renderer.processAnimationFrame(cursorProgress, animationCycle);
+    }
   }
 
   // Form reading methods
