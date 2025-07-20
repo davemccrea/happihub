@@ -16,22 +16,21 @@ import { DOM_SELECTORS } from "./constants";
 /**
  * Sets up form control event listeners
  * @param {Function} sendEvent - Function to send events to state machine
- * @param {AbortSignal} signal - AbortSignal for automatic cleanup
  */
-export function setupFormEventListeners(sendEvent, signal) {
+export function setupFormEventListeners(sendEvent) {
   // Selects
-  setupCurrentLeadListener(sendEvent, signal);
-  setupDisplayModeListener(sendEvent, signal);
-  setupGridTypeListener(sendEvent, signal);
+  setupCurrentLeadListener.call(this, sendEvent);
+  setupDisplayModeListener.call(this, sendEvent);
+  setupGridTypeListener.call(this, sendEvent);
 
   // Checkboxes  
-  setupLoopListener(sendEvent, signal);
-  setupQrsIndicatorListener(sendEvent, signal);
+  setupLoopListener.call(this, sendEvent);
+  setupQrsIndicatorListener.call(this, sendEvent);
 
   // Sliders
-  setupGridScaleListener(sendEvent, signal);
-  setupAmplitudeScaleListener(sendEvent, signal);
-  setupHeightScaleListener(sendEvent, signal);
+  setupGridScaleListener.call(this, sendEvent);
+  setupAmplitudeScaleListener.call(this, sendEvent);
+  setupHeightScaleListener.call(this, sendEvent);
 }
 
 // =================
@@ -43,7 +42,7 @@ export function setupFormEventListeners(sendEvent, signal) {
  * @param {Function} sendEvent - Function to send events to state machine
  * @returns {Function} Cleanup function
  */
-function setupCurrentLeadListener(sendEvent, signal) {
+function setupCurrentLeadListener(sendEvent) {
   const currentLeadSelect = document.getElementById(DOM_SELECTORS.LEAD_SELECTOR);
   if (!currentLeadSelect) {
     console.error("Element #lead-selector not found");
@@ -56,7 +55,7 @@ function setupCurrentLeadListener(sendEvent, signal) {
     sendEvent({ type: "CHANGE_LEAD", leadIndex });
   };
   
-  currentLeadSelect.addEventListener("change", handler, { signal });
+  currentLeadSelect.addEventListener("change", handler, { signal: this.controller.signal });
   }
 
 /**
@@ -78,7 +77,7 @@ function setupDisplayModeListener(sendEvent) {
     sendEvent({ type: "CHANGE_DISPLAY_MODE", displayMode });
   };
 
-  displayModeSelect.addEventListener("change", handler, { signal });
+  displayModeSelect.addEventListener("change", handler, { signal: this.controller.signal });
   }
 
 /**
@@ -100,7 +99,7 @@ function setupGridTypeListener(sendEvent) {
     sendEvent({ type: "CHANGE_GRID_TYPE", gridType });
   };
 
-  gridTypeSelect.addEventListener("change", handler, { signal });
+  gridTypeSelect.addEventListener("change", handler, { signal: this.controller.signal });
   }
 
 // ===================
@@ -124,7 +123,7 @@ function setupLoopListener(sendEvent) {
     sendEvent({ type: "TOGGLE_LOOP" });
   };
 
-  loopCheckbox.addEventListener("change", handler, { signal });
+  loopCheckbox.addEventListener("change", handler, { signal: this.controller.signal });
   }
 
 /**
@@ -144,7 +143,7 @@ function setupQrsIndicatorListener(sendEvent) {
     sendEvent({ type: "TOGGLE_QRS_INDICATOR" });
   };
 
-  qrsIndicatorCheckbox.addEventListener("change", handler, { signal });
+  qrsIndicatorCheckbox.addEventListener("change", handler, { signal: this.controller.signal });
   }
 
 // ==================
@@ -170,7 +169,7 @@ function setupGridScaleListener(sendEvent) {
     sendEvent({ type: "UPDATE_GRID_SCALE", value: gridScale });
   };
 
-  gridScaleSlider.addEventListener("input", handler, { signal });
+  gridScaleSlider.addEventListener("input", handler, { signal: this.controller.signal });
   }
 
 /**
@@ -192,7 +191,7 @@ function setupAmplitudeScaleListener(sendEvent) {
     sendEvent({ type: "UPDATE_AMPLITUDE_SCALE", value: amplitudeScale });
   };
 
-  amplitudeScaleSlider.addEventListener("input", handler, { signal });
+  amplitudeScaleSlider.addEventListener("input", handler, { signal: this.controller.signal });
   }
 
 /**
@@ -214,5 +213,5 @@ function setupHeightScaleListener(sendEvent) {
     sendEvent({ type: "UPDATE_HEIGHT_SCALE", value: heightScale });
   };
 
-  heightScaleSlider.addEventListener("input", handler, { signal });
+  heightScaleSlider.addEventListener("input", handler, { signal: this.controller.signal });
   }

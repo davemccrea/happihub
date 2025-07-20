@@ -326,20 +326,19 @@ export function createCalipersEventHandlers(canvas, sendEvent) {
  * 
  * @param {HTMLCanvasElement} canvas - The calipers canvas
  * @param {Function} sendEvent - Function to send events to state machine
- * @param {AbortSignal} signal - AbortSignal for automatic cleanup
  */
-export function setupCalipersEventListeners(canvas, sendEvent, signal) {
+export function setupCalipersEventListeners(canvas, sendEvent) {
   if (!canvas) return;
 
   const handlers = createCalipersEventHandlers(canvas, sendEvent);
 
   // Add canvas listeners with AbortController
-  canvas.addEventListener("mousedown", handlers.handleMouseDown, { signal });
-  canvas.addEventListener("mousemove", handlers.handleMouseMove, { signal });
+  canvas.addEventListener("mousedown", handlers.handleMouseDown, { signal: this.controller.signal });
+  canvas.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.controller.signal });
 
   // Add document listeners for drag outside canvas
-  document.addEventListener("mousemove", handlers.handleMouseMove, { signal });
-  document.addEventListener("mouseup", handlers.handleMouseUp, { signal });
+  document.addEventListener("mousemove", handlers.handleMouseMove, { signal: this.controller.signal });
+  document.addEventListener("mouseup", handlers.handleMouseUp, { signal: this.controller.signal });
 }
 
 /**

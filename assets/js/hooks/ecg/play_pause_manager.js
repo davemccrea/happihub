@@ -15,9 +15,8 @@ import { DOM_SELECTORS } from "./constants";
 /**
  * Sets up play/pause button event listener
  * @param {Function} sendEvent - Function to send events to state machine
- * @param {AbortSignal} signal - AbortSignal for automatic cleanup
  */
-export function setupPlayPauseEventListener(sendEvent, signal) {
+export function setupPlayPauseEventListener(sendEvent) {
   const playPauseButton = document.getElementById(DOM_SELECTORS.PLAY_PAUSE_BUTTON);
 
   if (!playPauseButton) {
@@ -28,7 +27,7 @@ export function setupPlayPauseEventListener(sendEvent, signal) {
   const handler = () => sendEvent({ type: "TOGGLE_PLAY_PAUSE" });
   
   // AbortController automatically handles cleanup
-  playPauseButton.addEventListener("click", handler, { signal });
+  playPauseButton.addEventListener("click", handler, { signal: this.controller.signal });
 }
 
 /**

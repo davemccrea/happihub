@@ -466,16 +466,14 @@ const ECGPlayerV2 = {
   // ===================
 
   setupPlayPauseEventListener() {
-    setupPlayPauseEventListener(
-      (/** @type {any} */ event) => this.actor.send(event),
-      this.controller.signal
+    setupPlayPauseEventListener.call(this, 
+      (/** @type {any} */ event) => this.actor.send(event)
     );
   },
 
   setupFormEventListeners() {
-    setupFormEventListeners(
-      (/** @type {any} */ event) => this.actor.send(event),
-      this.controller.signal
+    setupFormEventListeners.call(this,
+      (/** @type {any} */ event) => this.actor.send(event)
     );
   },
 
@@ -486,10 +484,9 @@ const ECGPlayerV2 = {
   setupCalipersEventListeners() {
     if (!this.calipersCanvas) return;
     
-    setupCalipersEventListeners(
+    setupCalipersEventListeners.call(this,
       this.calipersCanvas,
-      (/** @type {any} */ event) => this.actor.send(event),
-      this.controller.signal
+      (/** @type {any} */ event) => this.actor.send(event)
     );
   },
 

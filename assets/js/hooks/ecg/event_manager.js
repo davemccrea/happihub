@@ -3,12 +3,10 @@
 import { DOM_SELECTORS } from "./constants";
 
 export function setupEventListeners() {
-  const { signal } = this.controller;
-  
-  keydownListener.call(this, signal);
+  keydownListener.call(this);
   this.setupPlayPauseEventListener();
   this.setupFormEventListeners();
-  calipersListener.call(this, signal);
+  calipersListener.call(this);
 }
 
 export function setupLiveViewEventHandlers() {
@@ -34,7 +32,7 @@ export function setupLiveViewEventHandlers() {
 
 // Keys
 
-export function keydownListener(signal) {
+export function keydownListener() {
   const handler = (event) => {
     // Only handle shortcuts when the ECG player is focused or no input is focused
     const activeElement = document.activeElement;
@@ -59,12 +57,12 @@ export function keydownListener(signal) {
         break;
     }
   };
-  document.addEventListener("keydown", handler, { signal });
+  document.addEventListener("keydown", handler, { signal: this.controller.signal });
 }
 
 // Buttons
 
-export function calipersListener(signal) {
+export function calipersListener() {
   const calipersButton = document.getElementById(DOM_SELECTORS.CALIPERS_BUTTON);
 
   if (!calipersButton) {
@@ -76,6 +74,6 @@ export function calipersListener(signal) {
     this.actor.send({ type: "TOGGLE_CALIPERS" });
   };
 
-  calipersButton.addEventListener("click", handler, { signal });
+  calipersButton.addEventListener("click", handler, { signal: this.controller.signal });
 }
 
