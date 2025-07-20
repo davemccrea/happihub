@@ -12,10 +12,6 @@ export const ecgPlayerMachine = setup({
         context.display.currentLead < context.ecgData.leadNames.length - 1
       );
     },
-    canStartCaliper: ({ context }) => {
-      // Prevent starting a new caliper if we just finished one and it's still dragging
-      return !context.calipers.isDragging;
-    },
   },
   actions: {
     setEcgData: assign({
@@ -84,86 +80,51 @@ export const ecgPlayerMachine = setup({
       }),
     }),
     startCaliper: assign({
-      calipers: ({ context, event }) => {
-        // Clear previous caliper if there's a completed one
-        const activeCaliper = context.calipers.activeCaliper;
-        if (activeCaliper && activeCaliper.complete) {
-          return {
-            ...context.calipers,
-            list: [],
-            activeCaliper: null,
-            isDragging: false,
-          };
-        }
-        
-        // Create new caliper directly in state machine
-        const newCaliper = {
-          id: Date.now(),
-          type: 'time',
+      calipers: ({ event }) => ({
+        caliper: {
           startX: event.x,
           startY: event.y,
           endX: event.x,
           endY: event.y,
-          complete: false
-        };
-        
-        return {
-          ...context.calipers,
-          list: [newCaliper],
-          activeCaliper: newCaliper,
-          isDragging: true,
-        };
-      },
+          complete: false,
+        },
+      }),
     }),
     updateCaliper: assign({
       calipers: ({ context, event }) => {
-        if (!context.calipers.activeCaliper || !context.calipers.isDragging) {
+        if (!context.calipers.caliper || context.calipers.caliper.complete) {
           return context.calipers;
         }
         
-        // Update caliper coordinates directly in state machine
-        const updatedCaliper = {
-          ...context.calipers.activeCaliper,
-          endX: event.x,
-          endY: event.y
-        };
-        
         return {
-          ...context.calipers,
-          list: [updatedCaliper],
-          activeCaliper: updatedCaliper,
+          caliper: {
+            ...context.calipers.caliper,
+            endX: event.x,
+            endY: event.y,
+          },
         };
       },
     }),
     finishCaliper: assign({
       calipers: ({ context }) => {
-        if (!context.calipers.activeCaliper) {
+        if (!context.calipers.caliper) {
           return context.calipers;
         }
         
-        // Mark caliper as complete directly in state machine
-        const completedCaliper = {
-          ...context.calipers.activeCaliper,
-          complete: true
-        };
-        
         return {
-          ...context.calipers,
-          list: [completedCaliper],
-          activeCaliper: completedCaliper,
-          isDragging: false,
+          caliper: {
+            ...context.calipers.caliper,
+            complete: true,
+          },
         };
       },
     }),
     clearCalipers: assign({
-      calipers: ({ context }) => ({
-        ...context.calipers,
-        list: [],
-        activeCaliper: null,
-        isDragging: false,
+      calipers: () => ({
+        caliper: null,
       }),
     }),
-    renderCalipers: ({ context }) => {
+    renderCalipers: ({ context: _context }) => {
       // This action is bound to the actual render function in the ECG player
       // The actual implementation is provided when the machine is created
       // Context is passed directly to avoid stale state issues
@@ -188,9 +149,7 @@ export const ecgPlayerMachine = setup({
       qrsIndicatorEnabled: input.qrsIndicatorEnabled,
     },
     calipers: {
-      list: [],
-      activeCaliper: null,
-      isDragging: false,
+      caliper: null, // Single caliper: null | { startX, startY, endX, endY, complete }
     },
     error: null,
   }),
@@ -282,20 +241,28 @@ export const ecgPlayerMachine = setup({
               entry: "renderCalipers",
               on: {
                 CALIPER_START: {
-                  target: "dragging",
-                  guard: "canStartCaliper",
+                  target: "creating",
                   actions: ["startCaliper", "renderCalipers"],
                 },
               },
             },
-            dragging: {
+            creating: {
               on: {
                 CALIPER_DRAG: {
                   actions: ["updateCaliper", "renderCalipers"],
                 },
                 CALIPER_END: {
-                  target: "idle",
-                  actions: "finishCaliper",
+                  target: "complete",
+                  actions: ["finishCaliper", "renderCalipers"],
+                },
+              },
+            },
+            complete: {
+              entry: "renderCalipers",
+              on: {
+                CALIPER_START: {
+                  target: "creating",
+                  actions: ["startCaliper", "renderCalipers"],
                 },
               },
             },

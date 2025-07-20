@@ -227,10 +227,11 @@ const ECGPlayerV2 = {
    */
   initializeCanvases() {
     const { context } = this.actor.getSnapshot();
+    const snapshot = this.actor.getSnapshot();
 
     // Get display settings from machine state
     const { displayMode, heightScale } = context.display;
-    const { enabled: calipersEnabled } = context.calipers;
+    const calipersEnabled = snapshot.matches({ calipers: "enabled" });
 
     const canvasHeight =
       displayMode === "multi"
@@ -528,9 +529,10 @@ const ECGPlayerV2 = {
   },
 
   renderCalipersWithContext(context) {
+    const calipersArray = context.calipers.caliper ? [context.calipers.caliper] : [];
     renderCalipers(
       this.calipersContext,
-      context.calipers.list,
+      calipersArray,
       this.chartWidth,
       this.leadHeight * (context.display.displayMode === "multi" ? ROWS_PER_DISPLAY : 1),
       this.widthSeconds
