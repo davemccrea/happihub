@@ -59,8 +59,8 @@ const ECGPlayerV2 = {
           setButtonToPause: setButtonToPause.bind(this),
           setupPlayPauseEventListener: this.setupPlayPauseEventListener.bind(this),
           setupFormEventListeners: this.setupFormEventListeners.bind(this),
-          setCalipersButtonToDisabled: setCalipersButtonToDisabled.bind(this),
-          setCalipersButtonToEnabled: setCalipersButtonToEnabled.bind(this),
+          setCalipersButtonToDisabled: () => setCalipersButtonToDisabled(this.el),
+          setCalipersButtonToEnabled: () => setCalipersButtonToEnabled(this.el),
           setupCalipersEventListeners: this.setupCalipersEventListeners.bind(this),
           removeCalipersEventListeners: this.removeCalipersEventListeners.bind(this),
           renderCalipers: ({ context }) => this.renderCalipersWithContext(context),
@@ -248,6 +248,7 @@ const ECGPlayerV2 = {
 
     // Create background canvas for static grid
     this.backgroundCanvas = document.createElement("canvas");
+    this.backgroundCanvas.setAttribute("data-canvas-type", "background");
     this.backgroundCanvas.width = this.chartWidth * devicePixelRatio;
     this.backgroundCanvas.height = canvasHeight * devicePixelRatio;
     this.backgroundCanvas.style.width = this.chartWidth + "px";
@@ -260,6 +261,7 @@ const ECGPlayerV2 = {
 
     // Create waveform canvas (overlapping)
     this.waveformCanvas = document.createElement("canvas");
+    this.waveformCanvas.setAttribute("data-canvas-type", "waveform");
     this.waveformCanvas.width = this.chartWidth * devicePixelRatio;
     this.waveformCanvas.height = canvasHeight * devicePixelRatio;
     this.waveformCanvas.style.width = this.chartWidth + "px";
@@ -274,6 +276,7 @@ const ECGPlayerV2 = {
 
     // Create QRS flash canvas
     this.qrsFlashCanvas = document.createElement("canvas");
+    this.qrsFlashCanvas.setAttribute("data-canvas-type", "qrs-flash");
     this.qrsFlashCanvas.width = this.chartWidth * devicePixelRatio;
     this.qrsFlashCanvas.height = canvasHeight * devicePixelRatio;
     this.qrsFlashCanvas.style.width = this.chartWidth + "px";
@@ -288,6 +291,7 @@ const ECGPlayerV2 = {
 
     // Create calipers canvas
     this.calipersCanvas = document.createElement("canvas");
+    this.calipersCanvas.setAttribute("data-canvas-type", "calipers"); // Add data attribute for robust selection
     this.calipersCanvas.width = this.chartWidth * devicePixelRatio;
     this.calipersCanvas.height = canvasHeight * devicePixelRatio;
     this.calipersCanvas.style.width = this.chartWidth + "px";

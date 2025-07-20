@@ -1,5 +1,7 @@
 // @ts-check
 
+import { DOM_SELECTORS } from "./constants";
+
 function addListener(setupMethod) {
   const cleanup = setupMethod.call(this);
   this.listeners.add(cleanup);
@@ -68,7 +70,7 @@ export function keydownListener() {
 // Buttons
 
 export function calipersListener() {
-  const calipersButton = document.getElementById("calipers-button");
+  const calipersButton = document.getElementById(DOM_SELECTORS.CALIPERS_BUTTON);
 
   if (!calipersButton) {
     console.error("Element #calipers-button not found");

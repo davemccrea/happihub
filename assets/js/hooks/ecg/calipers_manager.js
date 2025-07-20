@@ -1,5 +1,53 @@
 // @ts-check
 
+import {
+  CALIPER_MARKER_LENGTH,
+  CALIPER_INDICATOR_SIZE,
+  CALIPER_LINE_WIDTH,
+  CALIPER_HEAVY_LINE_WIDTH,
+  CALIPER_TEXT_PADDING,
+  CALIPER_TEXT_HEIGHT,
+  CALIPER_TEXT_HEIGHT_DOUBLE,
+  CALIPER_TEXT_OFFSET,
+  CALIPER_DUPLICATE_EVENT_THRESHOLD,
+  CALIPER_FONT_SIZE,
+  CALIPER_COLORS,
+  DOM_SELECTORS
+} from "./constants";
+
+/**
+ * DOM utility functions for robust element selection
+ */
+
+/**
+ * Gets the calipers button element with error handling
+ * @returns {HTMLElement|null} The calipers button element
+ */
+export function getCalipersButton() {
+  const button = document.getElementById(DOM_SELECTORS.CALIPERS_BUTTON);
+  if (!button) {
+    console.warn(`Calipers button not found: #${DOM_SELECTORS.CALIPERS_BUTTON}`);
+  }
+  return button;
+}
+
+/**
+ * Gets the calipers canvas element using data attribute
+ * @param {HTMLElement|null} [ecgPlayerElement] - The ECG player element for scoped selection
+ * @returns {HTMLCanvasElement|null} The calipers canvas element
+ */
+export function getCalipersCanvas(ecgPlayerElement = null) {
+  const scope = ecgPlayerElement || document;
+  const canvas = scope.querySelector("[data-canvas-type='calipers']");
+  
+  if (canvas) {
+    return /** @type {HTMLCanvasElement} */ (canvas);
+  }
+  
+  console.warn("Calipers canvas not found");
+  return null;
+}
+
 /**
  * CaliperManager - Pure functional utilities for ECG measurement calipers
  * 
@@ -64,13 +112,11 @@ export function renderSingleCaliper(context, caliper, chartWidth, widthSeconds) 
   const { startX, startY, endX, endY, complete } = caliper;
   
   // Modern medical equipment colors: blue for active, green for complete
-  const activeColor = "#4A90E2";   // Modern blue
-  const completeColor = "#27AE60"; // Modern green
-  const color = complete ? completeColor : activeColor;
+  const color = complete ? CALIPER_COLORS.COMPLETE : CALIPER_COLORS.ACTIVE;
   
   context.strokeStyle = color;
   context.fillStyle = color;
-  context.lineWidth = 3;
+  context.lineWidth = CALIPER_HEAVY_LINE_WIDTH;
   context.lineCap = "round";
   
   // Draw professional caliper arms with perpendicular markers
@@ -94,7 +140,7 @@ export function renderSingleCaliper(context, caliper, chartWidth, widthSeconds) 
 function drawProfessionalCaliper(context, startX, startY, endX, endY, color) {
   context.strokeStyle = color;
   context.fillStyle = color;
-  context.lineWidth = 2;
+  context.lineWidth = CALIPER_LINE_WIDTH;
   
   // Main measurement line
   context.beginPath();
@@ -121,7 +167,7 @@ function drawProfessionalCaliper(context, startX, startY, endX, endY, color) {
  * @param {boolean} _isStart - Whether this is the start marker (currently unused)
  */
 function drawPerpendicularMarker(context, x, y, refX, refY, _isStart) {
-  const markerLength = 16;
+  const markerLength = CALIPER_MARKER_LENGTH;
   
   // Calculate perpendicular direction
   const dx = refX - x;
@@ -155,7 +201,7 @@ function drawPerpendicularMarker(context, x, y, refX, refY, _isStart) {
  * @param {string} color - The color to use
  */
 function drawMeasurementIndicator(context, x, y, color) {
-  const size = 4;
+  const size = CALIPER_INDICATOR_SIZE;
   context.fillStyle = color;
   context.beginPath();
   context.moveTo(x, y - size);
@@ -178,7 +224,7 @@ function drawMeasurementText(context, caliper, chartWidth, widthSeconds) {
   const midY = (caliper.startY + caliper.endY) / 2;
   
   // Modern medical monitor style text
-  context.font = "bold 11px monospace"; // Monospace font for medical precision
+  context.font = `bold ${CALIPER_FONT_SIZE}px monospace`; // Monospace font for medical precision
   context.textAlign = "center";
   
   // Create measurement box background
@@ -187,24 +233,24 @@ function drawMeasurementText(context, caliper, chartWidth, widthSeconds) {
   
   // Calculate text dimensions for background box
   const textMetrics = context.measureText(timeText);
-  const boxWidth = Math.max(textMetrics.width, context.measureText(bpmText).width) + 12;
-  const boxHeight = bpmText ? 30 : 18;
+  const boxWidth = Math.max(textMetrics.width, context.measureText(bpmText).width) + CALIPER_TEXT_PADDING;
+  const boxHeight = bpmText ? CALIPER_TEXT_HEIGHT_DOUBLE : CALIPER_TEXT_HEIGHT;
   
   // Position text above the caliper line
-  const textY = midY - 30;
+  const textY = midY - CALIPER_TEXT_OFFSET;
   
   // Draw modern semi-transparent background box
-  context.fillStyle = "rgba(255, 255, 255, 0.95)";
+  context.fillStyle = CALIPER_COLORS.TEXT_BG;
   context.fillRect(midX - boxWidth/2, textY - 14, boxWidth, boxHeight);
   
   // Draw subtle border around text box
-  context.strokeStyle = "rgba(0, 0, 0, 0.2)";
+  context.strokeStyle = CALIPER_COLORS.TEXT_BORDER;
   context.lineWidth = 1;
   context.strokeRect(midX - boxWidth/2, textY - 14, boxWidth, boxHeight);
   
   // Draw the measurement text in modern dark color
-  context.fillStyle = "#2C3E50"; // Modern dark blue-gray
-  context.strokeStyle = "rgba(255, 255, 255, 0.8)";
+  context.fillStyle = CALIPER_COLORS.TEXT;
+  context.strokeStyle = CALIPER_COLORS.TEXT_STROKE;
   context.lineWidth = 2;
   
   context.strokeText(timeText, midX, textY);
@@ -254,11 +300,11 @@ export function createCalipersEventHandlers(canvas, sendEvent) {
     });
   };
 
-  const handleMouseUp = (/** @type {MouseEvent} */ event) => {
+  const handleMouseUp = (/** @type {MouseEvent} */ _event) => {
     const now = Date.now();
     
-    // Prevent duplicate CALIPER_END events within 100ms
-    if (now - lastCalipersEndTime < 100) {
+    // Prevent duplicate CALIPER_END events within threshold
+    if (now - lastCalipersEndTime < CALIPER_DUPLICATE_EVENT_THRESHOLD) {
       return;
     }
     
@@ -325,16 +371,17 @@ export function clearCalipersCanvas(context, chartWidth, canvasHeight) {
 
 /**
  * Sets calipers button to disabled state
+ * @param {HTMLElement|null} [ecgPlayerElement] - The ECG player element for scoped canvas selection
  */
-export function setCalipersButtonToDisabled() {
-  const button = document.getElementById("calipers-button");
+export function setCalipersButtonToDisabled(ecgPlayerElement = null) {
+  const button = getCalipersButton();
   if (button && button.classList) {
     button.classList.remove("btn-active");
     button.title = "Enable Time Calipers (c)";
   }
 
   // Handle canvas interaction as part of the button state (same pattern as play/pause)
-  const calipersCanvas = /** @type {HTMLCanvasElement} */ (document.querySelector("[data-ecg-chart] canvas:last-child"));
+  const calipersCanvas = getCalipersCanvas(ecgPlayerElement);
   if (calipersCanvas) {
     calipersCanvas.style.pointerEvents = "none";
     calipersCanvas.style.cursor = "default";
@@ -343,16 +390,17 @@ export function setCalipersButtonToDisabled() {
 
 /**
  * Sets calipers button to enabled state
+ * @param {HTMLElement|null} [ecgPlayerElement] - The ECG player element for scoped canvas selection
  */
-export function setCalipersButtonToEnabled() {
-  const button = document.getElementById("calipers-button");
+export function setCalipersButtonToEnabled(ecgPlayerElement = null) {
+  const button = getCalipersButton();
   if (button && button.classList) {
     button.classList.add("btn-active");
     button.title = "Disable Time Calipers (c)";
   }
 
   // Handle canvas interaction as part of the button state (same pattern as play/pause)
-  const calipersCanvas = /** @type {HTMLCanvasElement} */ (document.querySelector("[data-ecg-chart] canvas:last-child"));
+  const calipersCanvas = getCalipersCanvas(ecgPlayerElement);
   if (calipersCanvas) {
     calipersCanvas.style.pointerEvents = "auto";
     calipersCanvas.style.cursor = "crosshair";

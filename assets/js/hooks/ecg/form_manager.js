@@ -1,5 +1,7 @@
 // @ts-check
 
+import { DOM_SELECTORS } from "./constants";
+
 /**
  * FormManager - Manages form control event listeners
  * 
@@ -56,7 +58,7 @@ export function setupFormEventListeners(sendEvent, listeners) {
  * @returns {Function} Cleanup function
  */
 function setupCurrentLeadListener(sendEvent) {
-  const currentLeadSelect = document.getElementById("lead-selector");
+  const currentLeadSelect = document.getElementById(DOM_SELECTORS.LEAD_SELECTOR);
   if (!currentLeadSelect) {
     console.error("Element #lead-selector not found");
     return () => {};
@@ -78,7 +80,7 @@ function setupCurrentLeadListener(sendEvent) {
  * @returns {Function} Cleanup function
  */
 function setupDisplayModeListener(sendEvent) {
-  const displayModeSelect = document.getElementById("display-mode-selector");
+  const displayModeSelect = document.getElementById(DOM_SELECTORS.DISPLAY_MODE_SELECTOR);
 
   if (!displayModeSelect) {
     console.error("Element #display-mode-selector not found");
@@ -101,7 +103,7 @@ function setupDisplayModeListener(sendEvent) {
  * @returns {Function} Cleanup function
  */
 function setupGridTypeListener(sendEvent) {
-  const gridTypeSelect = document.getElementById("grid-type-selector");
+  const gridTypeSelect = document.getElementById(DOM_SELECTORS.GRID_TYPE_SELECTOR);
 
   if (!gridTypeSelect) {
     console.error("Element #grid-type-selector not found");
@@ -128,7 +130,7 @@ function setupGridTypeListener(sendEvent) {
  * @returns {Function} Cleanup function
  */
 function setupLoopListener(sendEvent) {
-  const loopCheckbox = document.getElementById("loop-checkbox");
+  const loopCheckbox = document.getElementById(DOM_SELECTORS.LOOP_CHECKBOX);
 
   if (!loopCheckbox) {
     console.error("Element #loop-checkbox not found");
@@ -149,7 +151,7 @@ function setupLoopListener(sendEvent) {
  * @returns {Function} Cleanup function
  */
 function setupQrsIndicatorListener(sendEvent) {
-  const qrsIndicatorCheckbox = document.getElementById("qrs-indicator-checkbox");
+  const qrsIndicatorCheckbox = document.getElementById(DOM_SELECTORS.QRS_INDICATOR_CHECKBOX);
 
   if (!qrsIndicatorCheckbox) {
     console.error("Element #qrs-indicator-checkbox not found");
@@ -174,7 +176,7 @@ function setupQrsIndicatorListener(sendEvent) {
  * @returns {Function} Cleanup function
  */
 function setupGridScaleListener(sendEvent) {
-  const gridScaleSlider = document.getElementById("grid-scale-slider");
+  const gridScaleSlider = document.getElementById(DOM_SELECTORS.GRID_SCALE_SLIDER);
 
   if (!gridScaleSlider) {
     console.error("Element #grid-scale-slider not found");
@@ -197,7 +199,7 @@ function setupGridScaleListener(sendEvent) {
  * @returns {Function} Cleanup function
  */
 function setupAmplitudeScaleListener(sendEvent) {
-  const amplitudeScaleSlider = document.getElementById("amplitude-scale-slider");
+  const amplitudeScaleSlider = document.getElementById(DOM_SELECTORS.AMPLITUDE_SCALE_SLIDER);
 
   if (!amplitudeScaleSlider) {
     console.error("Element #amplitude-scale-slider not found");
@@ -220,7 +222,7 @@ function setupAmplitudeScaleListener(sendEvent) {
  * @returns {Function} Cleanup function
  */
 function setupHeightScaleListener(sendEvent) {
-  const heightScaleSlider = document.getElementById("height-scale-slider");
+  const heightScaleSlider = document.getElementById(DOM_SELECTORS.HEIGHT_SCALE_SLIDER);
 
   if (!heightScaleSlider) {
     console.error("Element #height-scale-slider not found");
