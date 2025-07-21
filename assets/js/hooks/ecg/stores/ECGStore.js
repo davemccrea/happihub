@@ -208,8 +208,25 @@ class ECGStore {
   }
 
   handleThemeChange() {
-    // This will be handled by the Renderer, but we can keep the action here
-    // if we need to react to theme changes in the store.
+    // Update theme colors in renderer
+    if (this.renderer && this.renderer.updateThemeColors) {
+      this.renderer.updateThemeColors();
+    }
+    
+    // Re-render grid background with new colors
+    if (this.renderer && this.renderer.renderGridBackground) {
+      this.renderer.renderGridBackground();
+    }
+    
+    // Clear and re-render waveform with new colors
+    if (this.renderer && this.renderer.clearWaveform) {
+      this.renderer.clearWaveform();
+    }
+    
+    // Re-render current frame if paused to show waveform in new colors
+    if (!this.isPlaying && this.startTime && this.pausedTime) {
+      this.renderCurrentFrame();
+    }
   }
 
   recreateCanvasAndRestart() {
