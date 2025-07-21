@@ -82,6 +82,10 @@ class ECGStore {
       updateDimensions: action,
       updateCursorPosition: action,
       updateLeadHeight: action,
+      setActiveCursorData: action,
+      setAllLeadsCursorData: action,
+      setActiveSegments: action,
+      addToAllLeadsCursorData: action,
       initializeStartTime: action,
       resumePlayback: action,
       startAnimation: action,
@@ -184,6 +188,7 @@ class ECGStore {
     
     const wasPlaying = this.isPlaying;
     
+    // Single atomic action for state changes
     action(() => {
       if (wasPlaying) {
         this.isPlaying = false; // Temporarily stop animation
@@ -200,11 +205,12 @@ class ECGStore {
       this.renderer.clearWaveform();
     }
     
-    action(() => {
-      if (wasPlaying) {
+    // Resume animation if it was playing
+    if (wasPlaying) {
+      action(() => {
         this.isPlaying = true; // Resume animation
-      }
-    })();
+      })();
+    }
     
     if (!wasPlaying && this.startTime && this.pausedTime) {
       // Re-render current frame for paused state
@@ -376,6 +382,22 @@ class ECGStore {
 
   updateLeadHeight(height) {
     this.leadHeight = height;
+  }
+
+  setActiveCursorData(data) {
+    this.activeCursorData = data;
+  }
+
+  setAllLeadsCursorData(data) {
+    this.allLeadsCursorData = data;
+  }
+
+  setActiveSegments(segments) {
+    this.activeSegments = segments;
+  }
+
+  addToAllLeadsCursorData(leadData) {
+    this.allLeadsCursorData.push(leadData);
   }
 
   initializeStartTime() {

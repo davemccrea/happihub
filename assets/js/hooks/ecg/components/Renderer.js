@@ -366,7 +366,7 @@ class Renderer {
       currentScreenStartTime,
       elapsedTime
     );
-    this.store.activeSegments = segments;
+    this.store.setActiveSegments(segments);
 
     if (segments.length > 0) {
       const times = [];
@@ -385,9 +385,9 @@ class Renderer {
         }
       }
 
-      this.store.activeCursorData = { times, values };
+      this.store.setActiveCursorData({ times, values });
     } else {
-      this.store.activeCursorData = { times: [], values: [] };
+      this.store.setActiveCursorData({ times: [], values: [] });
     }
   }
 
@@ -396,8 +396,8 @@ class Renderer {
     const columnCycleStart =
       Math.floor(elapsedTime / columnTimeSpan) * columnTimeSpan;
 
-    this.store.allLeadsCursorData = [];
-    this.store.activeSegments = [];
+    this.store.setAllLeadsCursorData([]);
+    this.store.setActiveSegments([]);
 
     for (
       let leadIndex = 0;
@@ -410,7 +410,7 @@ class Renderer {
         elapsedTime
       );
       if (leadIndex === 0) {
-        this.store.activeSegments = segments;
+        this.store.setActiveSegments(segments);
       }
 
       if (segments.length > 0) {
@@ -430,7 +430,7 @@ class Renderer {
           }
         }
 
-        this.store.allLeadsCursorData.push({
+        this.store.addToAllLeadsCursorData({
           leadIndex,
           times,
           values,
