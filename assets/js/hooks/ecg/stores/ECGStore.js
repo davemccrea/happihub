@@ -78,6 +78,7 @@ class ECGStore {
       readFormCheckbox: action,
       setRenderer: action,
       renderCurrentFrame: action,
+      withCanvasStatePreservation: action,
     });
   }
 
@@ -274,6 +275,26 @@ class ECGStore {
       const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
       this.renderer.processAnimationFrame(cursorProgress, animationCycle);
+    }
+  }
+
+  withCanvasStatePreservation(operation) {
+    // Preserve animation state during canvas operations
+    const wasPlaying = this.isPlaying;
+    if (wasPlaying) {
+      this.isPlaying = false; // Temporarily stop animation
+    }
+
+    operation();
+
+    // Restore state
+    if (!wasPlaying && this.startTime && this.pausedTime) {
+      // Re-render current frame for paused state
+      this.renderCurrentFrame();
+    }
+
+    if (wasPlaying) {
+      this.isPlaying = true; // Resume animation
     }
   }
 

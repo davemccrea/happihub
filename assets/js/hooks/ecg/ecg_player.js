@@ -40,19 +40,29 @@ const ECGPlayer = {
   },
 
   setupReactions() {
-    // Redraw the grid when scale or type changes
+    // Handle changes that require canvas recreation (dimensions change)
     reaction(
       () => {
         return {
           gridScale: this.store.gridScale,
-          gridType: this.store.gridType,
           displayMode: this.store.displayMode,
           heightScale: this.store.heightScale,
         };
       },
       () => {
-        this.renderer.recreateCanvas();
+        this.store.withCanvasStatePreservation(() => {
+          this.renderer.recreateCanvas();
+          this.renderer.renderGridBackground();
+        });
+      }
+    );
+
+    // Handle grid type changes (only re-render background, preserve waveform)
+    reaction(
+      () => this.store.gridType,
+      () => {
         this.renderer.renderGridBackground();
+        // Don't recreate canvas or clear waveform - just update the grid
       }
     );
 
