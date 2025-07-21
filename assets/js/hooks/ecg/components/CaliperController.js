@@ -12,43 +12,10 @@ class CaliperController {
     this.dragStartPoint = null;
     this.eventListeners = [];
 
-    this.setupCalipersButton();
+    // Button handling is now managed by UIBinder with MobX autorun
   }
 
-  setupCalipersButton() {
-    const button = document.getElementById("calipers-button");
-    if (button && !button.dataset.listenerAdded) {
-      button.addEventListener("click", () => {
-        this.toggleCalipers();
-      });
-      button.dataset.listenerAdded = "true";
-    }
-  }
-
-  toggleCalipers() {
-    action(() => {
-      this.store.calipersMode = !this.store.calipersMode;
-    })();
-    this.updateCalipersButton();
-    this.updateCalipersInteraction();
-
-    if (!this.store.calipersMode) {
-      this.clearCalipers();
-    }
-  }
-
-  updateCalipersButton() {
-    const button = document.getElementById("calipers-button");
-    if (button) {
-      if (this.store.calipersMode) {
-        button.classList.add("btn-active");
-        button.title = "Disable Time Calipers (c)";
-      } else {
-        button.classList.remove("btn-active");
-        button.title = "Enable Time Calipers (c)";
-      }
-    }
-  }
+  // Button handling and UI updates are now managed by UIBinder with MobX reactions
 
   updateCalipersInteraction() {
     if (this.canvas) {

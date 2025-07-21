@@ -133,8 +133,13 @@ const ECGPlayer = {
     // Update caliper interaction when calipers mode changes
     reaction(
       () => this.store.calipersMode,
-      () => {
+      (calipersMode) => {
         this.caliperController.updateCalipersInteraction();
+        
+        // Clear calipers from canvas when mode is disabled
+        if (!calipersMode) {
+          this.caliperController.clearCalipers();
+        }
       }
     );
 

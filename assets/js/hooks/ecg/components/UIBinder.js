@@ -111,6 +111,7 @@ class UIBinder {
 
     this.setupElementListener("calipers-button", "click", () => {
       this.store.toggleCalipers();
+      // Button state will be updated automatically by autorun
     });
 
     this.setupElementListener("fullscreen-button", "click", () => {
@@ -169,6 +170,19 @@ class UIBinder {
       const tooltip = this.store.isFullscreen ? "Exit Fullscreen (f)" : "Enter Fullscreen (f)";
       button.innerHTML = `<svg class="w-5 h-5 ${iconClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.store.isFullscreen ? "M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" : "M4 8V4m0 0h4M4 4l4 4m12-4v4m0-4h-4m4 0l-4 4M4 16v4m0 0h4m-4 0l4-4m12 4v-4m0 4h-4m4 0l-4-4"}" /></svg>`;
       button.title = tooltip;
+    }
+  }
+
+  updateCalipersButton() {
+    const button = document.getElementById("calipers-button");
+    if (button) {
+      if (this.store.calipersMode) {
+        button.classList.add("btn-active");
+        button.title = "Disable Time Calipers (c)";
+      } else {
+        button.classList.remove("btn-active");
+        button.title = "Enable Time Calipers (c)";
+      }
     }
   }
 
@@ -282,6 +296,13 @@ class UIBinder {
     this.disposers.push(
       autorun(() => {
         this.updateFullscreenButton();
+      })
+    );
+
+    // Automatically update caliper button when caliper mode changes
+    this.disposers.push(
+      autorun(() => {
+        this.updateCalipersButton();
       })
     );
 
