@@ -79,6 +79,10 @@ class ECGStore {
       setRenderer: action,
       renderCurrentFrame: action,
       withCanvasStatePreservation: action,
+      updateDimensions: action,
+      updateCursorPosition: action,
+      updateLeadHeight: action,
+      initializeStartTime: action,
     });
   }
 
@@ -165,23 +169,30 @@ class ECGStore {
     }
     
     const wasPlaying = this.isPlaying;
-    if (wasPlaying) {
-      this.isPlaying = false; // Temporarily stop animation
-    }
     
-    this.currentLead = leadIndex;
-    this.currentLeadData = this.ecgLeadDatasets[leadIndex];
-    this.calipers = [];
-    this.activeCaliper = null;
+    action(() => {
+      if (wasPlaying) {
+        this.isPlaying = false; // Temporarily stop animation
+      }
+      
+      this.currentLead = leadIndex;
+      this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+      this.calipers = [];
+      this.activeCaliper = null;
+    })();
     
     // Clear the waveform canvas when switching leads
     if (this.renderer && this.renderer.clearWaveform) {
       this.renderer.clearWaveform();
     }
     
-    if (wasPlaying) {
-      this.isPlaying = true; // Resume animation
-    } else if (this.startTime && this.pausedTime) {
+    action(() => {
+      if (wasPlaying) {
+        this.isPlaying = true; // Resume animation
+      }
+    })();
+    
+    if (!wasPlaying && this.startTime && this.pausedTime) {
       // Re-render current frame for paused state
       this.renderCurrentFrame();
     }
@@ -262,15 +273,18 @@ class ECGStore {
   }
 
   triggerQrsFlash() {
-    if (this.qrsFlashTimeout) {
-      clearTimeout(this.qrsFlashTimeout);
-    }
-    this.qrsFlashActive = true;
-    this.qrsFlashTimeout = setTimeout(() => {
+    action(() => {
+      if (this.qrsFlashTimeout) {
+        clearTimeout(this.qrsFlashTimeout);
+      }
+      this.qrsFlashActive = true;
+    })();
+    
+    this.qrsFlashTimeout = setTimeout(action(() => {
       this.qrsFlashActive = false;
       this.qrsFlashTimeout = null;
       this.clearQrsFlashArea();
-    }, QRS_FLASH_DURATION_MS);
+    }), QRS_FLASH_DURATION_MS);
   }
 
   clearQrsFlashArea() {
@@ -313,6 +327,58 @@ class ECGStore {
     if (wasPlaying) {
       this.isPlaying = true; // Resume animation
     }
+  }
+
+  // Actions for Renderer to use instead of direct mutations
+  updateDimensions(chartWidth, widthSeconds) {
+    this.chartWidth = chartWidth;
+    this.widthSeconds = widthSeconds;
+  }
+
+  updateCursorPosition(position) {
+    this.cursorPosition = position % this.chartWidth;
+  }
+
+  updateLeadHeight(height) {
+    this.leadHeight = height;
+  }
+
+  initializeStartTime() {
+    if (!this.startTime) {
+      this.startTime = Date.now();
+    }
+  }
+
+  // Computed properties for derived state
+  get qrsDetectionRate() {
+    return this.totalDuration > 0 ? (this.qrsDetectedCount / this.totalDuration) * 60 : 0;
+  }
+
+  get playbackProgress() {
+    if (!this.startTime || !this.totalDuration) return 0;
+    const elapsed = this.isPlaying 
+      ? (Date.now() - this.startTime) / 1000
+      : (this.pausedTime - this.startTime) / 1000;
+    return Math.min(elapsed / this.totalDuration, 1);
+  }
+
+  get currentPlaybackTime() {
+    if (!this.startTime) return 0;
+    return this.isPlaying 
+      ? (Date.now() - this.startTime) / 1000
+      : (this.pausedTime - this.startTime) / 1000;
+  }
+
+  get isDataLoaded() {
+    return this.ecgLeadDatasets && this.ecgLeadDatasets.length > 0;
+  }
+
+  get hasValidLead() {
+    return this.isDataLoaded && this.currentLead >= 0 && this.currentLead < this.leadNames.length;
+  }
+
+  get currentLeadName() {
+    return this.hasValidLead ? this.leadNames[this.currentLead] : 'Unknown';
   }
 
   // Form reading methods

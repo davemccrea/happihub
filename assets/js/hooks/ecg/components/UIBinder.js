@@ -1,5 +1,5 @@
 
-import { action } from "mobx";
+import { action, autorun } from "mobx";
 
 class UIBinder {
   constructor(el, store, targetComponent, renderer) {
@@ -20,6 +20,7 @@ class UIBinder {
     this.setupScaleSliders();
     this.setupActionButtons();
     this.syncFormElementsWithState();
+    this.setupReactiveDOMUpdates();
   }
 
   setupResizeListener() {
@@ -105,7 +106,7 @@ class UIBinder {
   setupActionButtons() {
     this.setupElementListener("play-pause-button", "click", () => {
       this.store.togglePlayback();
-      this.updatePlayPauseButton();
+      // Button will be updated automatically by autorun
     });
 
     this.setupElementListener("calipers-button", "click", () => {
@@ -114,6 +115,7 @@ class UIBinder {
 
     this.setupElementListener("fullscreen-button", "click", () => {
       this.toggleFullscreen();
+      // Button will be updated automatically by autorun
     });
   }
 
@@ -267,6 +269,61 @@ class UIBinder {
     }
   }
 
+  setupReactiveDOMUpdates() {
+    // Automatically update play/pause button when playing state changes
+    this.disposers = this.disposers || [];
+    
+    this.disposers.push(
+      autorun(() => {
+        this.updatePlayPauseButton();
+      })
+    );
+
+    // Automatically update fullscreen button when fullscreen state changes
+    this.disposers.push(
+      autorun(() => {
+        this.updateFullscreenButton();
+      })
+    );
+
+    // Automatically sync lead selector with current lead
+    this.disposers.push(
+      autorun(() => {
+        const leadSelector = document.getElementById("lead-selector");
+        if (leadSelector && this.store.hasValidLead) {
+          leadSelector.value = this.store.currentLead.toString();
+        }
+      })
+    );
+
+    // Automatically update display mode selector
+    this.disposers.push(
+      autorun(() => {
+        const displayModeSelector = document.getElementById("display-mode-selector");
+        if (displayModeSelector) {
+          displayModeSelector.value = this.store.displayMode;
+        }
+      })
+    );
+
+    // Automatically update grid type selector
+    this.disposers.push(
+      autorun(() => {
+        const gridTypeSelector = document.getElementById("grid-type-selector");
+        if (gridTypeSelector) {
+          gridTypeSelector.value = this.store.gridType;
+        }
+      })
+    );
+
+    // Automatically update lead selector visibility
+    this.disposers.push(
+      autorun(() => {
+        this.updateLeadSelectorVisibility(this.store.displayMode);
+      })
+    );
+  }
+
   updateGridScaleDisplay() {
     const gridScaleValue = document.getElementById("grid-scale-value");
     const gridScaleSpeed = document.getElementById("grid-scale-speed");
@@ -303,6 +360,11 @@ class UIBinder {
     });
     if (this.themeObserver) {
       this.themeObserver.disconnect();
+    }
+    // Dispose of MobX autorun reactions
+    if (this.disposers) {
+      this.disposers.forEach(dispose => dispose());
+      this.disposers = [];
     }
   }
 }

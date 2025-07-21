@@ -32,8 +32,7 @@ const ECGPlayer = {
 
     this.handleEvent("load_ecg_data", (payload) => {
       this.dataProcessor.process(payload.data);
-      // Set up UI controls after data is loaded
-      this.ui.updatePlayPauseButton();
+      // UI controls will be updated automatically by reactions
     });
 
     this.setupReactions();
@@ -97,11 +96,34 @@ const ECGPlayer = {
       }
     );
 
-    // Update play/pause button when playing state changes
+    // Play/pause button updates are now handled by UIBinder autorun
+
+    // Re-render current frame when amplitude scale changes
     reaction(
-      () => this.store.isPlaying,
+      () => this.store.amplitudeScale,
       () => {
-        this.ui.updatePlayPauseButton();
+        if (!this.store.isPlaying && this.store.startTime && this.store.pausedTime) {
+          this.store.renderCurrentFrame();
+        }
+      }
+    );
+
+    // Update caliper interaction when calipers mode changes
+    reaction(
+      () => this.store.calipersMode,
+      () => {
+        this.caliperController.updateCalipersInteraction();
+      }
+    );
+
+    // Clear waveform when amplitude scale changes during animation
+    reaction(
+      () => this.store.amplitudeScale,
+      () => {
+        if (this.store.isPlaying) {
+          // Clear waveform to re-render with new amplitude
+          this.renderer.clearWaveform();
+        }
       }
     );
   },
@@ -112,7 +134,7 @@ const ECGPlayer = {
 
       const now = Date.now();
       if (!this.store.startTime) {
-        this.store.startTime = now;
+        this.store.initializeStartTime();
       }
 
       const elapsedTime = (now - this.store.startTime) / 1000;

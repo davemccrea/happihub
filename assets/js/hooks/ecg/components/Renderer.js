@@ -48,9 +48,8 @@ class Renderer {
 
   calculateMedicallyAccurateDimensions() {
     if (!this.chartContainer) {
-      this.store.chartWidth =
-        DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM * this.store.gridScale;
-      this.store.widthSeconds = DEFAULT_WIDTH_SECONDS;
+      const chartWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM * this.store.gridScale;
+      this.store.updateDimensions(chartWidth, DEFAULT_WIDTH_SECONDS);
       return;
     }
 
@@ -59,11 +58,11 @@ class Renderer {
     const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * scaledPixelsPerMm;
 
     if (containerWidth < minWidth) {
-      this.store.chartWidth = minWidth;
-      this.store.widthSeconds = DEFAULT_WIDTH_SECONDS;
+      this.store.updateDimensions(minWidth, DEFAULT_WIDTH_SECONDS);
     } else {
-      this.store.widthSeconds = containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
-      this.store.chartWidth = this.store.widthSeconds * MM_PER_SECOND * scaledPixelsPerMm;
+      const widthSeconds = containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
+      const chartWidth = widthSeconds * MM_PER_SECOND * scaledPixelsPerMm;
+      this.store.updateDimensions(chartWidth, widthSeconds);
     }
   }
 
@@ -76,10 +75,10 @@ class Renderer {
             ((CHART_HEIGHT * this.store.heightScale) / MULTI_LEAD_HEIGHT_SCALE)
         : CHART_HEIGHT * this.store.heightScale;
 
-    this.store.leadHeight =
-      this.store.displayMode === "multi"
-        ? (CHART_HEIGHT * this.store.heightScale) / MULTI_LEAD_HEIGHT_SCALE
-        : CHART_HEIGHT * this.store.heightScale;
+    const leadHeight = this.store.displayMode === "multi"
+      ? (CHART_HEIGHT * this.store.heightScale) / MULTI_LEAD_HEIGHT_SCALE
+      : CHART_HEIGHT * this.store.heightScale;
+    this.store.updateLeadHeight(leadHeight);
 
     const devicePixelRatio = window.devicePixelRatio || 1;
 
@@ -351,8 +350,8 @@ class Renderer {
   }
 
   calculateCursorPosition(elapsedTime) {
-    this.store.cursorPosition = (elapsedTime * this.store.chartWidth) / this.store.widthSeconds;
-    this.store.cursorPosition = this.store.cursorPosition % this.store.chartWidth;
+    const position = (elapsedTime * this.store.chartWidth) / this.store.widthSeconds;
+    this.store.updateCursorPosition(position);
   }
 
   loadVisibleDataForSingleLead(elapsedTime) {
