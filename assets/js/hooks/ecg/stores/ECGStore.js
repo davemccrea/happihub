@@ -84,6 +84,7 @@ class ECGStore {
       updateLeadHeight: action,
       initializeStartTime: action,
       resumePlayback: action,
+      startAnimation: action,
     });
   }
 
@@ -149,13 +150,25 @@ class ECGStore {
     this.isPlaying = false;
     this.startTime = null;
     this.pausedTime = 0;
+    this.cursorPosition = 0;
     this.lastQrsIndex = -1;
     this.qrsDetectedCount = 0;
+    
+    // Reset data state
+    this.activeCursorData = null;
+    this.allLeadsCursorData = null;
+    
+    // Reset QRS flash state
     if (this.qrsFlashTimeout) {
       clearTimeout(this.qrsFlashTimeout);
       this.qrsFlashTimeout = null;
     }
     this.qrsFlashActive = false;
+    
+    // Clear the waveform canvas when resetting playback (like original implementation)
+    if (this.renderer && this.renderer.clearWaveform) {
+      this.renderer.clearWaveform();
+    }
   }
 
   loadData(data) {
@@ -245,10 +258,19 @@ class ECGStore {
     // This will be handled by the Renderer
   }
 
+  startAnimation() {
+    this.isPlaying = true;
+    this.startTime = Date.now();
+    this.pausedTime = 0;
+    this.cursorPosition = 0;
+    this.activeCursorData = null;
+    this.allLeadsCursorData = null;
+  }
+
   handlePlaybackEnd() {
     if (this.loopEnabled) {
       this.resetPlayback();
-      this.togglePlayback();
+      this.startAnimation();
     } else {
       this.resetPlayback();
     }
