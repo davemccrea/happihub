@@ -56,6 +56,18 @@ const ECGPlayer = {
       }
     );
 
+    // Handle fullscreen changes separately to ensure proper waveform preservation
+    reaction(
+      () => this.store.isFullscreen,
+      () => {
+        // Use the canvas state preservation wrapper which handles the full lifecycle
+        this.store.withCanvasStatePreservation(() => {
+          this.renderer.recreateCanvas();
+          this.renderer.renderGridBackground();
+        });
+      }
+    );
+
     // Handle grid type changes (only re-render background, preserve waveform)
     reaction(
       () => this.store.gridType,

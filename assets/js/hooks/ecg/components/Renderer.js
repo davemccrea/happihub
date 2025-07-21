@@ -68,6 +68,9 @@ class Renderer {
 
   recreateCanvas() {
     this.cleanupCanvases();
+    
+    // Recalculate dimensions for the new canvas size (e.g., fullscreen)
+    this.calculateMedicallyAccurateDimensions();
 
     const canvasHeight =
       this.store.displayMode === "multi"

@@ -126,9 +126,8 @@ class UIBinder {
         this.store.isFullscreen = isCurrentlyFullscreen;
       })();
       this.updateFullscreenStyles(this.store.isFullscreen);
-      this.updateFullscreenButton();
-      this.renderer.recreateCanvas();
-      this.renderer.renderGridBackground();
+      // Canvas recreation and grid rendering will be handled by MobX reaction
+      // Button update will be handled by autorun
     }
   }
 

@@ -83,6 +83,7 @@ class ECGStore {
       updateCursorPosition: action,
       updateLeadHeight: action,
       initializeStartTime: action,
+      resumePlayback: action,
     });
   }
 
@@ -301,11 +302,23 @@ class ECGStore {
   
   renderCurrentFrame() {
     // Render the current frame when paused
-    if (this.renderer && this.startTime && this.pausedTime) {
+    if (this.renderer && this.startTime && this.pausedTime && this.isDataLoaded) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+      
+      // Ensure we don't go beyond the total duration
+      if (elapsedSeconds >= this.totalDuration) {
+        return;
+      }
+      
       const cursorProgress = (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-      this.renderer.processAnimationFrame(cursorProgress, animationCycle);
+      
+      // Use setTimeout to ensure canvas is ready and data is available
+      setTimeout(() => {
+        if (this.renderer && this.renderer.processAnimationFrame) {
+          this.renderer.processAnimationFrame(cursorProgress, animationCycle);
+        }
+      }, 0);
     }
   }
 
@@ -347,6 +360,10 @@ class ECGStore {
     if (!this.startTime) {
       this.startTime = Date.now();
     }
+  }
+
+  resumePlayback() {
+    this.isPlaying = true;
   }
 
   // Computed properties for derived state
