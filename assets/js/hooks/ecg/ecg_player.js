@@ -85,6 +85,16 @@ const ECGPlayer = {
       }
     );
 
+    // Re-render grid background when lead names become available after data loading
+    reaction(
+      () => this.store.leadNames,
+      (leadNames) => {
+        if (leadNames && leadNames.length > 0) {
+          this.renderer.renderGridBackground();
+        }
+      }
+    );
+
     // The main animation loop
     reaction(
       () => this.store.isPlaying,
