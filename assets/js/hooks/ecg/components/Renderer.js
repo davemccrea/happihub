@@ -38,7 +38,7 @@ class Renderer {
     const isDark = theme === "dark";
 
     this.colors = {
-      waveform: isDark ? "#ffffff" : "#000000",
+      waveform: (isDark && !this.store?.isFullscreen) ? "#ffffff" : "#000000",
       gridFine: isDark ? "#660000" : "#ff9999",
       gridBold: isDark ? "#990000" : "#ff6666",
       gridDots: isDark ? "#666666" : "#999999",
@@ -67,10 +67,24 @@ class Renderer {
   }
 
   recreateCanvas() {
+    console.log('🎨 Renderer.recreateCanvas() starting', {
+      isFullscreen: this.store.isFullscreen,
+      currentDimensions: {
+        chartWidth: this.store.chartWidth,
+        widthSeconds: this.store.widthSeconds
+      }
+    });
+    
     this.cleanupCanvases();
     
     // Recalculate dimensions for the new canvas size (e.g., fullscreen)
+    console.log('🎨 Renderer.recreateCanvas() recalculating dimensions');
     this.calculateMedicallyAccurateDimensions();
+    
+    console.log('🎨 Renderer.recreateCanvas() new dimensions', {
+      chartWidth: this.store.chartWidth,
+      widthSeconds: this.store.widthSeconds
+    });
 
     const canvasHeight =
       this.store.displayMode === "multi"
@@ -110,6 +124,16 @@ class Renderer {
       this.qrsFlashCanvas,
       this.calipersCanvas
     );
+    
+    console.log('🎨 Renderer.recreateCanvas() completed', {
+      canvasCount: 4,
+      waveformCanvasSize: {
+        width: this.waveformCanvas.width,
+        height: this.waveformCanvas.height,
+        styleWidth: this.waveformCanvas.style.width,
+        styleHeight: this.waveformCanvas.style.height
+      }
+    });
   }
 
   createCanvas(devicePixelRatio, canvasHeight) {
@@ -136,7 +160,17 @@ class Renderer {
   }
 
   renderGridBackground() {
-    if (!this.backgroundContext) return;
+    console.log('📊 Renderer.renderGridBackground() called', {
+      hasBackgroundContext: !!this.backgroundContext,
+      displayMode: this.store.displayMode,
+      currentLead: this.store.currentLead,
+      isFullscreen: this.store.isFullscreen
+    });
+    
+    if (!this.backgroundContext) {
+      console.error('📊 Renderer.renderGridBackground() - no background context available');
+      return;
+    }
 
     const devicePixelRatio = window.devicePixelRatio || 1;
     const canvasHeight = this.backgroundCanvas.height / devicePixelRatio;
@@ -255,8 +289,19 @@ class Renderer {
   processAnimationFrame(cursorProgress, animationCycle) {
     const elapsedTime =
       animationCycle * this.store.widthSeconds + cursorProgress * this.store.widthSeconds;
+    
+    console.log('🎥 Renderer.processAnimationFrame() called', {
+      cursorProgress,
+      animationCycle,
+      elapsedTime,
+      totalDuration: this.store.totalDuration,
+      isPlaying: this.store.isPlaying,
+      isFullscreen: this.store.isFullscreen,
+      hasWaveformContext: !!this.waveformContext
+    });
 
     if (elapsedTime >= this.store.totalDuration) {
+      console.log('🎥 Renderer.processAnimationFrame() - elapsed time >= total duration, ending playback');
       this.store.handlePlaybackEnd();
       return;
     }
@@ -480,7 +525,20 @@ class Renderer {
   }
 
   drawWaveformToCursor({ times, values, bounds, timeSpan, cursor }) {
-    if (!times || times.length === 0) return;
+    console.log('🌊 Renderer.drawWaveformToCursor() called', {
+      timesLength: times ? times.length : 0,
+      valuesLength: values ? values.length : 0,
+      bounds,
+      timeSpan,
+      cursor,
+      isFullscreen: this.store.isFullscreen,
+      hasWaveformContext: !!this.waveformContext
+    });
+    
+    if (!times || times.length === 0) {
+      console.log('🌊 Renderer.drawWaveformToCursor() - no times data, returning');
+      return;
+    }
 
     const { clearX, clearWidth } = this.calculateClearBounds(
       bounds.xOffset,
@@ -511,7 +569,22 @@ class Renderer {
     }
 
     if (hasMovedTo) {
+      console.log('🌊 Renderer.drawWaveformToCursor() stroking waveform', {
+        contextStrokeStyle: this.waveformContext.strokeStyle,
+        contextLineWidth: this.waveformContext.lineWidth,
+        canvasWidth: this.waveformCanvas.width,
+        canvasHeight: this.waveformCanvas.height,
+        canvasStyle: {
+          width: this.waveformCanvas.style.width,
+          height: this.waveformCanvas.style.height,
+          marginTop: this.waveformCanvas.style.marginTop
+        },
+        chartWidth: this.store.chartWidth,
+        isFullscreen: this.store.isFullscreen
+      });
       this.waveformContext.stroke();
+    } else {
+      console.log('🌊 Renderer.drawWaveformToCursor() - no points to draw');
     }
   }
 
@@ -573,6 +646,18 @@ class Renderer {
       coordinates.push({ x, y });
     }
 
+    console.log('📐 Renderer.transformCoordinates() calculated', {
+      bounds,
+      timeSpan,
+      xScale,
+      yScale,
+      yMinMax: [this.store.yMin, this.store.yMax],
+      amplitudeScale: this.store.amplitudeScale,
+      sampleCoordinates: coordinates.slice(0, 3),
+      totalCoordinates: coordinates.length,
+      isFullscreen: this.store.isFullscreen
+    });
+
     return coordinates;
   }
 
@@ -595,10 +680,26 @@ class Renderer {
   }
 
   clearWaveform() {
+    console.log('🧯 Renderer.clearWaveform() called', {
+      hasWaveformContext: !!this.waveformContext,
+      hasWaveformCanvas: !!this.waveformCanvas,
+      chartWidth: this.store.chartWidth,
+      isFullscreen: this.store.isFullscreen
+    });
+    
     if (this.waveformContext) {
       const devicePixelRatio = window.devicePixelRatio || 1;
       const canvasHeight = this.waveformCanvas.height / devicePixelRatio;
+      
+      console.log('🧯 Renderer.clearWaveform() clearing', {
+        devicePixelRatio,
+        canvasHeight,
+        clearRect: [0, 0, this.store.chartWidth, canvasHeight]
+      });
+      
       this.waveformContext.clearRect(0, 0, this.store.chartWidth, canvasHeight);
+    } else {
+      console.error('🧯 Renderer.clearWaveform() - no waveform context available');
     }
   }
 

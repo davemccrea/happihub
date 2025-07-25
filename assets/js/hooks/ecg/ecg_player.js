@@ -48,23 +48,50 @@ const ECGPlayer = {
           heightScale: this.store.heightScale,
         };
       },
-      () => {
+      (changes) => {
+        console.log('🔧 ECGPlayer canvas recreation reaction triggered', {
+          changes,
+          isFullscreen: this.store.isFullscreen,
+          storeState: {
+            isPlaying: this.store.isPlaying,
+            startTime: this.store.startTime,
+            pausedTime: this.store.pausedTime
+          }
+        });
+        
         this.store.withCanvasStatePreservation(() => {
+          console.log('🔧 ECGPlayer dimensions reaction - recreating canvas');
           this.renderer.recreateCanvas();
+          console.log('🔧 ECGPlayer dimensions reaction - rendering grid background');
           this.renderer.renderGridBackground();
         });
+        console.log('🔧 ECGPlayer canvas recreation reaction completed');
       }
     );
 
     // Handle fullscreen changes separately to ensure proper waveform preservation
     reaction(
       () => this.store.isFullscreen,
-      () => {
+      (isFullscreen) => {
+        console.log('🎆 ECGPlayer fullscreen reaction triggered', {
+          isFullscreen,
+          storeState: {
+            isPlaying: this.store.isPlaying,
+            startTime: this.store.startTime,
+            pausedTime: this.store.pausedTime,
+            currentLead: this.store.currentLead
+          }
+        });
+        
         // Use the canvas state preservation wrapper which handles the full lifecycle
+        console.log('🎆 ECGPlayer calling withCanvasStatePreservation for fullscreen change');
         this.store.withCanvasStatePreservation(() => {
+          console.log('🎆 ECGPlayer fullscreen reaction - recreating canvas');
           this.renderer.recreateCanvas();
+          console.log('🎆 ECGPlayer fullscreen reaction - rendering grid background');
           this.renderer.renderGridBackground();
         });
+        console.log('🎆 ECGPlayer fullscreen reaction completed');
       }
     );
 
@@ -99,9 +126,17 @@ const ECGPlayer = {
     reaction(
       () => this.store.isPlaying,
       (isPlaying) => {
+        console.log('🎨 ECGPlayer animation loop reaction triggered', {
+          isPlaying,
+          isFullscreen: this.store.isFullscreen,
+          hasAnimationId: !!this.animationId
+        });
+        
         if (isPlaying) {
+          console.log('🎨 ECGPlayer starting animation loop');
           this.startAnimationLoop();
         } else {
+          console.log('🎨 ECGPlayer stopping animation');
           this.stopAnimation();
         }
       }
@@ -110,10 +145,21 @@ const ECGPlayer = {
     // Re-render current frame when paused and lead switches
     reaction(
       () => ({ currentLead: this.store.currentLead, isPlaying: this.store.isPlaying }),
-      ({ isPlaying }) => {
+      ({ currentLead, isPlaying }) => {
+        console.log('🎬 ECGPlayer paused frame reaction triggered', {
+          currentLead,
+          isPlaying,
+          hasStartTime: !!this.store.startTime,
+          hasPausedTime: !!this.store.pausedTime,
+          isFullscreen: this.store.isFullscreen
+        });
+        
         if (!isPlaying && this.store.startTime && this.store.pausedTime) {
+          console.log('🎬 ECGPlayer paused frame reaction - re-rendering current frame');
           // Re-render the current frame for the new lead when paused
           this.store.renderCurrentFrame();
+        } else {
+          console.log('🎬 ECGPlayer paused frame reaction - conditions not met for re-render');
         }
       }
     );

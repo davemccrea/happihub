@@ -122,13 +122,31 @@ class UIBinder {
 
   handleFullscreenChange() {
     const isCurrentlyFullscreen = this.isDocumentInFullscreen();
+    
+    console.log('🔄 UIBinder.handleFullscreenChange() called', {
+      isCurrentlyFullscreen,
+      storeIsFullscreen: this.store.isFullscreen,
+      needsUpdate: isCurrentlyFullscreen !== this.store.isFullscreen,
+      isPlaying: this.store.isPlaying,
+      startTime: this.store.startTime,
+      pausedTime: this.store.pausedTime
+    });
+    
     if (isCurrentlyFullscreen !== this.store.isFullscreen) {
+      console.log('🔄 UIBinder.handleFullscreenChange() updating fullscreen state');
+      
       action(() => {
         this.store.isFullscreen = isCurrentlyFullscreen;
       })();
+      
+      console.log('🔄 UIBinder.handleFullscreenChange() updating styles');
       this.updateFullscreenStyles(this.store.isFullscreen);
+      
+      console.log('🔄 UIBinder.handleFullscreenChange() - MobX reactions will handle canvas recreation');
       // Canvas recreation and grid rendering will be handled by MobX reaction
       // Button update will be handled by autorun
+    } else {
+      console.log('🔄 UIBinder.handleFullscreenChange() - no state change needed');
     }
   }
 
@@ -137,26 +155,80 @@ class UIBinder {
   }
 
   toggleFullscreen() {
-    if (this.isDocumentInFullscreen()) {
+    const isCurrentlyFullscreen = this.isDocumentInFullscreen();
+    
+    console.log('🎭 UIBinder.toggleFullscreen() called', {
+      isCurrentlyFullscreen,
+      action: isCurrentlyFullscreen ? 'exit' : 'enter',
+      storeState: {
+        isPlaying: this.store.isPlaying,
+        startTime: this.store.startTime,
+        pausedTime: this.store.pausedTime,
+        currentLead: this.store.currentLead
+      }
+    });
+    
+    if (isCurrentlyFullscreen) {
+      console.log('🎭 UIBinder.toggleFullscreen() exiting fullscreen');
       this.exitFullscreen();
     } else {
+      console.log('🎭 UIBinder.toggleFullscreen() entering fullscreen');
       this.requestFullscreen();
     }
   }
 
   requestFullscreen() {
     const element = document.getElementById("ecg-player-container");
-    if (element.requestFullscreen) element.requestFullscreen();
-    else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
-    else if (element.mozRequestFullScreen) element.mozRequestFullScreen();
-    else if (element.msRequestFullscreen) element.msRequestFullscreen();
+    
+    console.log('🎭 UIBinder.requestFullscreen() called', {
+      hasElement: !!element,
+      elementId: element ? element.id : null,
+      availableMethods: {
+        requestFullscreen: !!element?.requestFullscreen,
+        webkitRequestFullscreen: !!element?.webkitRequestFullscreen,
+        mozRequestFullScreen: !!element?.mozRequestFullScreen,
+        msRequestFullscreen: !!element?.msRequestFullscreen
+      }
+    });
+    
+    if (element.requestFullscreen) {
+      console.log('🎭 UIBinder.requestFullscreen() using standard API');
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen) {
+      console.log('🎭 UIBinder.requestFullscreen() using webkit API');
+      element.webkitRequestFullscreen();
+    } else if (element.mozRequestFullScreen) {
+      console.log('🎭 UIBinder.requestFullscreen() using moz API');
+      element.mozRequestFullScreen();
+    } else if (element.msRequestFullscreen) {
+      console.log('🎭 UIBinder.requestFullscreen() using ms API');
+      element.msRequestFullscreen();
+    }
   }
 
   exitFullscreen() {
-    if (document.exitFullscreen) document.exitFullscreen();
-    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-    else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-    else if (document.msExitFullscreen) document.msExitFullscreen();
+    console.log('🎭 UIBinder.exitFullscreen() called', {
+      availableMethods: {
+        exitFullscreen: !!document.exitFullscreen,
+        webkitExitFullscreen: !!document.webkitExitFullscreen,
+        mozCancelFullScreen: !!document.mozCancelFullScreen,
+        msExitFullscreen: !!document.msExitFullscreen
+      }
+    });
+    
+    if (document.exitFullscreen) {
+      console.log('🎭 UIBinder.exitFullscreen() using standard API');
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      console.log('🎭 UIBinder.exitFullscreen() using webkit API');
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      console.log('🎭 UIBinder.exitFullscreen() using moz API');
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      console.log('🎭 UIBinder.exitFullscreen() using ms API');
+      document.msExitFullscreen();
+    }
   }
 
   updateFullscreenStyles(isFullscreen) {
