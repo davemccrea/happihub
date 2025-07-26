@@ -1,6 +1,16 @@
 import { action } from "mobx";
 
+/**
+ * Manages caliper measurement functionality for ECG time intervals
+ * @class CaliperController
+ */
+
 class CaliperController {
+  /**
+   * @param {HTMLElement} el - The root element
+   * @param {ECGStore} store - The ECG store instance
+   * @param {HTMLCanvasElement} canvas - The canvas for caliper rendering
+   */
   constructor(el, store, canvas) {
     this.el = el;
     this.store = store;
@@ -11,10 +21,7 @@ class CaliperController {
     this.dragStartPoint = null;
     this.eventListeners = [];
 
-    // Button handling is now managed by UIBinder with MobX autorun
   }
-
-  // Button handling and UI updates are now managed by UIBinder with MobX reactions
 
   updateCalipersInteraction() {
     if (this.canvas) {
@@ -86,6 +93,11 @@ class CaliperController {
     this.eventListeners = [];
   }
 
+  /**
+   * Start drawing a new caliper
+   * @param {number} x - Mouse X coordinate
+   * @param {number} y - Mouse Y coordinate
+   */
   startCaliper(x, y) {
     if (this.store.activeCaliper && this.store.activeCaliper.complete) {
       this.clearCalipers();
@@ -110,6 +122,11 @@ class CaliperController {
     this.renderCalipers();
   }
 
+  /**
+   * Update caliper end position during drag
+   * @param {number} x - Mouse X coordinate
+   * @param {number} y - Mouse Y coordinate
+   */
   updateCaliper(x, y) {
     if (this.store.activeCaliper) {
       action(() => {
@@ -157,6 +174,10 @@ class CaliperController {
     });
   }
 
+  /**
+   * Render a single caliper with measurements
+   * @param {Object} caliper - Caliper data object
+   */
   renderSingleCaliper(caliper) {
     const { startX, startY, endX, endY, complete } = caliper;
     const activeColor = "#4A90E2";
@@ -175,6 +196,14 @@ class CaliperController {
     }
   }
 
+  /**
+   * Draw professional-style caliper with perpendicular markers
+   * @param {number} startX - Start X coordinate
+   * @param {number} startY - Start Y coordinate
+   * @param {number} endX - End X coordinate
+   * @param {number} endY - End Y coordinate
+   * @param {string} color - Caliper color
+   */
   drawProfessionalCaliper(startX, startY, endX, endY, color) {
     this.context.beginPath();
     this.context.moveTo(startX, startY);
@@ -188,6 +217,13 @@ class CaliperController {
     this.drawMeasurementIndicator(endX, endY, color);
   }
 
+  /**
+   * Draw perpendicular marker at caliper end
+   * @param {number} x - Marker X coordinate
+   * @param {number} y - Marker Y coordinate
+   * @param {number} refX - Reference X coordinate
+   * @param {number} refY - Reference Y coordinate
+   */
   drawPerpendicularMarker(x, y, refX, refY) {
     const markerLength = 16;
     const dx = refX - x;
@@ -215,6 +251,12 @@ class CaliperController {
     }
   }
 
+  /**
+   * Draw measurement indicator at caliper points
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {string} color - Indicator color
+   */
   drawMeasurementIndicator(x, y, color) {
     const size = 4;
     this.context.fillStyle = color;
@@ -226,6 +268,10 @@ class CaliperController {
     this.context.fill();
   }
 
+  /**
+   * Draw measurement text showing time and BPM
+   * @param {Object} caliper - Caliper data object
+   */
   drawMeasurementText(caliper) {
     const measurement = this.calculateTimeInterval(
       caliper.startX,
@@ -268,6 +314,12 @@ class CaliperController {
     }
   }
 
+  /**
+   * Calculate time interval from pixel distance
+   * @param {number} startX - Start X coordinate
+   * @param {number} endX - End X coordinate
+   * @returns {Object} Object with milliseconds and heartRate properties
+   */
   calculateTimeInterval(startX, endX) {
     const timePerPixel = this.store.widthSeconds / this.store.chartWidth;
     const interval = Math.abs(endX - startX) * timePerPixel;

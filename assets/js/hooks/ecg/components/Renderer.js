@@ -1,3 +1,8 @@
+/**
+ * Handles all ECG canvas rendering including grids, waveforms, and animations
+ * @class Renderer
+ */
+
 const MM_PER_SECOND = 25;
 const MM_PER_MILLIVOLT = 10;
 const PIXELS_PER_MM = 6;

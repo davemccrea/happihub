@@ -1,18 +1,32 @@
 import { action } from "mobx";
 
+/**
+ * Processes ECG data and manages data segmentation for performance
+ * @class DataProcessor
+ */
+
 const HEIGHT_MILLIVOLTS = 2.5;
 const SEGMENT_DURATION_SECONDS = 0.1; // Pre-computed data segment size for performance
 
 class DataProcessor {
+  /**
+   * @param {ECGStore} store - The ECG store instance
+   */
   constructor(store) {
     this.store = store;
   }
 
-  // Method to be called after data is processed to set up UI
   setupUIAfterDataLoad() {
-    // This can be extended to trigger UI updates after data loading
   }
 
+  /**
+   * Process incoming ECG data and prepare it for rendering
+   * @param {Object} data - Raw ECG data object
+   * @param {number} data.fs - Sampling frequency
+   * @param {string[]} data.sig_name - Lead names
+   * @param {number[][]} data.p_signal - Signal data matrix
+   * @param {number[]} [data.qrs] - QRS detection indices
+   */
   process(data) {
     try {
       if (!data.fs || !data.sig_name || !data.p_signal) {
@@ -71,10 +85,11 @@ class DataProcessor {
 
         this.precomputeDataSegments();
 
-        // Trigger UI setup after data is loaded
         this.setupUIAfterDataLoad();
       })();
-    } catch (error) {}
+    } catch (error) {
+      console.error('Error processing ECG data:', error);
+    }
   }
 
   precomputeDataSegments() {
@@ -127,6 +142,12 @@ class DataProcessor {
     }
   }
 
+  /**
+   * Calculate the data array index for a given time
+   * @param {Object} leadData - Lead data object with times array
+   * @param {number} targetTime - Target time in seconds
+   * @returns {number} Data array index
+   */
   calculateDataIndexForTime(leadData, targetTime) {
     if (!leadData || !leadData.times || leadData.times.length === 0) {
       return 0;

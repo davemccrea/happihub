@@ -1,5 +1,10 @@
 import { makeAutoObservable, action } from "mobx";
 
+/**
+ * MobX store for ECG player state management
+ * @class ECGStore
+ */
+
 const DEFAULT_WIDTH_SECONDS = 2.5;
 const QRS_FLASH_DURATION_MS = 100;
 const PIXELS_PER_MM = 6;
@@ -7,10 +12,7 @@ const MM_PER_SECOND = 25;
 const CONTAINER_PADDING = 0;
 
 class ECGStore {
-  // DOM element references
   chartContainer = null;
-
-  // State properties
   isPlaying = false;
   displayMode = "single";
   gridType = "telemetry";
@@ -51,11 +53,13 @@ class ECGStore {
   allLeadsCursorData = null;
   activeSegments = [];
 
+  /**
+   * @param {HTMLElement} chartContainer - The DOM container for the ECG chart
+   */
   constructor(chartContainer) {
     this.chartContainer = chartContainer;
     makeAutoObservable(this, {
-      chartContainer: false, // Not an observable property
-      // Mark methods that modify state as actions
+      chartContainer: false,
       setGridScale: action,
       setAmplitudeScale: action,
       setHeightScale: action,
@@ -87,7 +91,6 @@ class ECGStore {
     });
   }
 
-  // Actions
   setGridScale(newScale) {
     this.gridScale = newScale;
   }
@@ -143,11 +146,17 @@ class ECGStore {
     this.qrsFlashActive = false;
   }
 
+  /**
+   * @param {Object} data - ECG data object containing signals and metadata
+   */
   loadData(data) {
     this.ecgData = data;
     this.resetPlayback();
   }
 
+  /**
+   * @param {number} leadIndex - Zero-based lead index
+   */
   switchLead(leadIndex) {
     if (
       !this.ecgLeadDatasets ||
@@ -179,7 +188,6 @@ class ECGStore {
   }
 
   handleThemeChange() {
-    // This is now just a trigger for reactions. The store itself doesn't do anything.
   }
 
   handlePlaybackEnd() {
@@ -192,6 +200,9 @@ class ECGStore {
     }
   }
 
+  /**
+   * @param {number} elapsedTime - Current playback time in seconds
+   */
   checkQrsOccurrences(elapsedTime) {
     if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) return;
     for (let i = this.lastQrsIndex + 1; i < this.qrsTimestamps.length; i++) {
@@ -230,11 +241,18 @@ class ECGStore {
     };
   }
 
+  /**
+   * @param {number} chartWidth - Chart width in pixels
+   * @param {number} widthSeconds - Time span shown in seconds
+   */
   updateDimensions(chartWidth, widthSeconds) {
     this.chartWidth = chartWidth;
     this.widthSeconds = widthSeconds;
   }
 
+  /**
+   * Update chart dimensions based on DOM container size
+   */
   updateDimensionsFromDOM() {
     if (!this.chartContainer) {
       const chartWidth =
@@ -277,7 +295,6 @@ class ECGStore {
     if (!this.startTime) this.startTime = Date.now();
   }
 
-  // Computed properties
   get isDataLoaded() {
     return this.ecgLeadDatasets && this.ecgLeadDatasets.length > 0;
   }
@@ -292,7 +309,10 @@ class ECGStore {
     return this.hasValidLead ? this.leadNames[this.currentLead] : "Unknown";
   }
 
-  // Form reading methods
+  /**
+   * @param {string} fieldName - Name of the form field
+   * @returns {string|null} Form field value
+   */
   readFormValue(fieldName) {
     const input = document.querySelector(
       `input[name="settings[${fieldName}]"], select[name="settings[${fieldName}]"]`,

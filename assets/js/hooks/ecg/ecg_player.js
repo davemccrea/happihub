@@ -5,6 +5,16 @@ import UIBinder from "./components/UIBinder";
 import CaliperController from "./components/CaliperController";
 import { reaction } from "mobx";
 
+/**
+ * ECG Player Phoenix LiveView Hook
+ * @typedef {Object} ECGPlayerHook
+ * @property {Function} mounted - Called when hook is mounted
+ * @property {Function} setupReactions - Sets up MobX reactions for component coordination
+ * @property {Function} startAnimationLoop - Starts ECG animation loop
+ * @property {Function} stopAnimation - Stops ECG animation
+ * @property {Function} destroyed - Cleanup when hook is destroyed
+ */
+
 const ECGPlayer = {
   mounted() {
     this.targetComponent = this.el.getAttribute("phx-target");
@@ -32,7 +42,6 @@ const ECGPlayer = {
   },
 
   setupReactions() {
-    // When dimensions or display mode change, recreate the canvas and redraw everything.
     reaction(
       () => ({
         width: this.store.chartWidth,
@@ -48,7 +57,6 @@ const ECGPlayer = {
       },
     );
 
-    // When grid type or lead changes, update the UI accordingly.
     reaction(
       () => ({
         gridType: this.store.gridType,
@@ -56,16 +64,13 @@ const ECGPlayer = {
         leadNames: this.store.leadNames.length,
       }),
       (current, previous) => {
-        // If the lead changed, we must clear the old waveform.
         if (previous && current.currentLead !== previous.currentLead) {
           this.renderer.clearWaveform();
         }
-        // Always redraw the background for grid type changes or lead label updates.
         this.renderer.renderGridBackground();
       },
     );
 
-    // When theme changes, update colors and redraw everything.
     reaction(
       () => this.ui.themeObserver, // A bit of a hack to react to theme changes via UIBinder
       () => {
@@ -77,7 +82,6 @@ const ECGPlayer = {
       },
     );
 
-    // The main animation loop
     reaction(
       () => this.store.isPlaying,
       (isPlaying) => {
@@ -86,7 +90,6 @@ const ECGPlayer = {
       },
     );
 
-    // When a paused frame needs to be rendered
     reaction(
       () => this.store.pausedFrameData,
       (frameData) => {
@@ -99,7 +102,6 @@ const ECGPlayer = {
       },
     );
 
-    // When properties change that require a redraw of a paused frame
     reaction(
       () => ({
         currentLead: this.store.currentLead,
@@ -110,7 +112,6 @@ const ECGPlayer = {
       },
     );
 
-    // Update caliper interaction when calipers mode changes
     reaction(
       () => this.store.calipersMode,
       (calipersMode) => {
@@ -119,7 +120,6 @@ const ECGPlayer = {
       },
     );
 
-    // Clear waveform when amplitude scale changes during animation
     reaction(
       () => this.store.amplitudeScale,
       () => {
@@ -127,7 +127,6 @@ const ECGPlayer = {
       },
     );
 
-    // When QRS flash is triggered
     reaction(
       () => this.store.qrsFlashActive,
       (isActive) => {
