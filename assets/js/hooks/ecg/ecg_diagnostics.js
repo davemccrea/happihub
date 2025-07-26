@@ -31,7 +31,6 @@ export class ECGDiagnostics {
           usedJSHeapSize: measurement.bytes,
         };
       } catch (error) {
-        console.error("Failed to measure memory:", error);
         this.memory = { error: "Measurement failed" };
       }
     } else if ("memory" in performance) {

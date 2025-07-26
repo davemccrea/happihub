@@ -1,4 +1,3 @@
-
 import { action } from "mobx";
 
 const HEIGHT_MILLIVOLTS = 2.5;
@@ -12,13 +11,11 @@ class DataProcessor {
   // Method to be called after data is processed to set up UI
   setupUIAfterDataLoad() {
     // This can be extended to trigger UI updates after data loading
-    console.log("Data processing complete - UI can be updated");
   }
 
   process(data) {
     try {
       if (!data.fs || !data.sig_name || !data.p_signal) {
-        console.error("Invalid ECG data format:", data);
         return;
       }
 
@@ -69,19 +66,10 @@ class DataProcessor {
 
         this.precomputeDataSegments();
 
-        console.log("ECG data loaded successfully:", {
-          samplingRate: this.store.samplingRate,
-          leadNames: this.store.leadNames,
-          totalDuration: this.store.totalDuration,
-          leadCount: this.store.ecgLeadDatasets.length,
-          qrsCount: this.store.qrsIndexes.length,
-        });
-
         // Trigger UI setup after data is loaded
         this.setupUIAfterDataLoad();
       })();
     } catch (error) {
-      console.error("Error processing ECG data:", error);
     }
   }
 

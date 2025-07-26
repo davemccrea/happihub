@@ -1,7 +1,5 @@
 import { makeAutoObservable, action } from "mobx";
 
-const MM_PER_SECOND = 25;
-const PIXELS_PER_MM = 6;
 const DEFAULT_WIDTH_SECONDS = 2.5;
 const QRS_FLASH_DURATION_MS = 100;
 
@@ -78,7 +76,6 @@ class ECGStore {
       readFormCheckbox: action,
       setRenderer: action,
       renderCurrentFrame: action,
-      withCanvasStatePreservation: action,
       updateDimensions: action,
       updateCursorPosition: action,
       updateLeadHeight: action,
@@ -132,41 +129,21 @@ class ECGStore {
   togglePlayback() {
     const newPlayingState = !this.isPlaying;
 
-    console.log("⏯️ ECGStore.togglePlayback()", {
-      from: this.isPlaying,
-      to: newPlayingState,
-      startTime: this.startTime,
-      pausedTime: this.pausedTime,
-      isFullscreen: this.isFullscreen,
-    });
-
     this.isPlaying = newPlayingState;
 
     if (!newPlayingState) {
       // Pausing - record the pause time
       this.pausedTime = Date.now();
-      console.log(
-        "⏸️ ECGStore.togglePlayback() paused, recorded pausedTime:",
-        this.pausedTime
-      );
     } else {
       // Resuming - adjust start time to account for pause duration
       if (this.pausedTime && this.startTime) {
         const pauseDuration = Date.now() - this.pausedTime;
         this.startTime += pauseDuration;
-        console.log(
-          "▶️ ECGStore.togglePlayback() resuming, adjusted startTime by pauseDuration:",
-          pauseDuration
-        );
         this.pausedTime = 0;
       } else if (!this.startTime) {
         // Starting for the first time
         this.startTime = Date.now();
         this.pausedTime = 0;
-        console.log(
-          "▶️ ECGStore.togglePlayback() starting for first time, startTime:",
-          this.startTime
-        );
       }
     }
   }
@@ -285,10 +262,6 @@ class ECGStore {
     }
   }
 
-  recreateCanvasAndRestart() {
-    // This will be handled by the Renderer
-  }
-
   startAnimation() {
     this.isPlaying = true;
     this.startTime = Date.now();
@@ -357,15 +330,6 @@ class ECGStore {
   }
 
   renderCurrentFrame() {
-    console.log("🎬 ECGStore.renderCurrentFrame() called", {
-      hasRenderer: !!this.renderer,
-      startTime: this.startTime,
-      pausedTime: this.pausedTime,
-      isDataLoaded: this.isDataLoaded,
-      isPlaying: this.isPlaying,
-      isFullscreen: this.isFullscreen,
-    });
-
     // Render the current frame when paused
     if (
       this.renderer &&
@@ -375,17 +339,8 @@ class ECGStore {
     ) {
       const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
 
-      console.log("🎬 ECGStore.renderCurrentFrame() timing data", {
-        elapsedSeconds,
-        totalDuration: this.totalDuration,
-        widthSeconds: this.widthSeconds,
-      });
-
       // Ensure we don't go beyond the total duration
       if (elapsedSeconds >= this.totalDuration) {
-        console.log(
-          "🎬 ECGStore.renderCurrentFrame() - elapsed time exceeds duration, returning"
-        );
         return;
       }
 
@@ -393,106 +348,23 @@ class ECGStore {
         (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
       const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
 
-      console.log("🎬 ECGStore.renderCurrentFrame() calculated values", {
-        cursorProgress,
-        animationCycle,
-      });
+      if (this.renderer && this.renderer.processAnimationFrame) {
+        // Ensure dimensions are up-to-date before calculating cursor progress
+        this.renderer.calculateMedicallyAccurateDimensions();
 
-      // Use timeout for any canvas recreation to ensure dimensions are fully stabilized
-      const timeoutDelay = 1000;
-      setTimeout(() => {
-        console.log(
-          "🎬 ECGStore.renderCurrentFrame() setTimeout callback executing",
-          {
-            hasRenderer: !!this.renderer,
-            hasProcessAnimationFrame: !!(
-              this.renderer && this.renderer.processAnimationFrame
-            ),
-            timeoutDelay,
-          }
+        // Use current dimensions for cursor progress calculation
+        const currentCursorProgress =
+          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
+        const currentAnimationCycle = Math.floor(
+          elapsedSeconds / this.widthSeconds
         );
 
-        if (this.renderer && this.renderer.processAnimationFrame) {
-          // Recalculate cursor progress with the current (potentially updated) widthSeconds
-          // This ensures we use the latest canvas dimensions after fullscreen transitions
-          const currentCursorProgress =
-            (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-          const currentAnimationCycle = Math.floor(
-            elapsedSeconds / this.widthSeconds
-          );
-
-          this.renderer.processAnimationFrame(
-            currentCursorProgress,
-            currentAnimationCycle
-          );
-        } else {
-          console.error(
-            "🎬 ECGStore.renderCurrentFrame() - renderer or processAnimationFrame not available"
-          );
-        }
-      }, timeoutDelay);
-    } else {
-      console.log("🎬 ECGStore.renderCurrentFrame() - preconditions not met", {
-        hasRenderer: !!this.renderer,
-        hasStartTime: !!this.startTime,
-        hasPausedTime: !!this.pausedTime,
-        isDataLoaded: this.isDataLoaded,
-      });
+        this.renderer.processAnimationFrame(
+          currentCursorProgress,
+          currentAnimationCycle
+        );
+      }
     }
-  }
-
-  withCanvasStatePreservation(operation) {
-    console.log("🔄 ECGStore.withCanvasStatePreservation() starting", {
-      wasPlaying: this.isPlaying,
-      startTime: this.startTime,
-      pausedTime: this.pausedTime,
-      isFullscreen: this.isFullscreen,
-      currentLead: this.currentLead,
-    });
-
-    // Preserve animation state during canvas operations
-    const wasPlaying = this.isPlaying;
-    if (wasPlaying) {
-      console.log(
-        "🔄 ECGStore.withCanvasStatePreservation() stopping animation temporarily"
-      );
-      this.isPlaying = false; // Temporarily stop animation
-    }
-
-    console.log(
-      "🔄 ECGStore.withCanvasStatePreservation() executing operation"
-    );
-    operation();
-    console.log(
-      "🔄 ECGStore.withCanvasStatePreservation() operation completed"
-    );
-
-    // Restore state
-    if (!wasPlaying && this.startTime && this.pausedTime) {
-      console.log(
-        "🔄 ECGStore.withCanvasStatePreservation() re-rendering current frame for paused state"
-      );
-      // Re-render current frame for paused state
-      this.renderCurrentFrame();
-    } else {
-      console.log(
-        "🔄 ECGStore.withCanvasStatePreservation() not re-rendering frame",
-        {
-          wasPlaying,
-          hasStartTime: !!this.startTime,
-          hasPausedTime: !!this.pausedTime,
-        }
-      );
-    }
-
-    if (wasPlaying) {
-      console.log(
-        "🔄 ECGStore.withCanvasStatePreservation() resuming animation"
-      );
-      this.isPlaying = true; // Resume animation
-    }
-
-    console.log("🔄 ECGStore.withCanvasStatePreservation() completed");
   }
 
   // Actions for Renderer to use instead of direct mutations

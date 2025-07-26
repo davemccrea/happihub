@@ -28,17 +28,12 @@ test.describe('Debug Cursor Progress Calculation', () => {
     await playButton.click(); // Pause
     await page.waitForTimeout(1000);
 
-    console.log('=== BEFORE FULLSCREEN ===');
-    logs.forEach(log => console.log(log));
     logs.length = 0; // Clear logs
 
     // Enter fullscreen - this should trigger renderCurrentFrame()
     const fullscreenButton = page.locator("#fullscreen-button");
     await fullscreenButton.click();
     await page.waitForTimeout(3000);
-
-    console.log('=== AFTER FULLSCREEN ===');
-    logs.forEach(log => console.log(log));
 
     // Check if waveform is visible
     const waveformAfterFullscreen = await page.evaluate(() => {
@@ -60,8 +55,6 @@ test.describe('Debug Cursor Progress Calculation', () => {
         canvasSize: { width: waveformCanvas.width, height: waveformCanvas.height }
       };
     });
-
-    console.log('Waveform visibility:', waveformAfterFullscreen);
 
     // Exit fullscreen
     await page.keyboard.press('Escape');

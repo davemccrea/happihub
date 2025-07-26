@@ -53,7 +53,6 @@ test.describe('ECG Waveform Timing Issues', () => {
         };
       });
       
-      console.log(`${label}:`, result);
       return result;
     };
 
@@ -86,19 +85,6 @@ test.describe('ECG Waveform Timing Issues', () => {
     // Check after 5000ms (should be fully settled)
     await page.waitForTimeout(3000);
     const final = await checkWaveform('Final check after 5000ms');
-
-    // Print all the console logs from the transition
-    console.log('Console logs during transition:');
-    logs.forEach(log => console.log(log));
-
-    // The key test: waveform should remain visible throughout the entire transition
-    console.log('\n=== TRANSITION SUMMARY ===');
-    console.log('Before:', beforeFullscreen.visible, beforeFullscreen.pixelCount);
-    console.log('Immediately:', immediately.visible, immediately.pixelCount);  
-    console.log('500ms:', during500.visible, during500.pixelCount);
-    console.log('1000ms:', during1000.visible, during1000.pixelCount);
-    console.log('2000ms:', during2000.visible, during2000.pixelCount);
-    console.log('Final:', final.visible, final.pixelCount);
 
     // If any of these fail, we've identified when the waveform disappears
     expect(immediately.visible).toBe(true);

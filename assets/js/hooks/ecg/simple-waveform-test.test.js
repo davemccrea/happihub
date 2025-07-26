@@ -39,7 +39,6 @@ test.describe('Simple Waveform Bug Reproduction', () => {
       };
     });
 
-    console.log('Waveform while playing:', waveformVisiblePlaying);
     expect(waveformVisiblePlaying.visible).toBe(true);
 
     // Pause playback (CRITICAL STEP 1 in the bug)
@@ -67,7 +66,6 @@ test.describe('Simple Waveform Bug Reproduction', () => {
       };
     });
 
-    console.log('Waveform after pause in dark mode:', waveformAfterPause);
     expect(waveformAfterPause.visible).toBe(true);
 
     // Enter fullscreen (CRITICAL STEP 2 in the bug) 
@@ -97,8 +95,6 @@ test.describe('Simple Waveform Bug Reproduction', () => {
       };
     });
 
-    console.log('Waveform after fullscreen:', waveformAfterFullscreen);
-    
     // THE BUG: waveform should remain visible but the original issue was it disappeared
     // With our fix, this should pass
     expect(waveformAfterFullscreen.visible).toBe(true);
