@@ -34,5 +34,11 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'webkit',
+      use: { 
+        ...devices['Desktop Safari'],
+      },
+    },
   ],
 });

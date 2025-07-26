@@ -38,7 +38,7 @@ class Renderer {
     const isDark = theme === "dark";
 
     this.colors = {
-      waveform: (isDark && !this.store?.isFullscreen) ? "#ffffff" : "#000000",
+      waveform: isDark ? "#ffffff" : "#000000",
       gridFine: isDark ? "#660000" : "#ff9999",
       gridBold: isDark ? "#990000" : "#ff6666",
       gridDots: isDark ? "#666666" : "#999999",
