@@ -122,17 +122,14 @@ class DataProcessor {
 
   calculateDataIndexForTime(leadData, targetTime) {
     if (!leadData || !leadData.times || leadData.times.length === 0) {
-      console.warn("Invalid lead data provided to calculateDataIndexForTime");
       return 0;
     }
 
     if (typeof targetTime !== "number" || targetTime < 0) {
-      console.warn(`Invalid target time: ${targetTime}`);
       return 0;
     }
 
     if (!this.store.samplingRate || this.store.samplingRate <= 0) {
-      console.warn(`Invalid sampling rate: ${this.store.samplingRate}`);
       return 0;
     }
 

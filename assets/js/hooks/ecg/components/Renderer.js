@@ -68,7 +68,6 @@ class Renderer {
   recreateCanvas() {
     this.cleanupCanvases();
     
-    // Recalculate dimensions for the new canvas size (e.g., fullscreen)
     this.calculateMedicallyAccurateDimensions();
     
     const canvasHeight =
@@ -331,21 +330,18 @@ class Renderer {
       }
     }
 
-    // Handle QRS flash indicator
     if (this.qrsFlashContext) {
-      // Clear the QRS flash canvas first
       const devicePixelRatio = window.devicePixelRatio || 1;
       const canvasHeight = this.qrsFlashCanvas.height / devicePixelRatio;
       this.qrsFlashContext.clearRect(0, 0, this.store.chartWidth, canvasHeight);
 
-      // Draw QRS indicator if active
       if (this.store.qrsFlashActive) {
         const dotRadius = 5;
         const margin = 15;
         const dotX = this.store.chartWidth - margin;
         const dotY = margin;
 
-        this.qrsFlashContext.fillStyle = "#ff0000"; // Red color
+        this.qrsFlashContext.fillStyle = "#ff0000";
         this.qrsFlashContext.beginPath();
         this.qrsFlashContext.arc(dotX, dotY, dotRadius, 0, 2 * Math.PI);
         this.qrsFlashContext.fill();
@@ -480,6 +476,22 @@ class Renderer {
     }
   }
 
+  _drawWaveformPath(coordinates, limitX = Infinity) {
+    let hasMovedTo = false;
+    for (let i = 0; i < coordinates.length; i++) {
+      const { x, y } = coordinates[i];
+      if (x <= limitX) {
+        if (!hasMovedTo) {
+          this.waveformContext.moveTo(x, y);
+          hasMovedTo = true;
+        } else {
+          this.waveformContext.lineTo(x, y);
+        }
+      }
+    }
+    return hasMovedTo;
+  }
+
   drawWaveformToCursor({ times, values, bounds, timeSpan, cursor }) {
     if (!times || times.length === 0) {
       return;
@@ -497,46 +509,22 @@ class Renderer {
     }
 
     this.setupWaveformDrawing();
-
     const coordinates = this.transformCoordinates({ times, values, bounds, timeSpan });
-
-    let hasMovedTo = false;
-    for (let i = 0; i < coordinates.length; i++) {
-      const { x, y } = coordinates[i];
-      if (x <= cursor.position) {
-        if (!hasMovedTo) {
-          this.waveformContext.moveTo(x, y);
-          hasMovedTo = true;
-        } else {
-          this.waveformContext.lineTo(x, y);
-        }
-      }
-    }
-
-    if (hasMovedTo) {
+    
+    if (this._drawWaveformPath(coordinates, cursor.position)) {
       this.waveformContext.stroke();
     }
   }
 
   drawLeadWaveformStatic({ times, values, bounds, timeSpan }) {
-    if (times.length === 0) return;
+    if (!times || times.length === 0) return;
 
     this.setupWaveformDrawing();
-
     const coordinates = this.transformCoordinates({ times, values, bounds, timeSpan });
 
-    let hasMovedTo = false;
-    for (let i = 0; i < coordinates.length; i++) {
-      const { x, y } = coordinates[i];
-      if (!hasMovedTo) {
-        this.waveformContext.moveTo(x, y);
-        hasMovedTo = true;
-      } else {
-        this.waveformContext.lineTo(x, y);
-      }
+    if (this._drawWaveformPath(coordinates)) {
+      this.waveformContext.stroke();
     }
-
-    this.waveformContext.stroke();
   }
 
   calculateClearBounds(xOffset, width, cursorPosition, cursorWidth) {

@@ -7,7 +7,7 @@
 
 /**
  * Log in with test user credentials
- * @param {Page} page - Playwright page object
+ * @param {import('@playwright/test').Page} page - Playwright page object
  */
 export async function loginAsTestUser(page) {
   await page.goto('/users/log-in');
@@ -32,4 +32,41 @@ export async function loginAsTestUser(page) {
     page.waitForURL((url) => !url.pathname.includes('/log-in'), { timeout: 25000 }),
     page.click('#login_form_password button')
   ]);
+}
+
+/**
+ * Checks if the ECG waveform canvas is visible and contains non-transparent pixels.
+ * @param {import('@playwright/test').Page} page - Playwright page object.
+ * @returns {Promise<Object>} An object containing visibility status, pixel count, and other details.
+ */
+export async function isWaveformVisible(page) {
+  return await page.evaluate(() => {
+    const waveformCanvas = document.querySelector('[data-ecg-chart] canvas:nth-child(2)');
+    if (!waveformCanvas) {
+      return { visible: false, error: 'Waveform canvas not found' };
+    }
+    
+    const ctx = waveformCanvas.getContext('2d');
+    if (!ctx) {
+      return { visible: false, error: 'Canvas context not available' };
+    }
+
+    const imageData = ctx.getImageData(0, 0, waveformCanvas.width, waveformCanvas.height);
+    const data = imageData.data;
+    
+    let nonTransparentPixels = 0;
+    // Iterate through the alpha channel of the image data
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) { // Check if the pixel is not fully transparent
+        nonTransparentPixels++;
+      }
+    }
+    
+    return {
+      visible: nonTransparentPixels > 0,
+      pixelCount: nonTransparentPixels,
+      strokeStyle: ctx.strokeStyle,
+      canvasSize: { width: waveformCanvas.width, height: waveformCanvas.height }
+    };
+  });
 }

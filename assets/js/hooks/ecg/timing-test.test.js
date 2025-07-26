@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsTestUser } from "./test-helpers.js";
+import { loginAsTestUser, isWaveformVisible } from "./test-helpers.js";
 
 test.describe('ECG Waveform Timing Issues', () => {
   test('monitor waveform visibility continuously during fullscreen transition', async ({ page }) => {
@@ -22,42 +22,8 @@ test.describe('ECG Waveform Timing Issues', () => {
     await playButton.click();
     await page.waitForTimeout(1000);
 
-    // Capture console logs to monitor the fullscreen transition
-    const logs = [];
-    page.on('console', msg => {
-      if (msg.text().includes('🔄') || msg.text().includes('🎆') || msg.text().includes('🎨')) {
-        logs.push(msg.text());
-      }
-    });
-
-    // Function to check waveform visibility
-    const checkWaveform = async (label) => {
-      const result = await page.evaluate(() => {
-        const waveformCanvas = document.querySelector('[data-ecg-chart] canvas:nth-child(2)');
-        if (!waveformCanvas) return { error: 'Canvas not found' };
-        
-        const ctx = waveformCanvas.getContext('2d');
-        const imageData = ctx.getImageData(0, 0, waveformCanvas.width, waveformCanvas.height);
-        const data = imageData.data;
-        
-        let nonTransparentPixels = 0;
-        for (let i = 3; i < data.length; i += 4) {
-          if (data[i] > 0) nonTransparentPixels++;
-        }
-        
-        return {
-          visible: nonTransparentPixels > 0,
-          pixelCount: nonTransparentPixels,
-          canvasSize: { width: waveformCanvas.width, height: waveformCanvas.height },
-          strokeStyle: ctx.strokeStyle
-        };
-      });
-      
-      return result;
-    };
-
     // Check waveform before fullscreen
-    const beforeFullscreen = await checkWaveform('Before fullscreen');
+    const beforeFullscreen = await isWaveformVisible(page);
     expect(beforeFullscreen.visible).toBe(true);
 
     // Enter fullscreen and monitor throughout the transition
@@ -68,23 +34,23 @@ test.describe('ECG Waveform Timing Issues', () => {
     
     // Check immediately after clicking
     await page.waitForTimeout(100);
-    const immediately = await checkWaveform('Immediately after fullscreen click');
+    const immediately = await isWaveformVisible(page);
     
     // Check after 500ms (during transition)
     await page.waitForTimeout(400);
-    const during500 = await checkWaveform('After 500ms');
+    const during500 = await isWaveformVisible(page);
     
     // Check after 1000ms
     await page.waitForTimeout(500);
-    const during1000 = await checkWaveform('After 1000ms');
+    const during1000 = await isWaveformVisible(page);
     
     // Check after 2000ms
     await page.waitForTimeout(1000);
-    const during2000 = await checkWaveform('After 2000ms');
+    const during2000 = await isWaveformVisible(page);
     
     // Check after 5000ms (should be fully settled)
     await page.waitForTimeout(3000);
-    const final = await checkWaveform('Final check after 5000ms');
+    const final = await isWaveformVisible(page);
 
     // If any of these fail, we've identified when the waveform disappears
     expect(immediately.visible).toBe(true);

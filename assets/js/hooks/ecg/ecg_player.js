@@ -98,25 +98,12 @@ const ECGPlayer = {
       }
     );
 
-    // Re-render current frame when paused and lead switches
+    // Re-render the current frame when paused if relevant properties change
     reaction(
       () => ({
         currentLead: this.store.currentLead,
-        isPlaying: this.store.isPlaying,
+        amplitudeScale: this.store.amplitudeScale,
       }),
-      ({ currentLead, isPlaying }) => {
-        if (!isPlaying && this.store.startTime && this.store.pausedTime) {
-          // Re-render the current frame for the new lead when paused
-          this.store.renderCurrentFrame();
-        }
-      }
-    );
-
-    // Play/pause button updates are now handled by UIBinder autorun
-
-    // Re-render current frame when amplitude scale changes
-    reaction(
-      () => this.store.amplitudeScale,
       () => {
         if (
           !this.store.isPlaying &&
