@@ -16,7 +16,7 @@ test.describe("ECG Player Integration", () => {
 
     // Navigate to ECG viewer with sample data
     await page.goto(
-      "/ecg/viewer?dataset_name=ptbxl&filename=records100%2F11000%2F11004_lr",
+      "/ecg/viewer?dataset_name=ptbxl&filename=records100%2F11000%2F11004_lr"
     );
 
     // Wait for the ECG player and canvas to be loaded
@@ -32,10 +32,10 @@ test.describe("ECG Player Integration", () => {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         // Check if canvas has non-transparent pixels (indicating rendered content)
         return Array.from(imageData.data).some(
-          (value, index) => index % 4 === 3 && value > 0,
+          (value, index) => index % 4 === 3 && value > 0
         );
       },
-      { timeout: 10000 },
+      { timeout: 10000 }
     );
   });
 
@@ -51,8 +51,17 @@ test.describe("ECG Player Integration", () => {
 
     // Verify settings form elements are present
     await expect(page.locator("#display-mode-selector")).toBeVisible();
-    await expect(page.locator("#lead-selector")).toBeVisible();
     await expect(page.locator("#grid-type-selector")).toBeVisible();
+
+    // Lead selector visibility depends on display mode
+    const displayMode = await page
+      .locator("#display-mode-selector")
+      .inputValue();
+    if (displayMode === "single") {
+      await expect(page.locator("#lead-selector")).toBeVisible();
+    } else {
+      await expect(page.locator("#lead-selector-container")).toBeHidden();
+    }
   });
 
   test("Play/Pause button toggles ECG playback", async ({ page }) => {
@@ -80,24 +89,27 @@ test.describe("ECG Player Integration", () => {
   test("Display mode switching changes ECG visualization", async ({ page }) => {
     const displayModeSelector = page.locator("#display-mode-selector");
     const leadSelector = page.locator("#lead-selector");
+    const leadSelectorContainer = page.locator("#lead-selector-container");
 
     // Test switching to multi-lead mode
     await displayModeSelector.selectOption("multi");
 
-    // Wait for the change to take effect
-    await page.waitForTimeout(500);
+    // Trigger the change event explicitly to ensure JavaScript handlers run
+    await displayModeSelector.dispatchEvent("change");
 
-    // In multi-lead mode, lead selector should be disabled or hidden
-    // (This depends on the specific implementation)
+    // Wait for the lead selector container to be hidden
+    await expect(leadSelectorContainer).toBeHidden({ timeout: 10000 });
 
     // Switch back to single lead mode
     await displayModeSelector.selectOption("single");
+    await displayModeSelector.dispatchEvent("change");
 
     // Wait for the change to take effect
     await page.waitForTimeout(500);
 
     // Lead selector should be visible and functional in single mode
     await expect(leadSelector).toBeVisible();
+    await expect(leadSelectorContainer).toBeVisible();
 
     // Test switching between different leads
     const leadOptions = await leadSelector.locator("option").count();
@@ -129,7 +141,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0,
+        (value, index) => index % 4 === 3 && value > 0
       );
     });
 
@@ -144,14 +156,14 @@ test.describe("ECG Player Integration", () => {
     // Get initial value
     const initialGridScale = await gridScaleValue.textContent();
 
-    // Move slider to different position
-    await gridScaleSlider.fill("1.1");
+    // Move slider to a significantly different position (max is 1.25)
+    await gridScaleSlider.fill("1.25");
     await page.waitForTimeout(300);
 
     // Verify value updated
     const newGridScale = await gridScaleValue.textContent();
     expect(newGridScale).not.toBe(initialGridScale);
-    expect(newGridScale).toContain("1.1");
+    expect(newGridScale).toContain("1.25");
 
     // Test amplitude scale slider
     const amplitudeScaleSlider = page.locator("#amplitude-scale-slider");
@@ -256,7 +268,7 @@ test.describe("ECG Player Integration", () => {
         const ctx = canvas.getContext("2d");
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         return Array.from(imageData.data).some(
-          (value, index) => index % 4 === 3 && value > 0,
+          (value, index) => index % 4 === 3 && value > 0
         );
       });
     };
@@ -323,7 +335,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0,
+        (value, index) => index % 4 === 3 && value > 0
       );
     });
 
@@ -365,7 +377,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0,
+        (value, index) => index % 4 === 3 && value > 0
       );
     });
 
@@ -411,7 +423,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0,
+        (value, index) => index % 4 === 3 && value > 0
       );
     });
 
