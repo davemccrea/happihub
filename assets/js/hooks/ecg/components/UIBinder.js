@@ -27,6 +27,11 @@ class UIBinder {
       this.renderer.calculateMedicallyAccurateDimensions();
       this.renderer.recreateCanvas();
       this.renderer.renderGridBackground();
+
+      // If paused, we must explicitly redraw the current frame on the new canvas.
+      if (!this.store.isPlaying && this.store.startTime) {
+        this.store.renderCurrentFrame();
+      }
     };
     window.addEventListener("resize", handler);
     this.eventListeners.push({ target: window, type: "resize", handler });
@@ -151,13 +156,10 @@ class UIBinder {
 
   handleFullscreenChange() {
     const isCurrentlyFullscreen = this.isDocumentInFullscreen();
-
     if (isCurrentlyFullscreen !== this.store.isFullscreen) {
-      setTimeout(() => {
-        action(() => {
-          this.store.isFullscreen = isCurrentlyFullscreen;
-        })();
-      }, 1000);
+      action(() => {
+        this.store.isFullscreen = isCurrentlyFullscreen;
+      })();
     }
   }
 

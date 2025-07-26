@@ -344,14 +344,7 @@ class ECGStore {
         return;
       }
 
-      const cursorProgress =
-        (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-      const animationCycle = Math.floor(elapsedSeconds / this.widthSeconds);
-
       if (this.renderer && this.renderer.processAnimationFrame) {
-        // Ensure dimensions are up-to-date before calculating cursor progress
-        this.renderer.calculateMedicallyAccurateDimensions();
-
         // Use current dimensions for cursor progress calculation
         const currentCursorProgress =
           (elapsedSeconds % this.widthSeconds) / this.widthSeconds;

@@ -44,31 +44,27 @@ const ECGPlayer = {
   },
 
   setupReactions() {
-    // Handle changes that require canvas recreation (dimensions change)
+    // Handle display mode changes, which require a full canvas recreation.
     reaction(
+      () => this.store.displayMode,
       () => {
-        return {
-          gridScale: this.store.gridScale,
-          displayMode: this.store.displayMode,
-          heightScale: this.store.heightScale,
-        };
-      },
-      (changes) => {
         this.renderer.recreateCanvas();
         this.renderer.renderGridBackground();
+        if (!this.store.isPlaying && this.store.startTime) {
+          this.store.renderCurrentFrame();
+        }
       }
     );
 
-    // Handle grid type changes (only re-render background, preserve waveform)
+    // Handle grid type changes (e.g. lines vs dots), which only require a background redraw.
     reaction(
       () => this.store.gridType,
       () => {
         this.renderer.renderGridBackground();
-        // Don't recreate canvas or clear waveform - just update the grid
       }
     );
 
-    // Re-render grid background when current lead changes (for label update)
+    // Re-render grid background when current lead changes to update the label.
     reaction(
       () => this.store.currentLead,
       () => {
@@ -76,7 +72,7 @@ const ECGPlayer = {
       }
     );
 
-    // Re-render grid background when lead names become available after data loading
+    // Re-render grid background when lead names become available after data loading.
     reaction(
       () => this.store.leadNames,
       (leadNames) => {
