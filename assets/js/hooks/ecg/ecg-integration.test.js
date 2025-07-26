@@ -16,7 +16,7 @@ test.describe("ECG Player Integration", () => {
 
     // Navigate to ECG viewer with sample data
     await page.goto(
-      "/ecg/viewer?dataset_name=ptbxl&filename=records100%2F11000%2F11004_lr"
+      "/ecg/viewer?dataset_name=ptbxl&filename=records100%2F11000%2F11004_lr",
     );
 
     // Wait for the ECG player and canvas to be loaded
@@ -32,10 +32,10 @@ test.describe("ECG Player Integration", () => {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         // Check if canvas has non-transparent pixels (indicating rendered content)
         return Array.from(imageData.data).some(
-          (value, index) => index % 4 === 3 && value > 0
+          (value, index) => index % 4 === 3 && value > 0,
         );
       },
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
   });
 
@@ -129,7 +129,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0
+        (value, index) => index % 4 === 3 && value > 0,
       );
     });
 
@@ -256,7 +256,7 @@ test.describe("ECG Player Integration", () => {
         const ctx = canvas.getContext("2d");
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         return Array.from(imageData.data).some(
-          (value, index) => index % 4 === 3 && value > 0
+          (value, index) => index % 4 === 3 && value > 0,
         );
       });
     };
@@ -323,7 +323,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0
+        (value, index) => index % 4 === 3 && value > 0,
       );
     });
 
@@ -365,7 +365,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0
+        (value, index) => index % 4 === 3 && value > 0,
       );
     });
 
@@ -411,7 +411,7 @@ test.describe("ECG Player Integration", () => {
       const ctx = canvas.getContext("2d");
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       return Array.from(imageData.data).some(
-        (value, index) => index % 4 === 3 && value > 0
+        (value, index) => index % 4 === 3 && value > 0,
       );
     });
 

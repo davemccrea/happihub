@@ -2,10 +2,13 @@ import { makeAutoObservable, action } from "mobx";
 
 const DEFAULT_WIDTH_SECONDS = 2.5;
 const QRS_FLASH_DURATION_MS = 100;
+const PIXELS_PER_MM = 6;
+const MM_PER_SECOND = 25;
+const CONTAINER_PADDING = 0;
 
 class ECGStore {
-  // Renderer reference for cleanup operations
-  renderer = null;
+  // DOM element references
+  chartContainer = null;
 
   // State properties
   isPlaying = false;
@@ -18,6 +21,7 @@ class ECGStore {
   ecgData = null;
   startTime = null;
   pausedTime = 0;
+  pausedFrameData = null; // Holds data for rendering a paused frame
   loopEnabled = false;
   qrsIndicatorEnabled = false;
   calipersMode = false;
@@ -47,9 +51,10 @@ class ECGStore {
   allLeadsCursorData = null;
   activeSegments = [];
 
-  constructor(renderer = null) {
-    this.renderer = renderer;
+  constructor(chartContainer) {
+    this.chartContainer = chartContainer;
     makeAutoObservable(this, {
+      chartContainer: false, // Not an observable property
       // Mark methods that modify state as actions
       setGridScale: action,
       setAmplitudeScale: action,
@@ -66,17 +71,12 @@ class ECGStore {
       switchToPrevLead: action,
       toggleCalipers: action,
       handleThemeChange: action,
-      recreateCanvasAndRestart: action,
       handlePlaybackEnd: action,
       checkQrsOccurrences: action,
       triggerQrsFlash: action,
-      clearQrsFlashArea: action,
-      initializeFormValues: action,
-      readFormValue: action,
-      readFormCheckbox: action,
-      setRenderer: action,
       renderCurrentFrame: action,
       updateDimensions: action,
+      updateDimensionsFromDOM: action,
       updateCursorPosition: action,
       updateLeadHeight: action,
       setActiveCursorData: action,
@@ -84,8 +84,6 @@ class ECGStore {
       setActiveSegments: action,
       addToAllLeadsCursorData: action,
       initializeStartTime: action,
-      resumePlayback: action,
-      startAnimation: action,
     });
   }
 
@@ -93,23 +91,18 @@ class ECGStore {
   setGridScale(newScale) {
     this.gridScale = newScale;
   }
-
   setAmplitudeScale(newScale) {
     this.amplitudeScale = newScale;
   }
-
   setHeightScale(newScale) {
     this.heightScale = newScale;
   }
-
   setDisplayMode(mode) {
     this.displayMode = mode;
   }
-
   setGridType(type) {
     this.gridType = type;
   }
-
   setLoop(enabled) {
     this.loopEnabled = enabled;
   }
@@ -122,29 +115,18 @@ class ECGStore {
         clearTimeout(this.qrsFlashTimeout);
         this.qrsFlashTimeout = null;
       }
-      this.clearQrsFlashArea();
     }
   }
 
   togglePlayback() {
-    const newPlayingState = !this.isPlaying;
-
-    this.isPlaying = newPlayingState;
-
-    if (!newPlayingState) {
-      // Pausing - record the pause time
+    this.isPlaying = !this.isPlaying;
+    if (!this.isPlaying) {
       this.pausedTime = Date.now();
     } else {
-      // Resuming - adjust start time to account for pause duration
       if (this.pausedTime && this.startTime) {
-        const pauseDuration = Date.now() - this.pausedTime;
-        this.startTime += pauseDuration;
-        this.pausedTime = 0;
-      } else if (!this.startTime) {
-        // Starting for the first time
-        this.startTime = Date.now();
-        this.pausedTime = 0;
+        this.startTime += Date.now() - this.pausedTime;
       }
+      this.pausedTime = 0;
     }
   }
 
@@ -155,22 +137,10 @@ class ECGStore {
     this.cursorPosition = 0;
     this.lastQrsIndex = -1;
     this.qrsDetectedCount = 0;
-
-    // Reset data state
     this.activeCursorData = null;
     this.allLeadsCursorData = null;
-
-    // Reset QRS flash state
-    if (this.qrsFlashTimeout) {
-      clearTimeout(this.qrsFlashTimeout);
-      this.qrsFlashTimeout = null;
-    }
+    if (this.qrsFlashTimeout) clearTimeout(this.qrsFlashTimeout);
     this.qrsFlashActive = false;
-
-    // Clear the waveform canvas when resetting playback (like original implementation)
-    if (this.renderer && this.renderer.clearWaveform) {
-      this.renderer.clearWaveform();
-    }
   }
 
   loadData(data) {
@@ -183,53 +153,21 @@ class ECGStore {
       !this.ecgLeadDatasets ||
       leadIndex < 0 ||
       leadIndex >= this.ecgLeadDatasets.length
-    ) {
-      console.warn(`Invalid lead index: ${leadIndex}`);
+    )
       return;
-    }
-
-    const wasPlaying = this.isPlaying;
-
-    // Single atomic action for state changes
-    action(() => {
-      if (wasPlaying) {
-        this.isPlaying = false; // Temporarily stop animation
-      }
-
-      this.currentLead = leadIndex;
-      this.currentLeadData = this.ecgLeadDatasets[leadIndex];
-      this.calipers = [];
-      this.activeCaliper = null;
-    })();
-
-    // Clear the waveform canvas when switching leads
-    if (this.renderer && this.renderer.clearWaveform) {
-      this.renderer.clearWaveform();
-    }
-
-    // Resume animation if it was playing
-    if (wasPlaying) {
-      action(() => {
-        this.isPlaying = true; // Resume animation
-      })();
-    }
-
-    if (!wasPlaying && this.startTime && this.pausedTime) {
-      // Re-render current frame for paused state
-      this.renderCurrentFrame();
-    }
+    this.currentLead = leadIndex;
+    this.currentLeadData = this.ecgLeadDatasets[leadIndex];
+    this.calipers = [];
+    this.activeCaliper = null;
   }
 
   switchToNextLead() {
-    if (this.currentLead < this.ecgLeadDatasets.length - 1) {
+    if (this.currentLead < this.ecgLeadDatasets.length - 1)
       this.switchLead(this.currentLead + 1);
-    }
   }
 
   switchToPrevLead() {
-    if (this.currentLead > 0) {
-      this.switchLead(this.currentLead - 1);
-    }
+    if (this.currentLead > 0) this.switchLead(this.currentLead - 1);
   }
 
   toggleCalipers() {
@@ -241,57 +179,26 @@ class ECGStore {
   }
 
   handleThemeChange() {
-    // Update theme colors in renderer
-    if (this.renderer && this.renderer.updateThemeColors) {
-      this.renderer.updateThemeColors();
-    }
-
-    // Re-render grid background with new colors
-    if (this.renderer && this.renderer.renderGridBackground) {
-      this.renderer.renderGridBackground();
-    }
-
-    // Clear and re-render waveform with new colors
-    if (this.renderer && this.renderer.clearWaveform) {
-      this.renderer.clearWaveform();
-    }
-
-    // Re-render current frame if paused to show waveform in new colors
-    if (!this.isPlaying && this.startTime && this.pausedTime) {
-      this.renderCurrentFrame();
-    }
-  }
-
-  startAnimation() {
-    this.isPlaying = true;
-    this.startTime = Date.now();
-    this.pausedTime = 0;
-    this.cursorPosition = 0;
-    this.activeCursorData = null;
-    this.allLeadsCursorData = null;
+    // This is now just a trigger for reactions. The store itself doesn't do anything.
   }
 
   handlePlaybackEnd() {
     if (this.loopEnabled) {
       this.resetPlayback();
-      this.startAnimation();
+      this.isPlaying = true;
+      this.startTime = Date.now();
     } else {
       this.resetPlayback();
     }
   }
 
   checkQrsOccurrences(elapsedTime) {
-    if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) {
-      return;
-    }
-
+    if (!this.qrsTimestamps || this.qrsTimestamps.length === 0) return;
     for (let i = this.lastQrsIndex + 1; i < this.qrsTimestamps.length; i++) {
       const qrsTime = this.qrsTimestamps[i];
       if (qrsTime <= elapsedTime) {
         this.qrsDetectedCount++;
-        if (this.qrsIndicatorEnabled) {
-          this.triggerQrsFlash();
-        }
+        if (this.qrsIndicatorEnabled) this.triggerQrsFlash();
         this.lastQrsIndex = i;
       } else {
         break;
@@ -300,132 +207,80 @@ class ECGStore {
   }
 
   triggerQrsFlash() {
-    action(() => {
-      if (this.qrsFlashTimeout) {
-        clearTimeout(this.qrsFlashTimeout);
-      }
-      this.qrsFlashActive = true;
-    })();
-
+    if (this.qrsFlashTimeout) clearTimeout(this.qrsFlashTimeout);
+    this.qrsFlashActive = true;
     this.qrsFlashTimeout = setTimeout(
       action(() => {
         this.qrsFlashActive = false;
         this.qrsFlashTimeout = null;
-        this.clearQrsFlashArea();
       }),
-      QRS_FLASH_DURATION_MS
+      QRS_FLASH_DURATION_MS,
     );
   }
 
-  clearQrsFlashArea() {
-    // This method is called by the QRS flash timeout
-    // Call the renderer's clearQrsFlashArea method if available
-    if (this.renderer && this.renderer.clearQrsFlashArea) {
-      this.renderer.clearQrsFlashArea();
-    }
-  }
-
-  setRenderer(renderer) {
-    this.renderer = renderer;
-  }
-
   renderCurrentFrame() {
-    // Render the current frame when paused
-    if (
-      this.renderer &&
-      this.startTime &&
-      this.pausedTime &&
-      this.isDataLoaded
-    ) {
-      const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+    if (!this.isDataLoaded || !this.startTime || !this.pausedTime) return;
+    const elapsedSeconds = (this.pausedTime - this.startTime) / 1000;
+    if (elapsedSeconds >= this.totalDuration) return;
 
-      // Ensure we don't go beyond the total duration
-      if (elapsedSeconds >= this.totalDuration) {
-        return;
-      }
-
-      if (this.renderer && this.renderer.processAnimationFrame) {
-        // Use current dimensions for cursor progress calculation
-        const currentCursorProgress =
-          (elapsedSeconds % this.widthSeconds) / this.widthSeconds;
-        const currentAnimationCycle = Math.floor(
-          elapsedSeconds / this.widthSeconds
-        );
-
-        this.renderer.processAnimationFrame(
-          currentCursorProgress,
-          currentAnimationCycle
-        );
-      }
-    }
+    this.pausedFrameData = {
+      progress: (elapsedSeconds % this.widthSeconds) / this.widthSeconds,
+      cycle: Math.floor(elapsedSeconds / this.widthSeconds),
+      timestamp: Date.now(), // Add timestamp to ensure reaction fires
+    };
   }
 
-  // Actions for Renderer to use instead of direct mutations
   updateDimensions(chartWidth, widthSeconds) {
     this.chartWidth = chartWidth;
     this.widthSeconds = widthSeconds;
   }
 
-  updateCursorPosition(position) {
-    this.cursorPosition = position % this.chartWidth;
-  }
+  updateDimensionsFromDOM() {
+    if (!this.chartContainer) {
+      const chartWidth =
+        DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * PIXELS_PER_MM * this.gridScale;
+      this.updateDimensions(chartWidth, DEFAULT_WIDTH_SECONDS);
+      return;
+    }
+    const containerWidth = this.chartContainer.offsetWidth - CONTAINER_PADDING;
+    const scaledPixelsPerMm = PIXELS_PER_MM * this.gridScale;
+    const minWidth = DEFAULT_WIDTH_SECONDS * MM_PER_SECOND * scaledPixelsPerMm;
 
-  updateLeadHeight(height) {
-    this.leadHeight = height;
-  }
-
-  setActiveCursorData(data) {
-    this.activeCursorData = data;
-  }
-
-  setAllLeadsCursorData(data) {
-    this.allLeadsCursorData = data;
-  }
-
-  setActiveSegments(segments) {
-    this.activeSegments = segments;
-  }
-
-  addToAllLeadsCursorData(leadData) {
-    this.allLeadsCursorData.push(leadData);
-  }
-
-  initializeStartTime() {
-    if (!this.startTime) {
-      this.startTime = Date.now();
+    if (containerWidth < minWidth) {
+      this.updateDimensions(minWidth, DEFAULT_WIDTH_SECONDS);
+    } else {
+      const widthSeconds = containerWidth / (MM_PER_SECOND * scaledPixelsPerMm);
+      const chartWidth = widthSeconds * MM_PER_SECOND * scaledPixelsPerMm;
+      this.updateDimensions(chartWidth, widthSeconds);
     }
   }
 
-  resumePlayback() {
-    this.isPlaying = true;
+  updateCursorPosition(position) {
+    this.cursorPosition = position % this.chartWidth;
+  }
+  updateLeadHeight(height) {
+    this.leadHeight = height;
+  }
+  setActiveCursorData(data) {
+    this.activeCursorData = data;
+  }
+  setAllLeadsCursorData(data) {
+    this.allLeadsCursorData = data;
+  }
+  setActiveSegments(segments) {
+    this.activeSegments = segments;
+  }
+  addToAllLeadsCursorData(leadData) {
+    this.allLeadsCursorData.push(leadData);
+  }
+  initializeStartTime() {
+    if (!this.startTime) this.startTime = Date.now();
   }
 
-  // Computed properties for derived state
-  get qrsDetectionRate() {
-    return this.totalDuration > 0
-      ? (this.qrsDetectedCount / this.totalDuration) * 60
-      : 0;
-  }
-
-  get playbackProgress() {
-    if (!this.startTime || !this.totalDuration) return 0;
-    const elapsed = this.isPlaying
-      ? (Date.now() - this.startTime) / 1000
-      : (this.pausedTime - this.startTime) / 1000;
-    return Math.min(elapsed / this.totalDuration, 1);
-  }
-
-  get currentPlaybackTime() {
-    if (!this.startTime) return 0;
-    return this.isPlaying
-      ? (Date.now() - this.startTime) / 1000
-      : (this.pausedTime - this.startTime) / 1000;
-  }
-
+  // Computed properties
   get isDataLoaded() {
     return this.ecgLeadDatasets && this.ecgLeadDatasets.length > 0;
   }
-
   get hasValidLead() {
     return (
       this.isDataLoaded &&
@@ -433,7 +288,6 @@ class ECGStore {
       this.currentLead < this.leadNames.length
     );
   }
-
   get currentLeadName() {
     return this.hasValidLead ? this.leadNames[this.currentLead] : "Unknown";
   }
@@ -441,32 +295,25 @@ class ECGStore {
   // Form reading methods
   readFormValue(fieldName) {
     const input = document.querySelector(
-      `input[name="settings[${fieldName}]"], select[name="settings[${fieldName}]"]`
+      `input[name="settings[${fieldName}]"], select[name="settings[${fieldName}]"]`,
     );
     return input ? input.value : null;
   }
-
   readFormCheckbox(fieldName) {
     const input = document.querySelector(
-      `input[name="settings[${fieldName}]"][type="checkbox"]`
+      `input[name="settings[${fieldName}]"][type="checkbox"]`,
     );
     return input ? input.checked : false;
   }
-
   initializeFormValues() {
-    // Display and playback settings
     this.gridType = this.readFormValue("grid_type") || "telemetry";
     this.displayMode = this.readFormValue("display_mode") || "single";
     this.currentLead = parseInt(this.readFormValue("current_lead") || "0");
-
-    // Playback options
     this.loopEnabled = this.readFormCheckbox("loop_playback");
     this.qrsIndicatorEnabled = this.readFormCheckbox("qrs_indicator");
-
-    // Scale settings
     this.gridScale = parseFloat(this.readFormValue("grid_scale") || "1.0");
     this.amplitudeScale = parseFloat(
-      this.readFormValue("amplitude_scale") || "1.0"
+      this.readFormValue("amplitude_scale") || "1.0",
     );
     this.heightScale = parseFloat(this.readFormValue("height_scale") || "1.2");
   }

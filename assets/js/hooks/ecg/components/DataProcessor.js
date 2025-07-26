@@ -28,7 +28,7 @@ class DataProcessor {
 
         this.store.qrsIndexes = data.qrs || [];
         this.store.qrsTimestamps = this.store.qrsIndexes.map(
-          (index) => index / this.store.samplingRate
+          (index) => index / this.store.samplingRate,
         );
         this.store.lastQrsIndex = -1;
         this.store.qrsDetectedCount = 0;
@@ -38,7 +38,11 @@ class DataProcessor {
         let globalMin = Infinity;
         let globalMax = -Infinity;
 
-        for (let leadIndex = 0; leadIndex < this.store.leadNames.length; leadIndex++) {
+        for (
+          let leadIndex = 0;
+          leadIndex < this.store.leadNames.length;
+          leadIndex++
+        ) {
           const times = [];
           const values = [];
 
@@ -62,22 +66,25 @@ class DataProcessor {
 
         this.store.yMin = -HEIGHT_MILLIVOLTS / 2;
         this.store.yMax = HEIGHT_MILLIVOLTS / 2;
-        this.store.currentLeadData = this.store.ecgLeadDatasets[this.store.currentLead];
+        this.store.currentLeadData =
+          this.store.ecgLeadDatasets[this.store.currentLead];
 
         this.precomputeDataSegments();
 
         // Trigger UI setup after data is loaded
         this.setupUIAfterDataLoad();
       })();
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   precomputeDataSegments() {
     this.store.precomputedSegments.clear();
     this.store.dataIndexCache.clear();
 
-    if (!this.store.ecgLeadDatasets || this.store.ecgLeadDatasets.length === 0) {
+    if (
+      !this.store.ecgLeadDatasets ||
+      this.store.ecgLeadDatasets.length === 0
+    ) {
       return;
     }
 
@@ -98,7 +105,7 @@ class DataProcessor {
         const startTime = segmentKey * SEGMENT_DURATION_SECONDS;
         const endTime = Math.min(
           startTime + SEGMENT_DURATION_SECONDS,
-          this.store.totalDuration
+          this.store.totalDuration,
         );
 
         const startIndex = this.calculateDataIndexForTime(leadData, startTime);

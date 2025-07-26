@@ -1,4 +1,3 @@
-
 import { action } from "mobx";
 
 class CaliperController {
@@ -19,8 +18,12 @@ class CaliperController {
 
   updateCalipersInteraction() {
     if (this.canvas) {
-      this.canvas.style.pointerEvents = this.store.calipersMode ? "auto" : "none";
-      this.canvas.style.cursor = this.store.calipersMode ? "crosshair" : "default";
+      this.canvas.style.pointerEvents = this.store.calipersMode
+        ? "auto"
+        : "none";
+      this.canvas.style.cursor = this.store.calipersMode
+        ? "crosshair"
+        : "default";
 
       if (this.store.calipersMode) {
         this.setupCalipersEventListeners();
@@ -59,9 +62,21 @@ class CaliperController {
     document.addEventListener("mousemove", moveHandler);
     document.addEventListener("mouseup", upHandler);
 
-    this.eventListeners.push({ target: this.canvas, type: "mousedown", handler: downHandler });
-    this.eventListeners.push({ target: document, type: "mousemove", handler: moveHandler });
-    this.eventListeners.push({ target: document, type: "mouseup", handler: upHandler });
+    this.eventListeners.push({
+      target: this.canvas,
+      type: "mousedown",
+      handler: downHandler,
+    });
+    this.eventListeners.push({
+      target: document,
+      type: "mousemove",
+      handler: moveHandler,
+    });
+    this.eventListeners.push({
+      target: document,
+      type: "mouseup",
+      handler: upHandler,
+    });
   }
 
   removeCalipersEventListeners() {
@@ -82,12 +97,12 @@ class CaliperController {
     action(() => {
       this.store.activeCaliper = {
         id: Date.now(),
-        type: 'time',
+        type: "time",
         startX: x,
         startY: y,
         endX: x,
         endY: y,
-        complete: false
+        complete: false,
       };
       this.store.calipers = [this.store.activeCaliper];
     })();
@@ -137,7 +152,7 @@ class CaliperController {
     const canvasHeight = this.canvas.height / devicePixelRatio;
     this.context.clearRect(0, 0, this.store.chartWidth, canvasHeight);
 
-    this.store.calipers.forEach(caliper => {
+    this.store.calipers.forEach((caliper) => {
       this.renderSingleCaliper(caliper);
     });
   }
@@ -183,8 +198,14 @@ class CaliperController {
       const perpX = -dy / length;
       const perpY = dx / length;
       this.context.beginPath();
-      this.context.moveTo(x + perpX * markerLength / 2, y + perpY * markerLength / 2);
-      this.context.lineTo(x - perpX * markerLength / 2, y - perpY * markerLength / 2);
+      this.context.moveTo(
+        x + (perpX * markerLength) / 2,
+        y + (perpY * markerLength) / 2,
+      );
+      this.context.lineTo(
+        x - (perpX * markerLength) / 2,
+        y - (perpY * markerLength) / 2,
+      );
       this.context.stroke();
     } else {
       this.context.beginPath();
@@ -206,7 +227,10 @@ class CaliperController {
   }
 
   drawMeasurementText(caliper) {
-    const measurement = this.calculateTimeInterval(caliper.startX, caliper.endX);
+    const measurement = this.calculateTimeInterval(
+      caliper.startX,
+      caliper.endX,
+    );
     const midX = (caliper.startX + caliper.endX) / 2;
     const midY = (caliper.startY + caliper.endY) / 2;
 
@@ -214,10 +238,14 @@ class CaliperController {
     this.context.textAlign = "center";
 
     const timeText = `${measurement.milliseconds.toFixed(0)}ms`;
-    const bpmText = measurement.heartRate > 0 ? `${measurement.heartRate.toFixed(0)} BPM` : "";
+    const bpmText =
+      measurement.heartRate > 0
+        ? `${measurement.heartRate.toFixed(0)} BPM`
+        : "";
 
     const textMetrics = this.context.measureText(timeText);
-    const boxWidth = Math.max(textMetrics.width, this.context.measureText(bpmText).width) + 12;
+    const boxWidth =
+      Math.max(textMetrics.width, this.context.measureText(bpmText).width) + 12;
     const boxHeight = bpmText ? 30 : 18;
     const textY = midY - 30;
 
@@ -226,7 +254,12 @@ class CaliperController {
 
     this.context.strokeStyle = "rgba(0, 0, 0, 0.2)";
     this.context.lineWidth = 1;
-    this.context.strokeRect(midX - boxWidth / 2, textY - 14, boxWidth, boxHeight);
+    this.context.strokeRect(
+      midX - boxWidth / 2,
+      textY - 14,
+      boxWidth,
+      boxHeight,
+    );
 
     this.context.fillStyle = "#2C3E50";
     this.context.fillText(timeText, midX, textY);
@@ -240,7 +273,7 @@ class CaliperController {
     const interval = Math.abs(endX - startX) * timePerPixel;
     return {
       milliseconds: interval * 1000,
-      heartRate: interval > 0 ? 60 / interval : 0
+      heartRate: interval > 0 ? 60 / interval : 0,
     };
   }
 
