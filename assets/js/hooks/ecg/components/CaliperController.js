@@ -23,6 +23,24 @@ class CaliperController {
 
   }
 
+  /**
+   * Update canvas reference after canvas recreation
+   * @param {HTMLCanvasElement} newCanvas - The new canvas element
+   */
+  updateCanvas(newCanvas) {
+    // Remove existing event listeners if any
+    this.removeCalipersEventListeners();
+    
+    // Update canvas reference
+    this.canvas = newCanvas;
+    this.context = newCanvas.getContext("2d");
+    
+    // Re-setup event listeners if calipers mode is active
+    if (this.store.calipersMode) {
+      this.updateCalipersInteraction();
+    }
+  }
+
   updateCalipersInteraction() {
     if (this.canvas) {
       this.canvas.style.pointerEvents = this.store.calipersMode

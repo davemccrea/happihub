@@ -73,12 +73,14 @@ class Renderer {
     const devicePixelRatio = window.devicePixelRatio || 1;
 
     this.backgroundCanvas = this.createCanvas(devicePixelRatio, canvasHeight);
+    this.backgroundCanvas.setAttribute('data-canvas-id', 'background');
     this.backgroundContext = this.setupCanvasContext(
       this.backgroundCanvas,
       devicePixelRatio,
     );
 
     this.waveformCanvas = this.createCanvas(devicePixelRatio, canvasHeight);
+    this.waveformCanvas.setAttribute('data-canvas-id', 'waveform');
     this.waveformContext = this.setupCanvasContext(
       this.waveformCanvas,
       devicePixelRatio,
@@ -87,6 +89,7 @@ class Renderer {
     this.waveformCanvas.style.pointerEvents = "none";
 
     this.qrsFlashCanvas = this.createCanvas(devicePixelRatio, canvasHeight);
+    this.qrsFlashCanvas.setAttribute('data-canvas-id', 'qrs-flash');
     this.qrsFlashContext = this.setupCanvasContext(
       this.qrsFlashCanvas,
       devicePixelRatio,
@@ -95,6 +98,7 @@ class Renderer {
     this.qrsFlashCanvas.style.pointerEvents = "none";
 
     this.calipersCanvas = this.createCanvas(devicePixelRatio, canvasHeight);
+    this.calipersCanvas.setAttribute('data-canvas-id', 'calipers');
     this.calipersContext = this.setupCanvasContext(
       this.calipersCanvas,
       devicePixelRatio,

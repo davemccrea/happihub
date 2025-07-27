@@ -50,6 +50,8 @@ const ECGPlayer = {
       }),
       () => {
         this.renderer.recreateCanvas();
+        // Update caliper controller with new canvas reference
+        this.caliperController.updateCanvas(this.renderer.calipersCanvas);
         this.renderer.renderGridBackground();
         if (!this.store.isPlaying) {
           this.store.renderCurrentFrame();
