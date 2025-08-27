@@ -24,14 +24,18 @@ export class ECGDiagnostics {
    * @returns {Promise<void>}
    */
   async updateMemory() {
-    if (window.crossOriginIsolated && "measureUserAgentSpecificMemory" in performance) {
+    if (
+      window.crossOriginIsolated &&
+      "measureUserAgentSpecificMemory" in performance
+    ) {
       try {
-        const measurement = await /** @type {any} */ (performance).measureUserAgentSpecificMemory();
+        const measurement = await /** @type {any} */ (
+          performance
+        ).measureUserAgentSpecificMemory();
         this.memory = {
           usedJSHeapSize: measurement.bytes,
         };
       } catch (error) {
-        console.error("Failed to measure memory:", error);
         this.memory = { error: "Measurement failed" };
       }
     } else if ("memory" in performance) {
@@ -57,7 +61,8 @@ export class ECGDiagnostics {
 
     const panel = document.createElement("div");
     panel.id = "diagnostics-panel";
-    panel.className = "mt-4 mb-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
+    panel.className =
+      "mt-4 mb-4 p-4 bg-base-200 rounded-lg text-sm font-mono grid grid-cols-3 justify-start gap-4";
     panel.innerHTML = `
       <div id="diagnostics-col1" class="col-span-1"></div>
       <div id="diagnostics-col2" class="col-span-1"></div>
@@ -111,7 +116,9 @@ export class ECGDiagnostics {
         widthSeconds: this.ecgPlayer.widthSeconds,
         totalDuration: this.ecgPlayer.totalDuration,
         samplingRate: this.ecgPlayer.samplingRate,
-        totalSegments: this.ecgPlayer.precomputedSegments.get(this.ecgPlayer.currentLead)?.size || 0,
+        totalSegments:
+          this.ecgPlayer.precomputedSegments.get(this.ecgPlayer.currentLead)
+            ?.size || 0,
       },
     };
 
@@ -136,15 +143,22 @@ export class ECGDiagnostics {
     const groupsCol3 = {
       "Playback & Animation": {
         isPlaying: this.ecgPlayer.isPlaying,
-        currentLead: this.ecgPlayer.leadNames ? this.ecgPlayer.leadNames[this.ecgPlayer.currentLead] : "N/A",
+        currentLead: this.ecgPlayer.leadNames
+          ? this.ecgPlayer.leadNames[this.ecgPlayer.currentLead]
+          : "N/A",
         animationCycle: dynamicData.animationCycle,
         elapsedTime: dynamicData.elapsedTime,
         cursorProgress: dynamicData.cursorProgress,
         cursorPosition: dynamicData.cursorPosition,
-        localCursorPosition: this.ecgPlayer.displayMode === "multi" ? dynamicData.localCursorPosition : null,
+        localCursorPosition:
+          this.ecgPlayer.displayMode === "multi"
+            ? dynamicData.localCursorPosition
+            : null,
       },
       "QRS Detection": {
-        totalQrsCount: this.ecgPlayer.qrsIndexes ? this.ecgPlayer.qrsIndexes.length : 0,
+        totalQrsCount: this.ecgPlayer.qrsIndexes
+          ? this.ecgPlayer.qrsIndexes.length
+          : 0,
         detectedCount: this.ecgPlayer.qrsDetectedCount || 0,
       },
       "Real-time Rendering": {
@@ -177,7 +191,10 @@ export class ECGDiagnostics {
               let displayValue;
               if (key === "cursorProgress") {
                 displayValue = `${((value || 0) * 100).toFixed(0)}%`;
-              } else if (typeof value === "string" && (value.endsWith("MB") || !isNaN(parseFloat(value)))) {
+              } else if (
+                typeof value === "string" &&
+                (value.endsWith("MB") || !isNaN(parseFloat(value)))
+              ) {
                 displayValue = value;
               } else if (typeof value === "number") {
                 displayValue = `${value.toFixed(2)}${units[key] ? ` ${units[key]}` : ""}`;
@@ -222,7 +239,8 @@ export class ECGDiagnostics {
       };
     } else {
       segmentsInfo = {
-        activePointsPerLead: this.ecgPlayer.allLeadsCursorData?.[0]?.values.length || 0,
+        activePointsPerLead:
+          this.ecgPlayer.allLeadsCursorData?.[0]?.values.length || 0,
         totalActiveLeads: this.ecgPlayer.allLeadsCursorData?.length || 0,
       };
     }
@@ -249,7 +267,10 @@ export class ECGDiagnostics {
       this.createDebugPanel();
       this.render();
       if (!this.memoryInterval) {
-        this.memoryInterval = setInterval(() => this.updateMemory(), MEMORY_UPDATE_INTERVAL_MS);
+        this.memoryInterval = setInterval(
+          () => this.updateMemory(),
+          MEMORY_UPDATE_INTERVAL_MS,
+        );
       }
     } else {
       this.removeDebugPanel();
